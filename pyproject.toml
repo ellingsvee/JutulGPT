@@ -6,6 +6,13 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "jutuldarcy>=1.1.0",
+    "langchain>=0.3.26",
+    "langchain-community>=0.3.26",
+    "langchain-core>=0.3.67",
+    "langchain-ollama>=0.3.3",
+    "langchain-openai>=0.3.27",
+    "langchainhub>=0.1.21",
     "langgraph>=0.5.0",
     "langsmith>=0.4.4",
+    "pydantic>=2.11.7",
 ]
