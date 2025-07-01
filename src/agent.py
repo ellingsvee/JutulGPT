@@ -274,6 +274,9 @@ workflow.add_conditional_edges(
     },
 )
 workflow.add_edge("reflect", "generate")
+
+# memory = MemorySaver()  # Add memory
+# app = workflow.compile(checkpointer=memory)
 app = workflow.compile()
 
 question = "Generate python code for printing Hello World, and creating a list of numbers from 1 to 10 and prining this."
