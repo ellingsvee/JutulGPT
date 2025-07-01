@@ -11,3 +11,4 @@ _set_env("OPENAI_API_KEY")
 
 max_iterations = 3
 reflection_flag = "reflect"
+model_name = "llama3-groq-tool-use:8b"
