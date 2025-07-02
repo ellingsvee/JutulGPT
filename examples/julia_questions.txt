@@ -1,0 +1,11 @@
+Generate code for printing Hello World.
+Generate code for adding two numbers and printing the result.
+Generate code for defining a function that returns the square of a number.
+Generate code for creating an array of numbers from 1 to 10.
+Generate code for reading a number from user input.
+Generate code for calculating the factorial of a number using recursion.
+Generate code for plotting a simple line graph.
+Generate code for checking if a number is even or odd.
+Generate code for iterating over an array and printing each element.
+Generate code for defining a mutable struct called Person with fields name and age.
+Generate code for saving data to a CSV file.
