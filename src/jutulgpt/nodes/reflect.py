@@ -13,8 +13,6 @@ def reflect(state: GraphState):
         state (dict): New key added to state, generation
     """
 
-    print("---GENERATING CODE SOLUTION---")
-
     # State
     messages = state["messages"]
     iterations = state["iterations"]
