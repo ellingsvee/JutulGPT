@@ -1,6 +1,9 @@
 from jutulgpt.julia_interface import run_string
 
 if __name__ == "__main__":
+    # julia_code = """
+    # x = 2; y = x^3; y
+    # """
     julia_code = """
     throw("Intentional error for testing")
     """
