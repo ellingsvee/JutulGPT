@@ -1,6 +1,7 @@
+from typing import List
+
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
-from typing import List
 
 
 class Code(BaseModel):

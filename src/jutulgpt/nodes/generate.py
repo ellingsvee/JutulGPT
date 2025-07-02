@@ -1,5 +1,5 @@
-from schema import GraphState
-from llm import code_gen_chain, concatenated_content
+from jutulgpt.llm import code_gen_chain, concatenated_content
+from jutulgpt.state import GraphState
 
 
 def generate(state: GraphState):
@@ -12,7 +12,7 @@ def generate(state: GraphState):
     Returns:
         state (dict): New key added to state, generation
     """
-
+    print("YO THIS IS UPDATED")
     print("---GENERATING CODE SOLUTION---")
 
     # State

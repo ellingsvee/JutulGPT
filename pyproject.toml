@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "ipython>=9.4.0",
     "jutuldarcy>=1.1.0",
     "langchain>=0.3.26",
     "langchain-community>=0.3.26",
@@ -16,3 +17,7 @@ dependencies = [
     "langsmith>=0.4.4",
     "pydantic>=2.11.7",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,4 +1,4 @@
-from config import max_iterations, reflection_flag
+from jutulgpt.config import max_iterations, reflection_flag
 
 
 def decide_to_finish(state):

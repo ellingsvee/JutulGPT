@@ -1,4 +1,4 @@
-from schema import GraphState
+from jutulgpt.state import GraphState
 
 
 def code_check(state: GraphState):
