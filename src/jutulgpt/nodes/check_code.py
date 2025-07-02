@@ -1,3 +1,4 @@
+from jutulgpt.julia_interface import run_string
 from jutulgpt.state import GraphState
 
 
@@ -24,11 +25,10 @@ def code_check(state: GraphState):
     code = code_solution.code
 
     # Check imports
-    try:
-        exec(imports)
-    except Exception as e:
+    result = run_string(imports)
+    if result["error"]:
         print("---CODE IMPORT CHECK: FAILED---")
-        error_message = [("user", f"Your solution failed the import test: {e}")]
+        error_message = [("user", f"Import test failed:\n{result['error_message']}")]
         messages += error_message
         return {
             "generation": code_solution,
@@ -37,12 +37,11 @@ def code_check(state: GraphState):
             "error": "yes",
         }
 
-    # Check execution
-    try:
-        exec(imports + "\n" + code)
-    except Exception as e:
+    # Check code execution
+    result = run_string(imports + "\n" + code)
+    if result["error"]:
         print("---CODE BLOCK CHECK: FAILED---")
-        error_message = [("user", f"Your solution failed the code execution test: {e}")]
+        error_message = [("user", f"Code execution failed:\n{result['error_message']}")]
         messages += error_message
         return {
             "generation": code_solution,
