@@ -1,7 +1,0 @@
-Write code for setting up the domain. Set up a simple Cartesian Mesh that is converted into a reservoir domain with static properties permeability and porosity values together with geometry information. Use this domain to set up two wells: One vertical well for injection and a single perforation producer.
-Write code for setting up the fluid system. Select a two-phase immiscible system by declaring that the liquid and vapor phases are present in the model. These are assumed to have densities of 1000 and 100 kilograms per meters cubed at reference pressure and temperature conditions.
-Write code for setting up the model. Call the reservoir model setup function and get out the model together with the parameters.
-Designate an initial state. Set up a constant pressure reservoir filled with the liquid phase.
-Set up reporting timesteps. Report every year for 25 years.
-Write code for simulating the results.
-Write code for plotting the results of the simulation.
