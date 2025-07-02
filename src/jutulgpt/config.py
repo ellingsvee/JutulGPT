@@ -1,4 +1,5 @@
 import getpass
+import logging
 import os
 
 
@@ -9,6 +10,9 @@ def _set_env(var: str):
 
 _set_env("OPENAI_API_KEY")
 
-max_iterations = 3
+max_iterations = 5
 reflection_flag = "reflect"
 model_name = "llama3-groq-tool-use:8b"
+# model_name = "gemma3n:latest"
+
+logging_level = logging.INFO

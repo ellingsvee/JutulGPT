@@ -1,6 +1,7 @@
 import logging
 import os
 
+from jutulgpt.config import logging_level
 from jutulgpt.state import Code
 
 
@@ -34,17 +35,27 @@ def load_lines_from_txt(file_path):
 
 
 def format_code_response(code: Code) -> str:
-    return f"{code.prefix}\n\n```julia\n{code.imports}\n\n{code.code}\n```"
+    out = "Response:\n"
+    if code.prefix != "":
+        out += f"{code.prefix}\n\n"
+    if code.imports != "" or code.code != "":
+        out += "```julia\n"
+        if code.imports != "":
+            out += f"**{code.imports}\n\n"
+        if code.code != "":
+            out += f"{code.code}\n"
+        out += "```"
+    return out
 
 
 # Configure logger
 logger = logging.getLogger("jutulgpt")
-logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
+logging.basicConfig(level=logging_level, format="%(name)s: %(message)s")
 
 # Set your module's log level
-logging.getLogger("jutulgpt").setLevel(logging.INFO)
+logging.getLogger("jutulgpt").setLevel(logging.DEBUG)
 
 # Suppress overly verbose logs from dependencies
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)  # sometimes used under the hood
-logging.getLogger("langchain").setLevel(logging.WARNING)  # if needed
+logging.getLogger("httpx").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)  # sometimes used under the hood
+logging.getLogger("langchain").setLevel(logging.ERROR)  # if needed

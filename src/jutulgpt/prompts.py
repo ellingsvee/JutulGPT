@@ -18,9 +18,9 @@ Given a user query, your task is to generate correct and idiomatic **Julia code*
 - Avoid vague explanations. Be concise and clear.
 
 # ## Format your response in three parts:
-# 1. **Explanation**: Briefly describe the approach and reasoning (2–4 sentences).
+# 1. **Prefix**: Briefly describe the approach and reasoning (2–4 sentences). Make sure to write a complete and clear description what you have done.
 # 2. **Imports**: When necessary to import packages, list all required `using` statements. Let this be empty string `` when no external packages are needed.
-# 3. **Code**: Provide a clean, complete, and directly executable Julia code.
+# 3. **Code**: Provide a clean, complete, and directly executable Julia code. When nott needing to write any code, just return an empty string ``.
 
 Begin below. Here is the user's question:
             """.strip(),
