@@ -1,4 +1,7 @@
+import logging
 import os
+
+from jutulgpt.state import Code
 
 
 def load_lines_from_txt(file_path):
@@ -28,3 +31,20 @@ def load_lines_from_txt(file_path):
         ) from e
     except Exception as e:
         raise Exception(f"An unexpected error occurred: {e}") from e
+
+
+def format_code_response(code: Code) -> str:
+    return f"{code.prefix}\n\n```julia\n{code.imports}\n\n{code.code}\n```"
+
+
+# Configure logger
+logger = logging.getLogger("jutulgpt")
+logging.basicConfig(level=logging.INFO, format="%(name)s: %(message)s")
+
+# Set your module's log level
+logging.getLogger("jutulgpt").setLevel(logging.INFO)
+
+# Suppress overly verbose logs from dependencies
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)  # sometimes used under the hood
+logging.getLogger("langchain").setLevel(logging.WARNING)  # if needed

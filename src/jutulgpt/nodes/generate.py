@@ -1,5 +1,6 @@
 from jutulgpt.llm import code_gen_chain, concatenated_content
 from jutulgpt.state import CodeState
+from jutulgpt.utils import format_code_response, logger
 
 
 def generate(state: CodeState) -> CodeState:
@@ -12,7 +13,8 @@ def generate(state: CodeState) -> CodeState:
     Returns:
         state (dict): New key added to state, generation
     """
-    print("---GENERATING CODE SOLUTION---")
+    # print("---GENERATING CODE SOLUTION---")
+    logger.info("Generating code solution.")
 
     # State
     messages = state["messages"]
@@ -32,13 +34,24 @@ def generate(state: CodeState) -> CodeState:
     code_solution = code_gen_chain.invoke(
         {"context": concatenated_content, "messages": messages}
     )
-    messages += [
+    # messages += [
+    #     (
+    #         "assistant",
+    #         f"{code_solution.prefix} \n Imports: {code_solution.imports} \n Code: {code_solution.code}",
+    #     )
+    # ]
+    messages.append(
         (
             "assistant",
-            f"{code_solution.prefix} \n Imports: {code_solution.imports} \n Code: {code_solution.code}",
+            format_code_response(code_solution),
         )
-    ]
+    )
 
     # Increment
     iterations = iterations + 1
-    return {"code": code_solution, "messages": messages, "iterations": iterations}
+    return {
+        "messages": messages,
+        "code": code_solution,
+        "error": "no",
+        "iterations": iterations,
+    }
