@@ -1,8 +1,8 @@
 from jutulgpt.llm import code_gen_chain, concatenated_content
-from jutulgpt.state import GraphState
+from jutulgpt.state import CodeState
 
 
-def reflect(state: GraphState):
+def reflect(state: CodeState) -> CodeState:
     """
     Reflect on errors
 
@@ -16,7 +16,7 @@ def reflect(state: GraphState):
     # State
     messages = state["messages"]
     iterations = state["iterations"]
-    code_solution = state["generation"]
+    code_solution = state["code"]
 
     # Prompt reflection
 
@@ -25,4 +25,4 @@ def reflect(state: GraphState):
         {"context": concatenated_content, "messages": messages}
     )
     messages += [("assistant", f"Here are reflections on the error: {reflections}")]
-    return {"generation": code_solution, "messages": messages, "iterations": iterations}
+    return {"code": code_solution, "messages": messages, "iterations": iterations}

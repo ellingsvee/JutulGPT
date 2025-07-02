@@ -4,9 +4,9 @@ from jutulgpt.edges import decide_to_finish
 from jutulgpt.nodes.check_code import code_check
 from jutulgpt.nodes.generate import generate
 from jutulgpt.nodes.reflect import reflect
-from jutulgpt.state import GraphState
+from jutulgpt.state import CodeState
 
-builder = StateGraph(GraphState)
+builder = StateGraph(CodeState)
 
 builder.add_node("generate", generate)
 builder.add_node("check_code", code_check)

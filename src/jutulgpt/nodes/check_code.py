@@ -1,8 +1,8 @@
 from jutulgpt.julia_interface import run_string
-from jutulgpt.state import GraphState
+from jutulgpt.state import CodeState
 
 
-def code_check(state: GraphState):
+def code_check(state: CodeState) -> CodeState:
     """
     Check code
 
@@ -17,7 +17,7 @@ def code_check(state: GraphState):
 
     # State
     messages = state["messages"]
-    code_solution = state["generation"]
+    code_solution = state["code"]
     iterations = state["iterations"]
 
     # Get solution components
@@ -28,23 +28,26 @@ def code_check(state: GraphState):
     result = run_string(imports)
     if result["error"]:
         print("---CODE IMPORT CHECK: FAILED---")
+        print(f"Imports that failed:\n{imports}")
         error_message = [("user", f"Import test failed:\n{result['error_message']}")]
         messages += error_message
         return {
-            "generation": code_solution,
+            "code": code_solution,
             "messages": messages,
             "iterations": iterations,
             "error": "yes",
         }
 
     # Check code execution
-    result = run_string(imports + "\n" + code)
+    full_code = imports + "\n" + code
+    result = run_string(full_code)
     if result["error"]:
         print("---CODE BLOCK CHECK: FAILED---")
+        print(f"Code that failed:\n{full_code}")
         error_message = [("user", f"Code execution failed:\n{result['error_message']}")]
         messages += error_message
         return {
-            "generation": code_solution,
+            "code": code_solution,
             "messages": messages,
             "iterations": iterations,
             "error": "yes",
@@ -53,7 +56,7 @@ def code_check(state: GraphState):
     # No errors
     print("---NO CODE TEST FAILURES---")
     return {
-        "generation": code_solution,
+        "code": code_solution,
         "messages": messages,
         "iterations": iterations,
         "error": "no",

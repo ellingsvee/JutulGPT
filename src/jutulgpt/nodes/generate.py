@@ -1,8 +1,8 @@
 from jutulgpt.llm import code_gen_chain, concatenated_content
-from jutulgpt.state import GraphState
+from jutulgpt.state import CodeState
 
 
-def generate(state: GraphState):
+def generate(state: CodeState) -> CodeState:
     """
     Generate a code solution
 
@@ -41,4 +41,4 @@ def generate(state: GraphState):
 
     # Increment
     iterations = iterations + 1
-    return {"generation": code_solution, "messages": messages, "iterations": iterations}
+    return {"code": code_solution, "messages": messages, "iterations": iterations}
