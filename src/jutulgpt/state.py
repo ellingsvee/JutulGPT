@@ -1,4 +1,4 @@
-from typing import Annotated, List
+from typing import Annotated, List, Union
 
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
@@ -16,3 +16,10 @@ class CodeState(TypedDict):
     code: str
     error: str
     iterations: int
+
+
+# class RunCodeState(TypedDict):
+# out: Union[str, None]
+# error: bool
+# error_message: Union[str, None]
+# error_stacktrace: Union[str, None]

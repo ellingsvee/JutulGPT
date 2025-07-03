@@ -1,3 +1,6 @@
+# Custom
+src/jutulgpt/rag_sources/loaded_docs.pkl
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

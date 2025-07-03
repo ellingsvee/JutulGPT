@@ -1,4 +1,4 @@
-from jutulgpt.llm import code_gen_chain, concatenated_content
+from jutulgpt.agents import code_gen_chain, concatenated_content
 from jutulgpt.state import CodeState
 from jutulgpt.utils import format_code_response, logger
 

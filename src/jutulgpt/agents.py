@@ -1,12 +1,12 @@
-from langchain_ollama import ChatOllama
+from langchain_core.vectorstores import in_memory
 from langgraph.prebuilt import create_react_agent
 
 from jutulgpt.config import model_name
 from jutulgpt.prompts import code_gen_prompt
 from jutulgpt.state import Code
 from jutulgpt.tools import tools
+from jutulgpt.config import llm
 
-llm = ChatOllama(model=model_name)
 
 agent = create_react_agent(
     llm,
@@ -15,7 +15,7 @@ agent = create_react_agent(
 )
 
 
-def get_structured_response(response):
+def get_structured_response(response) -> Code:
     """Extract structured response from the agent output."""
     structured_response = response.get("structured_response", None)
     if structured_response is None:

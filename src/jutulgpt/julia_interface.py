@@ -11,7 +11,6 @@ def run_string(code: str):
             "error_stacktrace": None,
         }
     except JuliaError as e:
-        # return {"out": None, "error": True, "error_message": str(e)}
         full_msg = str(e)
         if "\nStacktrace:\n" in full_msg:
             pre_stack, stack = full_msg.split("\nStacktrace:\n", 1)
