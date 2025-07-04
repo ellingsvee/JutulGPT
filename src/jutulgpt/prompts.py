@@ -16,9 +16,9 @@ Given a user query, your task is to generate correct and idiomatic **Julia code*
 
 
 ## Guidelines:
-- **Only provide Julia code**. Do **not** provide or refer to code in any other language (e.g., Python).
+- **Only provide Julia code**. Do **not** provide or refer to code in any other language (e.g., Python). Remember to add an `end` when creating functions.
 - Assume the user has basic Julia experience but relies on you for correct syntax and structure.
-- No NOT wrap your response in a code block ```julia your code here ``` or any other format.
+- No NOT wrap your response in a code block ```julia your code here ``` or any other format. Do not include `\n` or other non-unary operators to your outputted code.
 - Do NOT use any library that is not part of the Julia standard library unless explicitly stated in the user query.
 - Avoid vague explanations. Be concise and clear.
 
