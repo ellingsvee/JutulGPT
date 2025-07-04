@@ -1,4 +1,4 @@
-from jutulgpt.julia_interface import run_string
+from jutulgpt.julia_interface import run_string, get_error_message
 from jutulgpt.state import CodeState
 from jutulgpt.utils import logger
 
@@ -29,10 +29,17 @@ def code_check(state: CodeState) -> CodeState:
     # Check imports
     result = run_string(imports)
     if result["error"]:
-        # print("---CODE IMPORT CHECK: FAILED---")
-        logger.error("Code import check failed.")
-        logger.debug(f"Imports that failed:\n{imports}")
-        error_message = [("user", f"Import test failed:\n{result['error_message']}")]
+        julia_error_message = get_error_message(result)
+        error_message = [("user", f"Import test failed:\n{julia_error_message}")]
+
+        logger.info(
+            f"""
+            Import test failed.
+            Imports that failed: {imports}
+            {julia_error_message}
+            """
+        )
+
         messages += error_message
         return {
             "code": code_solution,
@@ -45,14 +52,15 @@ def code_check(state: CodeState) -> CodeState:
     full_code = imports + "\n" + code
     result = run_string(full_code)
     if result["error"]:
-        # print("---CODE BLOCK CHECK: FAILED---")
-        # print(f"Code that failed:\n{full_code}")
-        error_message = [("user", f"Code execution failed:\n{result['error_message']}")]
-        # print(f"Error message:\n{error_message}")
-        logger.error("Code block check failed.")
-        logger.debug(f"Code that failed:\n{full_code}")
-        logger.debug(f"Error message:\n{result['error_message']}")
-
+        julia_error_message = get_error_message(result)
+        error_message = [("user", f"Code execution failed:\n{julia_error_message}")]
+        logger.info(
+            f"""
+            Code execution failed.
+            Code that failed: {full_code}
+            {julia_error_message}
+            """
+        )
         messages += error_message
         return {
             "code": code_solution,
