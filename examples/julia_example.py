@@ -1,14 +1,32 @@
+from langchain_core.messages import convert_to_messages
 from jutulgpt.graph import graph
+from jutulgpt.state import Code
 from jutulgpt.utils import format_code_response, load_lines_from_txt
 
 if __name__ == "__main__":
     questions = load_lines_from_txt("examples/julia_questions.txt")
-    question = questions[5]
+    question = questions[9]
 
-    question = "Can you check the JutulDarcy documentation for what different types of wells we can simulate? You dont need to write any code."
+    # question = "Can you check the JutulDarcy documentation for it says about the CartesianMesh function?"
 
-    print("Question:", question)
-    result = graph.invoke(
-        {"messages": [("user", question)], "code": "", "iterations": 0, "error": ""}
-    )
-    print(format_code_response(result["code"]))
+    # print("Question:", question)
+    # result = graph.invoke(
+    #     {"messages": [("user", question)], "code": "", "iterations": 0, "error": ""}
+    # )
+
+    # result["messages"][-2].pretty_print()
+    # result["messages"][-1].pretty_print()
+    # print(result)
+    for chunk in graph.stream(
+        # {"messages": [("user", question)], "code": "", "iterations": 0, "error": ""}
+        {
+            "messages": convert_to_messages([{"role": "user", "content": question}]),
+            "code": Code(prefix="", imports="", code=""),
+            "iterations": 0,
+            "error": "",
+        }
+    ):
+        for node, update in chunk.items():
+            # print("Update from node", node)
+            # update["messages"][-2].pretty_print()
+            update["messages"][-1].pretty_print()

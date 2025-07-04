@@ -7,8 +7,9 @@ def decide_to_finish(state):
         # print("---DECISION: FINISH---")
         logger.info("Decision: Finish")
         if state["iterations"] == max_iterations:
-            print(f"Max iterations ({max_iterations}) reached.")
+            print(f"Max iterations {max_iterations} reached.")
         return "end"
     # print("---DECISION: RETRY---")
     logger.info("Decision: Retry")
-    return "reflect" if reflection_flag == "reflect" else "generate"
+    # return "reflect" if reflection_flag == "reflect" else "generate"
+    return "generate"

@@ -11,14 +11,15 @@ class Code(BaseModel):
     code: str = Field(description="Code block not including import statements")
 
 
-class CodeState(TypedDict):
+class GraphState(TypedDict):
     messages: Annotated[list, add_messages]
-    code: str
+    code: Code
     error: str
     iterations: int
+    context: str
 
 
-# class RunCodeState(TypedDict):
+# class RunGraphState(TypedDict):
 # out: Union[str, None]
 # error: bool
 # error_message: Union[str, None]

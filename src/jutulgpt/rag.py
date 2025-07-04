@@ -31,7 +31,7 @@ else:
     with open(loaded_docs_path, "wb") as f:
         pickle.dump(loaded, f)
 
-splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 splits = splitter.split_documents(loaded)
 
 vectorstore = Chroma.from_documents(
@@ -40,7 +40,7 @@ vectorstore = Chroma.from_documents(
     persist_directory=persist_directory,
 )
 
-retriever = vectorstore.as_retriever()
+docs_retriever = vectorstore.as_retriever()
 
 
 def format_docs(docs):

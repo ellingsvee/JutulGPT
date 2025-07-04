@@ -1,8 +1,10 @@
+from langchain_core.messages import AIMessage
+
 from jutulgpt.agents import code_gen_chain, concatenated_content
-from jutulgpt.state import CodeState
+from jutulgpt.state import GraphState
 
 
-def reflect(state: CodeState) -> CodeState:
+def reflect(state: GraphState) -> GraphState:
     """
     Reflect on errors
 
@@ -24,5 +26,11 @@ def reflect(state: CodeState) -> CodeState:
     reflections = code_gen_chain.invoke(
         {"context": concatenated_content, "messages": messages}
     )
-    messages += [("assistant", f"Here are reflections on the error: {reflections}")]
-    return {"code": code_solution, "messages": messages, "iterations": iterations}
+    # messages += [("assistant", f"Here are reflections on the error: {reflections}")]
+    # return {"code": code_solution, "messages": messages, "iterations": iterations}
+    state["messages"].append(
+        AIMessage(content=f"Here are reflections on the error: {reflections}")
+    )
+    state["code"] = code_solution
+    state["error"] = "no"
+    return state

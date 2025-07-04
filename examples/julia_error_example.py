@@ -4,8 +4,11 @@ if __name__ == "__main__":
     # julia_code = """
     # x = 2; y = x^3; y
     # """
+    # julia_code = """
+    # throw("Intentional error for testing")
+    # """
     julia_code = """
-    throw("Intentional error for testing")
+    using InvalidMdule
     """
 
     result = run_string(julia_code)
@@ -13,7 +16,10 @@ if __name__ == "__main__":
     print("Result of running Julia code:")
     if result["error"]:
         print("Error occurred:")
-        print(result["error_message"])
+        print(f"out: {result['out']}")
+        print(f"error: {result['error']}")
+        print(f"error_message: {result['error_message']}")
+        print(f"error_stacktrace: {result['error_stacktrace']}")
     else:
         print("Code executed successfully.")
         print("Output:", result["out"])

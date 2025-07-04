@@ -1,9 +1,11 @@
-from jutulgpt.julia_interface import run_string, get_error_message
-from jutulgpt.state import CodeState
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
+from jutulgpt.julia_interface import get_error_message, run_string
+from jutulgpt.state import GraphState
 from jutulgpt.utils import logger
 
 
-def code_check(state: CodeState) -> CodeState:
+def code_check(state: GraphState) -> GraphState:
     """
     Check code
 
@@ -18,9 +20,7 @@ def code_check(state: CodeState) -> CodeState:
     logger.info("Checking coder:")
 
     # State
-    messages = state["messages"]
     code_solution = state["code"]
-    iterations = state["iterations"]
 
     # Get solution components
     imports = code_solution.imports
@@ -30,7 +30,10 @@ def code_check(state: CodeState) -> CodeState:
     result = run_string(imports)
     if result["error"]:
         julia_error_message = get_error_message(result)
-        error_message = [("user", f"Import test failed:\n{julia_error_message}")]
+        # error_message = [("user", f"Import test failed:\n{julia_error_message}")]
+        error_message = [
+            SystemMessage(content=f"Import test failed:\n{julia_error_message}")
+        ]
 
         logger.info(
             f"""
@@ -39,14 +42,9 @@ def code_check(state: CodeState) -> CodeState:
             {julia_error_message}
             """
         )
-
-        messages += error_message
-        return {
-            "code": code_solution,
-            "messages": messages,
-            "iterations": iterations,
-            "error": "yes",
-        }
+        state["messages"] += error_message
+        state["error"] = "yes"
+        return state
 
     # Check code execution
     full_code = imports + "\n" + code
@@ -61,20 +59,13 @@ def code_check(state: CodeState) -> CodeState:
             {julia_error_message}
             """
         )
-        messages += error_message
-        return {
-            "code": code_solution,
-            "messages": messages,
-            "iterations": iterations,
-            "error": "yes",
-        }
+        state["messages"] += error_message
+        state["error"] = "yes"
+        return state
 
-    # No errors
-    # print("---NO CODE TEST FAILURES---")
     logger.info("No code test failures.")
-    return {
-        "code": code_solution,
-        "messages": messages,
-        "iterations": iterations,
-        "error": "no",
-    }
+    state["messages"].append(
+        SystemMessage(content="No code test failures. Code is valid.")
+    )
+    state["error"] = "no"
+    return state
