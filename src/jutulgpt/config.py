@@ -1,8 +1,11 @@
 import getpass
+from dotenv import load_dotenv
 import logging
 import os
 
+from langchain.chat_models import init_chat_model
 from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 
 def _set_env(var: str):
@@ -10,15 +13,19 @@ def _set_env(var: str):
         os.environ[var] = getpass.getpass(f"{var}: ")
 
 
-# _set_env("OPENAI_API_KEY")
+load_dotenv()
+_set_env("OPENAI_API_KEY")
 
 
 max_iterations = 5
-reflection_flag = ""
+# reflection_flag = ""
 model_name = "llama3-groq-tool-use:8b"
 # model_name = "gemma3n:latest"
 
 logging_level = logging.INFO
 
-llm = ChatOllama(model=model_name)
-embedding = OllamaEmbeddings(model="nomic-embed-text")
+# llm = ChatOllama(model=model_name)
+# embedding = OllamaEmbeddings(model="nomic-embed-text")
+
+llm = init_chat_model("openai:gpt-4.1", temperature=0)
+embedding = OpenAIEmbeddings()
