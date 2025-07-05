@@ -1,58 +1,22 @@
+# src/jutulgpt/rag_sources/jutuldarcy_examples/introduction/wells_intro.jl
+
+
+# 1. Define the path to your Julia code file
+julia_file_path = (
+    "./src/jutulgpt/rag_sources/jutuldarcy_examples/introduction/wells_intro.jl"
+)
+from langchain_core.documents import Document
+from langchain_core.document_loaders import BaseLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
-import pickle
-import re
 from typing import List
 
-from langchain.text_splitter import TextSplitter
-from langchain_chroma import Chroma
-from langchain_community.document_loaders import (
-    DirectoryLoader,
-    UnstructuredMarkdownLoader,
-)
-from langchain_core.document_loaders import BaseLoader
+import re
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from jutulgpt.config import embedding
-from jutulgpt.utils import logger
-
-persist_directory = "./chroma_docs_dir"
-loaded_docs_path = "./src/jutulgpt/rag_sources/loaded_docs.pkl"
-if os.path.exists(loaded_docs_path):
-    logger.info("Loading existing loaded_docs from disk.")
-    with open(loaded_docs_path, "rb") as f:
-        loaded = pickle.load(f)
-else:
-    logger.info("loaded_docs not found. Generating new one.")
-    loader_docs = DirectoryLoader(
-        path="./src/jutulgpt/rag_sources/jutuldarcy_docs/man/",
-        glob="**/*.md",
-        show_progress=True,
-        loader_cls=UnstructuredMarkdownLoader,
-    )
-
-    loaded = loader_docs.load()
-
-    with open(loaded_docs_path, "wb") as f:
-        pickle.dump(loaded, f)
-
-splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-splits = splitter.split_documents(loaded)
-
-vectorstore = Chroma.from_documents(
-    documents=splits,
-    embedding=embedding,
-    persist_directory=persist_directory,
-)
-
-docs_retriever = vectorstore.as_retriever()
+from typing import List
 
 
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
-
-
-def split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
+def split_on_julia_markdown_headers(document: Document) -> List[Document]:
     """
     Splits a Document at lines like `# ##` or `# ###`, which represent markdown headings
     inside Julia comments. Keeps all content grouped under each such header.
@@ -118,17 +82,27 @@ class JuliaCodeSplitter(RecursiveCharacterTextSplitter):
         )
 
 
+# Example usage:
 def load_and_split_julia_code(path_to_file):
     loader = JuliaCodeLoader(path_to_file)
     docs = loader.load()
 
-    # Apply heading-aware splitting
-    chunks = []
-    for doc in docs:
-        chunks.extend(split_julia_file_on_markdown_headers(doc))
-
-    # Alternatively, you can use the JuliaCodeSplitter
     # splitter = JuliaCodeSplitter(chunk_size=1000, chunk_overlap=100)
     # chunks = splitter.split_documents(docs)
 
+    # Apply heading-aware splitting
+    chunks = []
+    for doc in docs:
+        chunks.extend(split_on_julia_markdown_headers(doc))
+
     return chunks
+
+
+# --- For testing ---
+if __name__ == "__main__":
+    from pprint import pprint
+
+    chunks = load_and_split_julia_code(julia_file_path)  # Replace with your file path
+    for i, chunk in enumerate(chunks):
+        print(f"\n--- Chunk {i + 1} ---")
+        print(chunk.page_content)
