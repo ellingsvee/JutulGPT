@@ -1,14 +1,13 @@
 from langchain_core.vectorstores import in_memory
 from langgraph.prebuilt import create_react_agent
 
+# from jutulgpt.tools.tools_rag import docs_retriever_tool
+from jutulgpt.config import llm
+
 # from jutulgpt.config import model_name
 from jutulgpt.prompts import code_gen_prompt
 from jutulgpt.state import Code
 from jutulgpt.tools import tools
-
-# from jutulgpt.tools.tools_rag import docs_retriever_tool
-from jutulgpt.config import llm
-
 
 agent = create_react_agent(
     llm,

@@ -1,6 +1,5 @@
 from langchain_core.prompts import ChatPromptTemplate
 
-
 code_gen_prompt = ChatPromptTemplate.from_messages(
     [
         (

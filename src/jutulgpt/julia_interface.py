@@ -1,5 +1,6 @@
 import re
 from typing import Union
+
 from juliacall import JuliaError
 from juliacall import Main as jl
 
@@ -50,4 +51,5 @@ def get_error_message(result) -> str:
     out_string = f"Julia error message: {result['error_message']}\n"
     if result["error_stacktrace"] is not None:
         out_string += f"Julia stacktrace: {result['error_stacktrace']}"
+    return out_string
     return out_string

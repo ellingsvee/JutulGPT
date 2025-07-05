@@ -1,8 +1,8 @@
 import getpass
-from dotenv import load_dotenv
 import logging
 import os
 
+from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
