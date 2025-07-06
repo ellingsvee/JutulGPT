@@ -39,3 +39,7 @@ dev = [
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff]
+select = ["I"]
+extend-select = ["I"]
