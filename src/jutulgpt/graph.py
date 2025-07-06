@@ -2,7 +2,6 @@ from langgraph.graph import END, START, StateGraph
 
 from jutulgpt.config import max_iterations
 
-# from jutulgpt.nodes import check_code, generate_code
 from jutulgpt.nodes import check_code, generate_code
 from jutulgpt.state import GraphState
 from jutulgpt.utils import logger
