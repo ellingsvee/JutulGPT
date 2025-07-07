@@ -31,7 +31,7 @@ def _deduplicate_chunks(chunks):
 
 
 def format_examples(
-    docs: List[Document], n: int = 4, remove_duplicates: bool = True
+    docs: List[Document], n: int = 6, remove_duplicates: bool = True
 ) -> str:
     if remove_duplicates:
         docs = _deduplicate_chunks(docs)
@@ -137,7 +137,7 @@ def _format_doc(doc: Document) -> str:
     return f"# From `{file_source}` - Section: `{section_path}`\n\n{doc.page_content.strip()}"
 
 
-def format_docs(docs, n: int = 4, remove_duplicates: bool = True):
+def format_docs(docs, n: int = 6, remove_duplicates: bool = True):
     if remove_duplicates:
         docs = _deduplicate_chunks(docs)
     docs = docs[:n]

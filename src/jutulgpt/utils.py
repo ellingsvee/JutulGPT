@@ -41,7 +41,7 @@ def format_code_response(code: Code) -> str:
     if code.imports != "" or code.code != "":
         out += "```julia\n"
         if code.imports != "":
-            out += f"**{code.imports}\n\n"
+            out += f"{code.imports}\n\n"
         if code.code != "":
             out += f"{code.code}\n"
         out += "```"
