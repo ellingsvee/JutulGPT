@@ -33,7 +33,7 @@ def retrieve_jutuldarcy_documentation(query: str) -> str:
 
     Output: String containing the formatted output from the retriever
     """
-    logger.info("TOOL INVOKED: retrieve_jutuldarcy_documentation")
+    logger.info(f"TOOL INVOKED: retrieve_jutuldarcy_documentation")
     out = format_docs(docs_retriever.invoke(input=query))
     print(out)
     return out
@@ -55,4 +55,5 @@ def retrieve_jutuldarcy_examples(query: str) -> str:
     return out
 
 
-tools = [retrieve_jutuldarcy_documentation, retrieve_jutuldarcy_examples]
+# tools = [retrieve_jutuldarcy_documentation, retrieve_jutuldarcy_examples]
+tools = []

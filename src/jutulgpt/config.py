@@ -17,7 +17,7 @@ load_dotenv()
 _set_env("OPENAI_API_KEY")
 
 
-max_iterations = 5
+max_iterations = 3
 # reflection_flag = ""
 model_name = "llama3-groq-tool-use:8b"
 # model_name = "gemma3n:latest"

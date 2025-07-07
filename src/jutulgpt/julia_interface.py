@@ -4,6 +4,8 @@ from typing import Union
 from juliacall import JuliaError
 from juliacall import Main as jl
 
+jl.seval("using JutulDarcy, Jutul")  # Make sure these packages are always imported
+
 
 def run_string(code: str):
     """Execute Julia code from a string and capture output or detailed errors."""

@@ -27,6 +27,12 @@ You have tools that can be used to retrieve relevant information related to the 
 2. **Imports**: When necessary to import packages, list all required `using` statements. The `using` have to be the at the beginning of every line. F.ex. do NOT write `**using`. Let this be empty string `` when no external packages are needed.
 3. **Code**: Provide a clean, complete, and directly executable Julia code. When not needing to write any code, just return an empty string ``.
 
+## Here is some retrieved context from the JutulDarcy documentation:
+{docs_context}
+
+## Here is some retrieved context from the JutulDarcy examples:
+{examples_context}
+
 ## Used question
 Begin below. Here is the user's question:
             """.strip(),

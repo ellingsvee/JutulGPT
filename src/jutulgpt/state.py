@@ -22,6 +22,8 @@ class GraphState:
     structured_response: Code
     error: bool
     iterations: int
+    docs_context: str
+    examples_context: str
 
 
 # class GraphState(TypedDict):

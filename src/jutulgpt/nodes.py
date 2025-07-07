@@ -1,9 +1,17 @@
+from os import stat
+
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import MessagesState
 
 from jutulgpt.agents import code_gen_chain, get_structured_response
 from jutulgpt.config import llm
 from jutulgpt.julia_interface import get_error_message, run_string
+from jutulgpt.rag import (
+    docs_retriever,
+    examples_retriever,
+    format_docs,
+    format_examples,
+)
 from jutulgpt.state import Code, GraphState
 from jutulgpt.utils import format_code_response, logger
 
@@ -34,7 +42,14 @@ def generate_code(state: GraphState) -> GraphState:
         )
 
     # Solution
-    out = code_gen_chain.invoke({"messages": messages})
+    # out = code_gen_chain.invoke({"messages": messages})
+    out = code_gen_chain.invoke(
+        {
+            "messages": messages,
+            "docs_context": state.docs_context,
+            "examples_context": state.examples_context,
+        }
+    )
     structured_resonse = get_structured_response(out)
 
     # TODO: Double check that this is correct.
@@ -44,6 +59,8 @@ def generate_code(state: GraphState) -> GraphState:
         structured_response=structured_resonse,
         error=False,
         iterations=state.iterations + 1,
+        docs_context=state.docs_context,
+        examples_context=state.examples_context,
     )
 
 
@@ -71,6 +88,8 @@ def check_code(state: GraphState) -> GraphState:
             structured_response=structured_resonse,
             error=True,
             iterations=state.iterations,
+            docs_context=state.docs_context,
+            examples_context=state.examples_context,
         )
 
     full_code = imports + "\n" + code
@@ -93,6 +112,8 @@ def check_code(state: GraphState) -> GraphState:
             structured_response=structured_resonse,
             error=True,
             iterations=state.iterations,
+            docs_context=state.docs_context,
+            examples_context=state.examples_context,
         )
 
     logger.info("No code test failures.")
@@ -101,4 +122,25 @@ def check_code(state: GraphState) -> GraphState:
         structured_response=structured_resonse,
         error=False,
         iterations=state.iterations,
+        docs_context=state.docs_context,
+        examples_context=state.examples_context,
+    )
+
+
+def retrieve_info(state: GraphState) -> GraphState:
+    # Get the latest user message as the query
+    user_messages = [m for m in state.messages if getattr(m, "type", None) == "human"]
+    if user_messages:
+        query = user_messages[-1].content
+    else:
+        query = ""
+    docs_context = format_docs(docs_retriever.invoke(input=query))
+    examples_context = format_examples(examples_retriever.invoke(input=query))
+    return GraphState(
+        messages=state.messages,
+        structured_response=state.structured_response,
+        error=False,
+        iterations=state.iterations,
+        docs_context=docs_context,
+        examples_context=examples_context,
     )
