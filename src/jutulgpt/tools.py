@@ -56,4 +56,4 @@ def retrieve_jutuldarcy_examples(query: str) -> str:
 
 
 # tools = [retrieve_jutuldarcy_documentation, retrieve_jutuldarcy_examples]
-tools = []
+tools = []  # WARNING: Have inculded the RAG more explicitly instead.
