@@ -1,60 +1,25 @@
 import os
 import pickle
 import re
-
-# persist_directory = "./chroma_docs_dir"
-# loaded_docs_path = "./src/jutulgpt/rag_sources/loaded_docs.pkl"
-# if os.path.exists(loaded_docs_path):
-#     logger.info("Loading existing loaded_docs from disk.")
-#     with open(loaded_docs_path, "rb") as f:
-#         loaded = pickle.load(f)
-# else:
-#     logger.info("loaded_docs not found. Generating new one.")
-#     loader_docs = DirectoryLoader(
-#         path="./src/jutulgpt/rag_sources/jutuldarcy_docs/man/",
-#         glob="**/*.md",
-#         show_progress=True,
-#         loader_cls=UnstructuredMarkdownLoader,
-#     )
-#
-#     loaded = loader_docs.load()
-#
-#     with open(loaded_docs_path, "wb") as f:
-#         pickle.dump(loaded, f)
-#
-# splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-# splits = splitter.split_documents(loaded)
-#
-# vectorstore = Chroma.from_documents(
-#     documents=splits,
-#     embedding=embedding,
-#     persist_directory=persist_directory,
-# )
-#
-# docs_retriever = vectorstore.as_retriever()
-# def format_docs(docs):
-#     return "\n\n".join(doc.page_content for doc in docs)
+from abc import ABC
 from collections import defaultdict
-from typing import AsyncIterator, Iterator, List
+from typing import List
 
-from langchain.text_splitter import TextSplitter
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import (
     DirectoryLoader,
     TextLoader,
-    UnstructuredFileLoader,
-    UnstructuredMarkdownLoader,
 )
-from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pydantic_core.core_schema import lax_or_strict_schema
+from langchain_text_splitters import (
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
 
 from jutulgpt.config import embedding
-from jutulgpt.utils import logger
 
 
-def deduplicate_chunks(chunks):
+def _deduplicate_chunks(chunks):
     seen = set()
     deduped = []
     for doc in chunks:
@@ -65,11 +30,11 @@ def deduplicate_chunks(chunks):
     return deduped
 
 
-def format_docs(
+def format_examples(
     docs: List[Document], n: int = 4, remove_duplicates: bool = True
 ) -> str:
     if remove_duplicates:
-        docs = deduplicate_chunks(docs)
+        docs = _deduplicate_chunks(docs)
 
     docs = docs[:n]
 
@@ -88,7 +53,22 @@ def format_docs(
     return "\n\n---\n\n".join(formatted)
 
 
-def split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
+def _load_or_retrieve_from_storage(
+    loader: DirectoryLoader, storage_path: str
+) -> List[Document]:
+    if os.path.exists(storage_path):
+        # if False:
+        with open(storage_path, "rb") as f:
+            loaded = pickle.load(f)
+    else:
+        loaded = loader.load()
+
+        with open(storage_path, "wb") as f:
+            pickle.dump(loaded, f)
+    return loaded
+
+
+def _split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
     """
     Splits a Document at lines like `# ##` or `# ###`, which represent markdown headings
     inside Julia comments. Keeps all content grouped under each such header.
@@ -103,7 +83,6 @@ def split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
 
     def finalize_chunk():
         if current_chunk_lines:
-            # chunk_text = "\n".join(current_chunk_lines).strip()
             chunk_text = "\n".join(line for line in current_chunk_lines if line.strip())
             if chunk_text:
                 chunks.append(
@@ -115,7 +94,6 @@ def split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
 
     for line in lines:
         heading_match = re.match(r"^#\s+(#{1,6})\s+(.*)", line.strip())
-        # heading_match = re.match(r"^#*\s*#+\s+(.*)", line.strip())
         if heading_match:
             # Finalize the previous chunk
             finalize_chunk()
@@ -130,92 +108,158 @@ def split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
     return chunks
 
 
-class JuliaCodeLoader(BaseLoader):
-    """Loads Julia (.jl) files and creates LangChain Documents."""
+def _split_markdown_file(
+    markdown_splitter: MarkdownHeaderTextSplitter,
+    text_splitter: RecursiveCharacterTextSplitter,
+    document: Document,
+) -> List[Document]:
+    content = document.page_content
+    document_metadata = document.metadata.copy()
 
-    def __init__(self, file_path: str):
-        self.file_path = file_path
+    splits = markdown_splitter.split_text(content)
+    for split in splits:
+        split.metadata = {**split.metadata, **document_metadata}
+
+    splits = text_splitter.split_documents(splits)
+
+    return splits
+
+
+def _format_doc(doc: Document) -> str:
+    header_keys = ["Header 1", "Header 2", "Header 3"]
+    section_path_parts = [
+        str(doc.metadata[k])
+        for k in header_keys
+        if k in doc.metadata and doc.metadata[k] is not None
+    ]
+    section_path = " > ".join(section_path_parts) if section_path_parts else "Root"
+    file_source = doc.metadata.get("source", "Unknown Document")
+    return f"# From `{file_source}` - Section: `{section_path}`\n\n{doc.page_content.strip()}"
+
+
+def format_docs(docs, n: int = 4, remove_duplicates: bool = True):
+    if remove_duplicates:
+        docs = _deduplicate_chunks(docs)
+    docs = docs[:n]
+
+    formatted = [_format_doc(doc) for doc in docs]
+    return "\n\n---\n\n".join(formatted)
+
+
+class BaseIndexer(ABC):
+    def __init__(
+        self,
+        dir_path: str,
+        persist_path: str,
+        cache_path: str,
+    ):
+        self.dir_path = dir_path
+        self.persist_path = persist_path
+        self.cache_path = cache_path
 
     def load(self) -> List[Document]:
-        with open(self.file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        metadata = {"source": os.path.basename(self.file_path)}
-        return [Document(page_content=content, metadata=metadata)]
+        raise NotImplementedError("Subclasses should implement this method.")
+
+    def split(self, docs: List[Document]) -> List[Document]:
+        raise NotImplementedError("Subclasses should implement this method.")
+
+    def get_retriever(self):
+        raise NotImplementedError("Subclasses should implement this method.")
 
 
-class JuliaCodeSplitter(RecursiveCharacterTextSplitter):
-    """
-    Splits Julia files with awareness of comment blocks and function boundaries.
-    """
+class JuliaExampleIndexer(BaseIndexer):
+    def __init__(
+        self,
+        dir_path: str = "./src/jutulgpt/rag_sources/jutuldarcy_examples/",
+        persist_path: str = "./src/jutulgpt/rag_sources/chroma_examples",
+        cache_path: str = "./src/jutulgpt/rag_sources/loaded_examples.pkl",
+    ):
+        super().__init__(dir_path, persist_path, cache_path)
 
-    def __init__(self, chunk_size=1000, chunk_overlap=100):
-        super().__init__(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=["\n\n", "# ", "\n", " "],
-        )
-
-
-def load_and_split_julia_code(path_to_file: str) -> List[Document]:
-    loader = JuliaCodeLoader(path_to_file)
-    docs = loader.load()
-
-    # Apply heading-aware splitting
-    chunks = []
-    for doc in docs:
-        chunks.extend(split_julia_file_on_markdown_headers(doc))
-
-    # Alternatively, you can use the JuliaCodeSplitter
-    # splitter = JuliaCodeSplitter(chunk_size=1000, chunk_overlap=100)
-    # chunks = splitter.split_documents(docs)
-
-    return chunks
-
-
-def create_examples_retriever(
-    dir_path: str = "./src/jutulgpt/rag_sources/jutuldarcy_examples/",
-):
-    loaded_examples_path = "./src/jutulgpt/rag_sources/loaded_examples.pkl"
-
-    if os.path.exists(loaded_examples_path):
-        # if False:
-        with open(loaded_examples_path, "rb") as f:
-            loaded = pickle.load(f)
-    else:
-        loader_examples = DirectoryLoader(
-            path=dir_path,
+    def load(self):
+        loader = DirectoryLoader(
+            path=self.dir_path,
             glob="**/*.jl",
             show_progress=True,
-            # loader_cls=UnstructuredFileLoader,
             loader_cls=TextLoader,
         )
-        loaded = loader_examples.load()
+        return _load_or_retrieve_from_storage(loader, self.cache_path)
 
-        with open(loaded_examples_path, "wb") as f:
-            pickle.dump(loaded, f)
+    def split(self, docs: List[Document]) -> List[Document]:
+        chunks = []
+        for doc in docs:
+            chunks.extend(_split_julia_file_on_markdown_headers(doc))
+        return chunks
 
-    # Step 2: Split on markdown headers
-    # header_chunks = []
-    # for doc in loaded:
-    #     header_chunks.extend(split_julia_file_on_markdown_headers(doc))
-    chunks = []
-    for doc in loaded:
-        sections = split_julia_file_on_markdown_headers(doc)
-        # for section in sections:
-        #     chunks.extend(JuliaCodeSplitter().split_documents([section]))
-        chunks.extend(sections)
-
-    # See header_chunks[i].page_content for the content of each chunk
-
-    # Create  a vectorstore ret
-    persist_directory = "./chroma_examples_dir"
-    vectorstore = Chroma.from_documents(
-        documents=chunks,
-        embedding=embedding,
-        persist_directory=persist_directory,
-    )
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 8})
-    return retriever
+    def get_retriever(self):
+        docs = self.split(self.load())
+        vectorstore = Chroma.from_documents(
+            documents=docs,
+            embedding=embedding,
+            persist_directory=self.persist_path,
+        )
+        return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
-examples_retriever = create_examples_retriever()
+class MarkdownDocIndexer(BaseIndexer):
+    def __init__(
+        self,
+        dir_path: str = "./src/jutulgpt/rag_sources/jutuldarcy_docs/man/",
+        persist_path: str = "./src/jutulgpt/rag_sources/chroma_docs",
+        cache_path: str = "./src/jutulgpt/rag_sources/loaded_docs.pkl",
+        chunk_size: int = 500,
+        chunk_overlap: int = 50,
+    ):
+        super().__init__(dir_path, persist_path, cache_path)
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+
+        self.markdown_splitter = MarkdownHeaderTextSplitter(
+            headers_to_split_on=[
+                ("#", "Header 1"),
+                ("##", "Header 2"),
+                ("###", "Header 3"),
+            ],
+            strip_headers=False,
+        )
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+        )
+
+    def load(self):
+        loader = DirectoryLoader(
+            path=self.dir_path,
+            glob="**/*.md",
+            show_progress=True,
+            loader_cls=TextLoader,
+        )
+        return _load_or_retrieve_from_storage(loader, self.cache_path)
+
+    def split(self, docs: List[Document]) -> List[Document]:
+        chunks = []
+        for doc in docs:
+            chunks.extend(
+                _split_markdown_file(
+                    markdown_splitter=self.markdown_splitter,
+                    text_splitter=self.text_splitter,
+                    document=doc,
+                )
+            )
+        return chunks
+
+    def get_retriever(self):
+        docs = self.split(self.load())
+        vectorstore = Chroma.from_documents(
+            documents=docs,
+            embedding=embedding,
+            persist_directory=self.persist_path,
+        )
+        return vectorstore.as_retriever(search_kwargs={"k": 8})
+
+
+examples_indexer = JuliaExampleIndexer()
+examples_retriever = examples_indexer.get_retriever()
+
+docs_indexer = MarkdownDocIndexer()
+docs_retriever = docs_indexer.get_retriever()

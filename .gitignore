@@ -1,5 +1,8 @@
 # Custom
 src/jutulgpt/rag_sources/loaded_docs.pkl
+src/jutulgpt/rag_sources/loaded_examples.pkl
+src/jutulgpt/rag_sources/chroma_docs/
+src/jutulgpt/rag_sources/chroma_examples/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
