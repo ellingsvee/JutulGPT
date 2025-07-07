@@ -41,6 +41,7 @@ from langchain.text_splitter import TextSplitter
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import (
     DirectoryLoader,
+    TextLoader,
     UnstructuredFileLoader,
     UnstructuredMarkdownLoader,
 )
@@ -53,18 +54,25 @@ from jutulgpt.config import embedding
 from jutulgpt.utils import logger
 
 
-def format_docs(docs: List[Document]) -> str:
-    formatted_chunks = []
-    for doc in docs:
-        heading = doc.metadata.get("heading", "No heading")
-        source = doc.metadata.get("source", "Unknown file")
-        formatted_chunks.append(
-            f"### From `{source}` — Section: `{heading}`\n\n{doc.page_content.strip()}"
-        )
-    return "\n\n---\n\n".join(formatted_chunks)
+def deduplicate_chunks(chunks):
+    seen = set()
+    deduped = []
+    for doc in chunks:
+        content = doc.page_content.strip()
+        if content not in seen:
+            seen.add(content)
+            deduped.append(doc)
+    return deduped
 
 
-def format_docs_grouped_by_source(docs: List[Document]) -> str:
+def format_docs(
+    docs: List[Document], n: int = 4, remove_duplicates: bool = True
+) -> str:
+    if remove_duplicates:
+        docs = deduplicate_chunks(docs)
+
+    docs = docs[:n]
+
     grouped = defaultdict(list)
     for doc in docs:
         key = (
@@ -76,7 +84,7 @@ def format_docs_grouped_by_source(docs: List[Document]) -> str:
     formatted = []
     for (source, heading), contents in grouped.items():
         section = "\n".join(contents)
-        formatted.append(f"### From `{source}` — Section: `{heading}`\n\n{section}")
+        formatted.append(f"# From `{source}` — Section: `{heading}`\n\n{section}")
     return "\n\n---\n\n".join(formatted)
 
 
@@ -95,7 +103,8 @@ def split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
 
     def finalize_chunk():
         if current_chunk_lines:
-            chunk_text = "\n".join(current_chunk_lines).strip()
+            # chunk_text = "\n".join(current_chunk_lines).strip()
+            chunk_text = "\n".join(line for line in current_chunk_lines if line.strip())
             if chunk_text:
                 chunks.append(
                     Document(
@@ -106,6 +115,7 @@ def split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
 
     for line in lines:
         heading_match = re.match(r"^#\s+(#{1,6})\s+(.*)", line.strip())
+        # heading_match = re.match(r"^#*\s*#+\s+(.*)", line.strip())
         if heading_match:
             # Finalize the previous chunk
             finalize_chunk()
@@ -168,6 +178,7 @@ def create_examples_retriever(
     loaded_examples_path = "./src/jutulgpt/rag_sources/loaded_examples.pkl"
 
     if os.path.exists(loaded_examples_path):
+        # if False:
         with open(loaded_examples_path, "rb") as f:
             loaded = pickle.load(f)
     else:
@@ -175,7 +186,8 @@ def create_examples_retriever(
             path=dir_path,
             glob="**/*.jl",
             show_progress=True,
-            loader_cls=UnstructuredFileLoader,
+            # loader_cls=UnstructuredFileLoader,
+            loader_cls=TextLoader,
         )
         loaded = loader_examples.load()
 
@@ -186,22 +198,23 @@ def create_examples_retriever(
     # header_chunks = []
     # for doc in loaded:
     #     header_chunks.extend(split_julia_file_on_markdown_headers(doc))
-    index_chunks = []
+    chunks = []
     for doc in loaded:
         sections = split_julia_file_on_markdown_headers(doc)
-        for section in sections:
-            index_chunks.extend(JuliaCodeSplitter().split_documents([section]))
+        # for section in sections:
+        #     chunks.extend(JuliaCodeSplitter().split_documents([section]))
+        chunks.extend(sections)
 
     # See header_chunks[i].page_content for the content of each chunk
 
     # Create  a vectorstore ret
     persist_directory = "./chroma_examples_dir"
     vectorstore = Chroma.from_documents(
-        documents=index_chunks,
+        documents=chunks,
         embedding=embedding,
         persist_directory=persist_directory,
     )
-    retriever = vectorstore.as_retriever()
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 8})
     return retriever
 
 

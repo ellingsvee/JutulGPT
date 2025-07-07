@@ -24,8 +24,9 @@ model_name = "llama3-groq-tool-use:8b"
 
 logging_level = logging.INFO
 
-# llm = ChatOllama(model=model_name)
-# embedding = OllamaEmbeddings(model="nomic-embed-text")
+llm = ChatOllama(model=model_name)
+embedding = OllamaEmbeddings(model="nomic-embed-text")
+# embedding = OllamaEmbeddings(model="mxbai-embed-large:latest")
 
-llm = init_chat_model("openai:gpt-4.1", temperature=0)
-embedding = OpenAIEmbeddings()
+# llm = init_chat_model("openai:gpt-4.1", temperature=0)
+# embedding = OpenAIEmbeddings()
