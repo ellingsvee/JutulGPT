@@ -49,13 +49,28 @@ def test_check_code_success(mock_get_error_message, mock_run_string, dummy_state
         "error_stacktrace": "",
     }
 
-    dummy_state.structured_response = Code(
-        prefix="", imports="import A", code='println("Hello")'
-    )
     result = check_code(dummy_state)
 
     assert isinstance(result, GraphState)
     assert result.error is False
+    assert result.iterations == 0
+
+
+@patch("jutulgpt.nodes.run_string")
+@patch("jutulgpt.nodes.get_error_message")
+def test_check_code_fail(mock_get_error_message, mock_run_string, dummy_state):
+    # Setup mock for successful import and execution
+    mock_run_string.return_value = {
+        "out": "",
+        "error": True,
+        "error_message": "",
+        "error_stacktrace": "",
+    }
+
+    result = check_code(dummy_state)
+
+    assert isinstance(result, GraphState)
+    assert result.error is True
     assert result.iterations == 0
 
 
