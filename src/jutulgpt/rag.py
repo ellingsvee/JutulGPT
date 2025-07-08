@@ -193,11 +193,20 @@ class JuliaExampleIndexer(BaseIndexer):
 
     def get_retriever(self):
         docs = self.split(self.load())
-        vectorstore = Chroma.from_documents(
-            documents=docs,
-            embedding=embedding,
-            persist_directory=self.persist_path,
-        )
+
+        if os.path.exists(self.persist_path):
+            vectorstore = Chroma(
+                embedding_function=embedding,
+                persist_directory=self.persist_path,
+                collection_name="jutuldarcy_examples",
+            )
+        else:
+            vectorstore = Chroma.from_documents(
+                documents=docs,
+                embedding=embedding,
+                persist_directory=self.persist_path,
+                collection_name="jutuldarcy_examples",
+            )
         return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
@@ -250,11 +259,21 @@ class MarkdownDocIndexer(BaseIndexer):
 
     def get_retriever(self):
         docs = self.split(self.load())
-        vectorstore = Chroma.from_documents(
-            documents=docs,
-            embedding=embedding,
-            persist_directory=self.persist_path,
-        )
+
+        if os.path.exists(self.persist_path):
+            vectorstore = Chroma(
+                embedding_function=embedding,
+                persist_directory=self.persist_path,
+                collection_name="jutuldarcy_docs",
+            )
+        else:
+            vectorstore = Chroma.from_documents(
+                documents=docs,
+                embedding=embedding,
+                persist_directory=self.persist_path,
+                collection_name="jutuldarcy_docs",
+            )
+
         return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
