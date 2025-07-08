@@ -67,8 +67,21 @@ def generate_code(state: GraphState) -> GraphState:
 def check_code(state: GraphState) -> GraphState:
     messages = state.messages
     structured_resonse = state.structured_response
+    prefix = structured_resonse.prefix
     imports = structured_resonse.imports
     code = structured_resonse.code
+
+    if prefix == "" and imports == "" and code == "":
+        error_message = f"Your response is empty. You have to provide an answer!"
+        messages.append(HumanMessage(content=error_message))
+        return GraphState(
+            messages=messages,
+            structured_response=structured_resonse,
+            error=True,
+            iterations=state.iterations,
+            docs_context=state.docs_context,
+            examples_context=state.examples_context,
+        )
 
     result = run_string(imports)
     if result["error"]:
