@@ -60,13 +60,13 @@ def check_code(state: GraphState) -> GraphState:
         julia_error_message = get_error_message(result)
         error_message = f"Your solution failed the import test:\n{julia_error_message}"
 
-        logger.info(
-            f"""
-            Import test failed.
-            Imports that failed: {imports}
-            {julia_error_message}
-            """
-        )
+        # logger.info(
+        #     f"""
+        #     Import test failed.
+        #     Imports that failed: {imports}
+        #     {julia_error_message}
+        #     """
+        # )
         messages.append(HumanMessage(content=error_message))
         return GraphState(
             messages=messages,
@@ -97,7 +97,7 @@ def check_code(state: GraphState) -> GraphState:
             iterations=state.iterations,
         )
 
-    logger.info("No code test failures.")
+    # logger.info("No code test failures.")
     return GraphState(
         messages=messages,
         structured_response=structured_resonse,

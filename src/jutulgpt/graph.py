@@ -6,11 +6,7 @@ from jutulgpt.agents import memory
 from jutulgpt.config import max_iterations
 from jutulgpt.nodes import check_code, generate_code
 from jutulgpt.state import GraphState
-from jutulgpt.tools import (
-    retrieve_jutuldarcy,
-    retrieve_jutuldarcy_documentation,
-    retrieve_jutuldarcy_examples,
-)
+from jutulgpt.tools import retrieve_jutuldarcy, write_code_to_julia_file
 from jutulgpt.utils import logger
 
 generate_code_name = "generate_code"
@@ -33,7 +29,8 @@ graph_builder = StateGraph(GraphState)
 graph_builder.add_node(generate_code_name, generate_code)
 graph_builder.add_node(check_code_name, check_code)
 
-tools = ToolNode([retrieve_jutuldarcy])
+# tools = ToolNode([retrieve_jutuldarcy])
+tools = ToolNode([retrieve_jutuldarcy, write_code_to_julia_file])
 graph_builder.add_node(tools)
 
 
