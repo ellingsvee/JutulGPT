@@ -62,7 +62,7 @@ logging.getLogger("urllib3").setLevel(logging.ERROR)  # sometimes used under the
 logging.getLogger("langchain").setLevel(logging.ERROR)  # if needed
 
 
-def get_tool_message(messages: List, n_last=2):
+def get_tool_message(messages: List, n_last=2, print=False):
     """
     Extract the most recent tool message from a list of messages.
 
@@ -77,5 +77,7 @@ def get_tool_message(messages: List, n_last=2):
     # for message in reversed(messages):
     for message in messages[-n_last:]:
         if message.type == "tool":
+            if print:
+                message.pretty_print()
             return message
     return None
