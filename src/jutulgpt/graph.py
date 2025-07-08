@@ -1,10 +1,13 @@
 from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.prebuilt import ToolNode, tool_node, tools_condition
+from ollama import Tool
 
+from jutulgpt.agents import memory
 from jutulgpt.config import max_iterations
-from jutulgpt.nodes import check_code, generate_code, retrieve_info
+from jutulgpt.nodes import check_code, generate_code
 from jutulgpt.state import GraphState
 from jutulgpt.tools import (
+    retrieve_jutuldarcy,
     retrieve_jutuldarcy_documentation,
     retrieve_jutuldarcy_examples,
 )
@@ -12,9 +15,6 @@ from jutulgpt.utils import logger
 
 generate_code_name = "generate_code"
 check_code_name = "check_code"
-retrieve_info_name = "retrieve_info"
-retrieve_documentation_name = "retrieve_docs"
-retrieve_examples_name = "retrieve_examples"
 start_name = "start"
 end_name = "end"
 
@@ -29,25 +29,32 @@ def decide_to_finish(state: GraphState):
     return generate_code_name
 
 
-builder = StateGraph(GraphState)
-builder.add_node(generate_code_name, generate_code)
-builder.add_node(check_code_name, check_code)
-builder.add_node(retrieve_info_name, retrieve_info)
+graph_builder = StateGraph(GraphState)
+graph_builder.add_node(generate_code_name, generate_code)
+graph_builder.add_node(check_code_name, check_code)
+
+tools = ToolNode([retrieve_jutuldarcy])
+graph_builder.add_node(tools)
 
 
-builder.add_edge(START, retrieve_info_name)
-builder.add_edge(retrieve_info_name, generate_code_name)
-builder.add_edge(generate_code_name, check_code_name)
-builder.add_conditional_edges(
+graph_builder.set_entry_point(generate_code_name)
+graph_builder.add_conditional_edges(
+    generate_code_name,
+    tools_condition,
+    {END: check_code_name, "tools": "tools"},
+)
+graph_builder.add_edge("tools", check_code_name)
+graph_builder.add_edge(generate_code_name, END)
+graph_builder.add_conditional_edges(
     check_code_name,
     decide_to_finish,
     {
         end_name: END,
         generate_code_name: generate_code_name,
-        # generate_code_name: retrieve_info_name,  # Retry by retrieving info again
     },
 )
-graph = builder.compile()
+
+graph = graph_builder.compile(checkpointer=memory)
 
 # Plot the graph
 graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")

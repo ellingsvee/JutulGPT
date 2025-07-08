@@ -49,7 +49,7 @@ def format_examples(
     formatted = []
     for (source, heading), contents in grouped.items():
         section = "\n".join(contents)
-        formatted.append(f"# From `{source}` — Section: `{heading}`\n\n{section}")
+        formatted.append(f"## From `{source}` — Section: `{heading}`\n{section}")
     return "\n\n---\n\n".join(formatted)
 
 
@@ -134,7 +134,7 @@ def _format_doc(doc: Document) -> str:
     ]
     section_path = " > ".join(section_path_parts) if section_path_parts else "Root"
     file_source = doc.metadata.get("source", "Unknown Document")
-    return f"# From `{file_source}` - Section: `{section_path}`\n\n{doc.page_content.strip()}"
+    return f"## From `{file_source}` - Section: `{section_path}`\n{doc.page_content.strip()}"
 
 
 def format_docs(docs, n: int = 2, remove_duplicates: bool = True):

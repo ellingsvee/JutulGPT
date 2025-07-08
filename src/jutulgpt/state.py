@@ -25,8 +25,6 @@ class GraphState:
     structured_response: Code
     error: bool
     iterations: int
-    docs_context: str
-    examples_context: str
 
 
 def make_initial_state(user_question: str) -> GraphState:
@@ -35,6 +33,4 @@ def make_initial_state(user_question: str) -> GraphState:
         structured_response=Code(prefix="", imports="", code=""),
         error=False,
         iterations=0,
-        docs_context="",
-        examples_context="",
     )

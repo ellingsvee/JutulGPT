@@ -55,5 +55,37 @@ def retrieve_jutuldarcy_examples(query: str) -> str:
     return out
 
 
-# tools = [retrieve_jutuldarcy_documentation, retrieve_jutuldarcy_examples]
-tools = []  # WARNING: Have inculded the RAG more explicitly instead.
+@tool(response_format="content_and_artifact")
+def retrieve_jutuldarcy(query: str):
+    """
+    Use this tool to look up any information, usage, or examples from the JutulDarcy documentation. ALWAYS use this tool before answering any Julia code question about JutulDarcy.
+
+    Input:
+        query: The string sent into the vectorstore retriever.
+
+    Output: String containing the formatted output from the retriever
+    """
+    logger.info(f"TOOL INVOKED: retrieve_jutuldarcy with query: {query}")
+
+    retrieved_docs = docs_retriever.invoke(input=query)
+    retrieved_examples = examples_retriever.invoke(input=query)
+    retrieved = retrieved_docs + retrieved_examples
+
+    docs = format_docs(retrieved_docs)
+    examples = format_examples(retrieved_examples)
+
+    out = f"""
+# Retrieved from the JutulDarcy documentation:
+{docs}
+
+# Retrieved from the JutulDarcy examples:
+{examples}
+"""
+
+    # print(out)
+
+    return out, retrieved
+
+
+tools = [retrieve_jutuldarcy]
+# tools = []  # WARNING: Have inculded the RAG more explicitly instead.

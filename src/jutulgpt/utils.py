@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import List
 
 from jutulgpt.config import logging_level
 from jutulgpt.state import Code
@@ -59,3 +60,22 @@ logging.getLogger("jutulgpt").setLevel(logging.DEBUG)
 logging.getLogger("httpx").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.ERROR)  # sometimes used under the hood
 logging.getLogger("langchain").setLevel(logging.ERROR)  # if needed
+
+
+def get_tool_message(messages: List, n_last=2):
+    """
+    Extract the most recent tool message from a list of messages.
+
+    Args:
+        messages (list): List of messages.
+        n_last (int): Number of last messages to consider for finding the tool message.
+
+    Returns:
+        str: The content of the most recent tool message, or None if no tool message is found.
+    """
+
+    # for message in reversed(messages):
+    for message in messages[-n_last:]:
+        if message.type == "tool":
+            return message
+    return None
