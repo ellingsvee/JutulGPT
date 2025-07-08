@@ -10,10 +10,9 @@ from jutulgpt.graph import (
     end_name,
     generate_code_name,
     graph,
-    retrieve_info_name,
     start_name,
 )
-from jutulgpt.nodes import check_code, generate_code, retrieve_info
+from jutulgpt.nodes import check_code, generate_code
 from jutulgpt.state import Code, GraphState
 
 
@@ -22,7 +21,6 @@ def test_graph_nodes():
     nodes = set(graph.get_graph().nodes)
     assert generate_code_name in nodes
     assert check_code_name in nodes
-    assert retrieve_info_name in nodes
 
 
 def test_decide_to_finish_end():
@@ -32,8 +30,6 @@ def test_decide_to_finish_end():
         structured_response=Code(prefix="", imports="", code=""),
         error=False,
         iterations=0,
-        docs_context="",
-        examples_context="",
     )
     assert decide_to_finish(state) == end_name
 
@@ -42,8 +38,6 @@ def test_decide_to_finish_end():
         structured_response=Code(prefix="", imports="", code=""),
         error=True,
         iterations=max_iterations,
-        docs_context="",
-        examples_context="",
     )
     # Assuming max_iterations=10 in config
     assert decide_to_finish(state) == end_name
@@ -56,7 +50,5 @@ def test_decide_to_finish_retry():
         structured_response=Code(prefix="", imports="", code=""),
         error=True,
         iterations=1,
-        docs_context="",
-        examples_context="",
     )
     assert decide_to_finish(state) == generate_code_name

@@ -23,15 +23,11 @@ def test_graph_state_fields():
         structured_response=code,
         error=True,
         iterations=2,
-        docs_context="docs",
-        examples_context="examples",
     )
     assert state.messages == messages
     assert state.structured_response == code
     assert state.error is True
     assert state.iterations == 2
-    assert state.docs_context == "docs"
-    assert state.examples_context == "examples"
 
 
 def test_graph_state_is_frozen():
@@ -41,8 +37,6 @@ def test_graph_state_is_frozen():
         structured_response=code,
         error=False,
         iterations=0,
-        docs_context="",
-        examples_context="",
     )
     try:
         state.iterations = 5
@@ -60,5 +54,3 @@ def test_make_initial_state():
     assert state.structured_response == Code(prefix="", imports="", code="")
     assert state.error is False
     assert state.iterations == 0
-    assert state.docs_context == ""
-    assert state.examples_context == ""

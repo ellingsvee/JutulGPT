@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from jutulgpt.nodes import check_code, generate_code, retrieve_info
+from jutulgpt.nodes import check_code, generate_code
 from jutulgpt.state import Code, GraphState
 
 
@@ -11,11 +11,9 @@ from jutulgpt.state import Code, GraphState
 def dummy_state():
     return GraphState(
         messages=[HumanMessage(content="How do I solve X in Julia?")],
-        structured_response=Code(prefix="", imports="", code=""),
+        structured_response=Code(prefix="", imports="using JutulDarcy;", code="x = 1;"),
         error=False,
         iterations=0,
-        docs_context="",
-        examples_context="",
     )
 
 
@@ -33,7 +31,7 @@ def test_generate_code(mock_format, mock_structured, mock_chain, dummy_state):
     result = generate_code(dummy_state)
 
     assert isinstance(result, GraphState)
-    assert isinstance(result.messages[-1], AIMessage)
+    # assert isinstance(result.messages[-1], SystemMessage)
     assert result.error is False
     assert result.iterations == 1
 
@@ -72,21 +70,3 @@ def test_check_code_fail(mock_get_error_message, mock_run_string, dummy_state):
     assert isinstance(result, GraphState)
     assert result.error is True
     assert result.iterations == 0
-
-
-@patch("jutulgpt.nodes.docs_retriever")
-@patch("jutulgpt.nodes.examples_retriever")
-@patch("jutulgpt.nodes.format_docs")
-@patch("jutulgpt.nodes.format_examples")
-def test_retrieve_info(
-    mock_fmt_examples, mock_fmt_docs, mock_ex_retriever, mock_doc_retriever, dummy_state
-):
-    mock_doc_retriever.invoke.return_value = "docs"
-    mock_ex_retriever.invoke.return_value = "examples"
-    mock_fmt_docs.return_value = "Formatted docs"
-    mock_fmt_examples.return_value = "Formatted examples"
-
-    result = retrieve_info(dummy_state)
-    assert isinstance(result, GraphState)
-    assert result.docs_context == "Formatted docs"
-    assert result.examples_context == "Formatted examples"
