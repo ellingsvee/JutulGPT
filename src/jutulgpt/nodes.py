@@ -1,10 +1,9 @@
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.graph import MessagesState
 
-from jutulgpt.agents import (
+from jutulgpt.agents import (  # code_gen_chain_without_tools,
     agent_config,
     code_gen_chain,
-    # code_gen_chain_without_tools,
     get_structured_response,
 )
 from jutulgpt.config import llm
@@ -17,8 +16,20 @@ from jutulgpt.rag import (
     format_docs,
     format_examples,
 )
-from jutulgpt.state import Code, GraphState
+from jutulgpt.state import Code, GraphState, InitialState
 from jutulgpt.utils import format_code_response, logger
+
+
+def start_node(state: InitialState) -> GraphState:
+    """
+    Start node that sets up the conversation with the user.
+    """
+    return GraphState(
+        messages=state.messages,
+        structured_response=Code(prefix="", imports="", code=""),
+        error=False,
+        iterations=0,
+    )
 
 
 def generate_code(state: GraphState) -> GraphState:

@@ -19,6 +19,11 @@ class Code(BaseModel):
 
 
 @dataclass(kw_only=False, frozen=True)
+class InitialState:
+    messages: Annotated[list, add_messages]
+
+
+@dataclass(kw_only=False, frozen=True)
 class GraphState:
     # messages: Annotated[list[AnyMessage], add_messages]
     messages: Annotated[list, add_messages]

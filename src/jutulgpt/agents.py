@@ -21,7 +21,7 @@ agent = create_react_agent(
     llm,
     tools=tools,
     response_format=Code,
-    checkpointer=memory,
+    # checkpointer=memory,
 )
 
 
