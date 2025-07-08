@@ -17,6 +17,7 @@ dependencies = [
     "langchain-text-splitters>=0.3.8",
     "langchainhub>=0.1.21",
     "langgraph>=0.5.0",
+    "langgraph-cli[inmem]>=0.3.3",
     "langsmith>=0.4.4",
     "pydantic>=2.11.7",
     "pygraphviz>=1.14",
