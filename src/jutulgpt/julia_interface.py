@@ -4,7 +4,7 @@ from typing import Union
 from juliacall import JuliaError
 from juliacall import Main as jl
 
-from jutulgpt.state import Code
+from jutulgpt.state import CodeBlock
 
 jl.seval("using JutulDarcy, Jutul")  # Make sure these packages are always imported
 
@@ -66,11 +66,11 @@ def _get_code_string_from_response(response: str) -> str:
     return ""
 
 
-def get_code_from_response(response: str) -> Code:
-    """Extracts Julia code and imports from a Markdown code block and returns a Code object."""
+def get_code_from_response(response: str) -> CodeBlock:
+    """Extracts Julia code and imports from a Markdown code block and returns a CodeBlock object."""
     code_str = _get_code_string_from_response(response)
     if not code_str:
-        return Code(imports="", code="")
+        return CodeBlock(imports="", code="")
 
     import_lines = []
     code_lines = []
@@ -80,4 +80,6 @@ def get_code_from_response(response: str) -> Code:
         else:
             code_lines.append(line)
 
-    return Code(imports="\n".join(import_lines), code="\n".join(code_lines).strip())
+    return CodeBlock(
+        imports="\n".join(import_lines), code="\n".join(code_lines).strip()
+    )

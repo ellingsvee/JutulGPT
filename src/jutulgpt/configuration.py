@@ -23,6 +23,7 @@ load_dotenv()
 _set_env("OPENAI_API_KEY")
 
 embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
+max_iterations = 3
 
 
 @dataclass(kw_only=True)

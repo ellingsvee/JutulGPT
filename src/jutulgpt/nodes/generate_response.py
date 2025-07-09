@@ -1,8 +1,9 @@
 """This module contains the `generate_response` function which is responsible for generating a response."""
 
+from os import error
 from typing import cast
 
-from langchain_core.messages import AIMessage, trim_messages
+from langchain_core.messages import AIMessage, HumanMessage, trim_messages
 from langchain_core.runnables import RunnableConfig
 
 from jutulgpt.configuration import Configuration
@@ -26,16 +27,27 @@ def generate_response(state: State, config: RunnableConfig) -> State:
     Returns:
         dict[str, list[AIMessage]]: A dictionary containing the model's response messages.
     """
+    messages = state.messages
+    error = state.error
+
     configuration = Configuration.from_runnable_config(config)
 
     # Initialize the model with tool binding. Change the model or add more tools here.
     model = load_chat_model(configuration.model).bind_tools(tools)
 
+    # If there was an error in the previous step, add this to the messages.
+    if error:
+        messages += [
+            HumanMessage(
+                content=f"Previous step failed with the provided error. Fix the error to provide runnable code."
+            ),
+        ]
+
     # Format the system prompt. Customize this to change the agent's behavior.
     system_message = configuration.system_prompt
 
     trimmedStateMessages = trim_messages(
-        state.messages,
+        messages,
         max_tokens=40000,  # adjust for model's context window minus system & files message
         strategy="last",
         token_counter=model,
@@ -61,8 +73,7 @@ def generate_response(state: State, config: RunnableConfig) -> State:
                     content="Sorry, I could not find an answer to your question in the specified number of steps.",
                 )
             ],
-            "iterations": state.iterations + 1,
         }
 
     # Return the model's response as a list to be added to existing messages
-    return {"messages": [response], "iterations": state.iterations + 1}
+    return {"messages": [response]}

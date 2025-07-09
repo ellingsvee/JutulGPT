@@ -57,7 +57,7 @@ class State(InputState):
     """
 
 
-class Code(BaseModel):
+class CodeBlock(BaseModel):
     imports: str = Field(default="", description="Code block import statements")
     code: str = Field(
         default="", description="Code block not including import statements"

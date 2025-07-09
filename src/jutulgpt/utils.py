@@ -8,7 +8,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from jutulgpt.state import Code
+from jutulgpt.state import CodeBlock
 
 
 def load_lines_from_txt(file_path: str) -> List[str]:
@@ -40,7 +40,7 @@ def load_lines_from_txt(file_path: str) -> List[str]:
         raise Exception(f"An unexpected error occurred: {e}") from e
 
 
-def format_code_response(code: Code) -> str:
+def format_code_response(code: CodeBlock) -> str:
     out = ""
     if code.imports != "" or code.code != "":
         out += "```julia\n"
