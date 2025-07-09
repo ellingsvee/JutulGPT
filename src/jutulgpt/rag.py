@@ -14,9 +14,9 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 
-# from jutulgpt.config import embedding, use_openai
+from jutulgpt.configuration import embedding_model
 
-embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
+# embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
 
 
 def _deduplicate_chunks(chunks):
@@ -149,14 +149,12 @@ def format_docs(docs, n: int = 2, remove_duplicates: bool = True):
 
 class BaseIndexer(ABC):
     def __init__(
-        self,
-        dir_path: str,
-        persist_path: str,
-        cache_path: str,
+        self, embedding_model, dir_path: str, persist_path: str, cache_path: str
     ):
         self.dir_path = dir_path
         self.persist_path = persist_path
         self.cache_path = cache_path
+        self.embedding_model = embedding_model
 
     def load(self) -> List[Document]:
         raise NotImplementedError("Subclasses should implement this method.")
@@ -171,13 +169,14 @@ class BaseIndexer(ABC):
 class JuliaExampleIndexer(BaseIndexer):
     def __init__(
         self,
+        embedding_model,
         dir_path: str = "./src/jutulgpt/rag_sources/jutuldarcy_examples/",
         persist_path: str = "./src/jutulgpt/rag_sources/chroma_examples_openai"
         if True
         else "./src/jutulgpt/rag_sources/chroma_examples",
         cache_path: str = "./src/jutulgpt/rag_sources/loaded_examples.pkl",
     ):
-        super().__init__(dir_path, persist_path, cache_path)
+        super().__init__(embedding_model, dir_path, persist_path, cache_path)
 
     def load(self):
         loader = DirectoryLoader(
@@ -199,14 +198,14 @@ class JuliaExampleIndexer(BaseIndexer):
 
         if os.path.exists(self.persist_path):
             vectorstore = Chroma(
-                embedding_function=embedding_model,
+                embedding_function=self.embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_examples",
             )
         else:
             vectorstore = Chroma.from_documents(
                 documents=docs,
-                embedding=embedding_model,
+                embedding=self.embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_examples",
             )
@@ -216,6 +215,7 @@ class JuliaExampleIndexer(BaseIndexer):
 class MarkdownDocIndexer(BaseIndexer):
     def __init__(
         self,
+        embedding_model,
         dir_path: str = "./src/jutulgpt/rag_sources/jutuldarcy_docs/man/",
         persist_path: str = "./src/jutulgpt/rag_sources/chroma_docs_openai"
         if True
@@ -224,7 +224,7 @@ class MarkdownDocIndexer(BaseIndexer):
         chunk_size: int = 500,
         chunk_overlap: int = 50,
     ):
-        super().__init__(dir_path, persist_path, cache_path)
+        super().__init__(embedding_model, dir_path, persist_path, cache_path)
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
@@ -266,14 +266,14 @@ class MarkdownDocIndexer(BaseIndexer):
 
         if os.path.exists(self.persist_path):
             vectorstore = Chroma(
-                embedding_function=embedding_model,
+                embedding_function=self.embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_docs",
             )
         else:
             vectorstore = Chroma.from_documents(
                 documents=docs,
-                embedding=embedding_model,
+                embedding=self.embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_docs",
             )
@@ -281,8 +281,8 @@ class MarkdownDocIndexer(BaseIndexer):
         return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
-examples_indexer = JuliaExampleIndexer()
+examples_indexer = JuliaExampleIndexer(embedding_model=embedding_model)
 examples_retriever = examples_indexer.get_retriever()
 
-docs_indexer = MarkdownDocIndexer()
+docs_indexer = MarkdownDocIndexer(embedding_model=embedding_model)
 docs_retriever = docs_indexer.get_retriever()

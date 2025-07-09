@@ -4,6 +4,7 @@ import pytest
 from langchain_core.documents import Document
 
 import jutulgpt.rag as rag
+from jutulgpt.configuration import embedding_model
 
 
 def test_deduplicate_chunks():
@@ -63,7 +64,7 @@ def test_julia_example_indexer_load_and_split(mock_load, mock_loader):
         metadata={"source": "f.jl"},
     )
     mock_load.return_value = [doc]
-    indexer = rag.JuliaExampleIndexer()
+    indexer = rag.JuliaExampleIndexer(embedding_model=embedding_model)
     docs = indexer.load()
     assert isinstance(docs, list)
     chunks = indexer.split(docs)
@@ -81,7 +82,7 @@ def test_markdown_doc_indexer_load_and_split(mock_load, mock_loader):
         metadata={"source": "f.md"},
     )
     mock_load.return_value = [doc]
-    indexer = rag.MarkdownDocIndexer()
+    indexer = rag.MarkdownDocIndexer(embedding_model=embedding_model)
     docs = indexer.load()
     assert isinstance(docs, list)
     chunks = indexer.split(docs)
@@ -93,7 +94,7 @@ def test_markdown_doc_indexer_load_and_split(mock_load, mock_loader):
 
 @patch("jutulgpt.rag.Chroma")
 def test_julia_example_indexer_get_retriever(mock_chroma):
-    indexer = rag.JuliaExampleIndexer()
+    indexer = rag.JuliaExampleIndexer(embedding_model=embedding_model)
     indexer.split = MagicMock(return_value=[Document(page_content="A", metadata={})])
     indexer.load = MagicMock(return_value=[Document(page_content="A", metadata={})])
     retriever = indexer.get_retriever()
@@ -102,7 +103,7 @@ def test_julia_example_indexer_get_retriever(mock_chroma):
 
 @patch("jutulgpt.rag.Chroma")
 def test_markdown_doc_indexer_get_retriever(mock_chroma):
-    indexer = rag.MarkdownDocIndexer()
+    indexer = rag.MarkdownDocIndexer(embedding_model=embedding_model)
     indexer.split = MagicMock(return_value=[Document(page_content="A", metadata={})])
     indexer.load = MagicMock(return_value=[Document(page_content="A", metadata={})])
     retriever = indexer.get_retriever()

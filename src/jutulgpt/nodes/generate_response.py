@@ -11,9 +11,7 @@ from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
 
 
-def generate_response(
-    state: State, config: RunnableConfig
-) -> dict[str, list[AIMessage]]:
+def generate_response(state: State, config: RunnableConfig) -> State:
     """Generate a response based on the given state and configuration.
 
     This function initializes a chat model with tool bindings, formats the system prompt,
@@ -62,8 +60,9 @@ def generate_response(
                     id=response.id,
                     content="Sorry, I could not find an answer to your question in the specified number of steps.",
                 )
-            ]
+            ],
+            "iterations": state.iterations + 1,
         }
 
     # Return the model's response as a list to be added to existing messages
-    return {"messages": [response]}
+    return {"messages": [response], "iterations": state.iterations + 1}

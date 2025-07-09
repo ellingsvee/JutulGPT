@@ -4,6 +4,8 @@ from typing import Union
 from juliacall import JuliaError
 from juliacall import Main as jl
 
+from jutulgpt.state import Code
+
 jl.seval("using JutulDarcy, Jutul")  # Make sure these packages are always imported
 
 
@@ -54,3 +56,28 @@ def get_error_message(result) -> str:
     if result["error_stacktrace"] is not None:
         out_string += f"Julia stacktrace: {result['error_stacktrace']}"
     return out_string
+
+
+def _get_code_string_from_response(response: str) -> str:
+    """Extract code from a Markdown-style Julia code block in the response string."""
+    match = re.search(r"```julia\s*([\s\S]*?)```", response, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def get_code_from_response(response: str) -> Code:
+    """Extracts Julia code and imports from a Markdown code block and returns a Code object."""
+    code_str = _get_code_string_from_response(response)
+    if not code_str:
+        return Code(imports="", code="")
+
+    import_lines = []
+    code_lines = []
+    for line in code_str.splitlines():
+        if line.strip().startswith(("using ")):
+            import_lines.append(line.strip())
+        else:
+            code_lines.append(line)
+
+    return Code(imports="\n".join(import_lines), code="\n".join(code_lines).strip())

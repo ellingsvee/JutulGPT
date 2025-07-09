@@ -8,6 +8,7 @@ from typing import Sequence
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
+from pydantic import BaseModel, Field
 from typing_extensions import Annotated
 
 
@@ -54,3 +55,10 @@ class State(InputState):
     This is a 'managed' variable, controlled by the state machine rather than user code.
     It is set to 'True' when the step count reaches recursion_limit - 1.
     """
+
+
+class Code(BaseModel):
+    imports: str = Field(default="", description="Code block import statements")
+    code: str = Field(
+        default="", description="Code block not including import statements"
+    )

@@ -35,30 +35,28 @@ def test_load_lines_from_txt_invalid_path():
 
 
 def test_format_code_response_all_fields():
-    code = Code(prefix="desc", imports="import A", code="println(1)")
+    code = Code(imports="using A", code="println(1)")
     out = format_code_response(code)
-    assert "desc" in out
-    assert "import A" in out
+    assert "using A" in out
     assert "println(1)" in out
     assert "```julia" in out
 
 
 def test_format_code_response_prefix_only():
-    code = Code(prefix="desc", imports="", code="")
+    code = Code(imports="", code="")
     out = format_code_response(code)
-    assert out.startswith("Response:\ndesc")
     assert "```julia" not in out
 
 
 def test_format_code_response_code_only():
-    code = Code(prefix="", imports="", code="println(1)")
+    code = Code(imports="", code="println(1)")
     out = format_code_response(code)
     assert "println(1)" in out
     assert "```julia" in out
 
 
 def test_format_code_response_imports_only():
-    code = Code(prefix="", imports="import A", code="")
+    code = Code(imports="using A", code="")
     out = format_code_response(code)
-    assert "import A" in out
+    assert "using A" in out
     assert "```julia" in out
