@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "chat": "./src/jutulgpt/graph.py:graph"
+  },
+  "image_distro": "wolfi"
+}

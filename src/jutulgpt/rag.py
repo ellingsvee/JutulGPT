@@ -70,8 +70,9 @@ def _load_or_retrieve_from_storage(
 
 def _split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
     """
-    Splits a Document at lines like `# ##` or `# ###`, which represent markdown headings
+    Splits a Document at lines like `# #` or `# ##`, which represent markdown headings
     inside Julia comments. Keeps all content grouped under each such header.
+    Note that we do not split on `# ###` or deeper headings. To do this, change the `re.match(r"^#\s+(#{1,2})\s+(.*)", line.strip())` to more than 2.
     """
     content = document.page_content
     lines = content.splitlines()
@@ -93,7 +94,7 @@ def _split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
                 )
 
     for line in lines:
-        heading_match = re.match(r"^#\s+(#{1,6})\s+(.*)", line.strip())
+        heading_match = re.match(r"^#\s+(#{1,2})\s+(.*)", line.strip())
         if heading_match:
             # Finalize the previous chunk
             finalize_chunk()
@@ -126,7 +127,7 @@ def _split_markdown_file(
 
 
 def _format_doc(doc: Document) -> str:
-    header_keys = ["Header 1", "Header 2", "Header 3"]
+    header_keys = ["Header 1", "Header 2"]
     section_path_parts = [
         str(doc.metadata[k])
         for k in header_keys
@@ -227,7 +228,6 @@ class MarkdownDocIndexer(BaseIndexer):
             headers_to_split_on=[
                 ("#", "Header 1"),
                 ("##", "Header 2"),
-                ("###", "Header 3"),
             ],
             strip_headers=False,
         )

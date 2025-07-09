@@ -16,11 +16,11 @@ from jutulgpt.rag import (
     format_docs,
     format_examples,
 )
-from jutulgpt.state import Code, GraphState, InitialState
+from jutulgpt.state import Code, GraphState, InputState
 from jutulgpt.utils import format_code_response, logger
 
 
-def start_node(state: InitialState) -> GraphState:
+def start_node(state: InputState) -> GraphState:
     """
     Start node that sets up the conversation with the user.
     """

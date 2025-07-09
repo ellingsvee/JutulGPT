@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Annotated
 
-from langchain_core.messages import AnyMessage, HumanMessage
+from langchain_core.messages import AnyMessage, BaseMessage, HumanMessage
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
@@ -18,15 +18,20 @@ class Code(BaseModel):
     )
 
 
-@dataclass(kw_only=False, frozen=True)
-class InitialState:
-    messages: Annotated[list, add_messages]
+@dataclass(kw_only=True, frozen=True)
+class InputState:
+    messages: Annotated[list[BaseMessage], add_messages]
+
+
+# @dataclass(kw_only=False, frozen=True)
+# class InitialState:
+#     messages: Annotated[list, add_messages]
 
 
 @dataclass(kw_only=False, frozen=True)
-class GraphState:
+class GraphState(InputState):
     # messages: Annotated[list[AnyMessage], add_messages]
-    messages: Annotated[list, add_messages]
+    # messages: Annotated[list, add_messages]
     structured_response: Code
     error: bool
     iterations: int

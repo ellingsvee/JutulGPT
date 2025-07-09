@@ -29,5 +29,6 @@ logging_level = logging.INFO
 # llm = ChatOllama(model=model_name)
 # embedding = OllamaEmbeddings(model="nomic-embed-text")
 
-llm = init_chat_model("openai:gpt-4.1", temperature=0)
+# llm = init_chat_model("openai:gpt-4.1", temperature=0)
+llm = init_chat_model("openai:gpt-4.1-mini", temperature=0)
 embedding = OpenAIEmbeddings()
