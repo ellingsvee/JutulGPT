@@ -1,8 +1,9 @@
+from langchain_core.messages import convert_to_messages
 from langchain_core.runnables.config import RunnableConfig
 
 from jutulgpt.agents import agent_config
 from jutulgpt.graph import graph
-from jutulgpt.state import make_initial_state
+from jutulgpt.state import InputState
 from jutulgpt.utils import get_tool_message
 
 
@@ -15,7 +16,10 @@ def main():
             break
 
         # Build initial state from user input
-        state = make_initial_state(user_input)
+        # state = make_initial_state(user_input)
+        state = InputState(
+            messages=convert_to_messages([{"role": "user", "content": user_input}]),
+        )
 
         # Stream the graph's response
         print("JutulGPT:")

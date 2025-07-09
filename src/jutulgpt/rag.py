@@ -72,7 +72,7 @@ def _split_julia_file_on_markdown_headers(document: Document) -> List[Document]:
     """
     Splits a Document at lines like `# #` or `# ##`, which represent markdown headings
     inside Julia comments. Keeps all content grouped under each such header.
-    Note that we do not split on `# ###` or deeper headings. To do this, change the `re.match(r"^#\s+(#{1,2})\s+(.*)", line.strip())` to more than 2.
+    Note that we do not split on `# ###` or deeper headings.
     """
     content = document.page_content
     lines = content.splitlines()

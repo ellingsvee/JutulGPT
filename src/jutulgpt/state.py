@@ -6,6 +6,8 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
+from jutulgpt.config import avoid_tools
+
 
 class Code(BaseModel):
     prefix: str = Field(
@@ -30,17 +32,24 @@ class InputState:
 
 @dataclass(kw_only=False, frozen=True)
 class GraphState(InputState):
-    # messages: Annotated[list[AnyMessage], add_messages]
-    # messages: Annotated[list, add_messages]
     structured_response: Code
     error: bool
     iterations: int
+    if avoid_tools:
+        retrieved_context: str
 
 
-def make_initial_state(user_question: str) -> GraphState:
-    return GraphState(
-        messages=[HumanMessage(content=user_question)],
-        structured_response=Code(prefix="", imports="", code=""),
-        error=False,
-        iterations=0,
-    )
+# def make_initial_state(user_question: str) -> GraphState:
+
+#     return GraphState(
+#         messages=[HumanMessage(content=user_question)],
+#         structured_response=Code(prefix="", imports="", code=""),
+#         error=False,
+#         iterations=0,
+#     )
+#     return GraphState(
+#         messages=[HumanMessage(content=user_question)],
+#         structured_response=Code(prefix="", imports="", code=""),
+#         error=False,
+#         iterations=0,
+#     )

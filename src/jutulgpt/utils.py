@@ -1,5 +1,6 @@
 import logging
 import os
+from dataclasses import asdict
 from typing import List
 
 from jutulgpt.config import logging_level
@@ -81,3 +82,10 @@ def get_tool_message(messages: List, n_last=2, print=False):
                 message.pretty_print()
             return message
     return None
+
+
+def state_to_dict(state, remove_keys: List[str] = []) -> dict:
+    state_dict = asdict(state)
+    for key in remove_keys:
+        state_dict.pop(key, None)
+    return state_dict
