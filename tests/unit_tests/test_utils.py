@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from jutulgpt.state import Code
+from jutulgpt.state import CodeBlock
 from jutulgpt.utils import format_code_response, load_lines_from_txt
 
 
@@ -35,7 +35,7 @@ def test_load_lines_from_txt_invalid_path():
 
 
 def test_format_code_response_all_fields():
-    code = Code(imports="using A", code="println(1)")
+    code = CodeBlock(imports="using A", code="println(1)")
     out = format_code_response(code)
     assert "using A" in out
     assert "println(1)" in out
@@ -43,20 +43,20 @@ def test_format_code_response_all_fields():
 
 
 def test_format_code_response_prefix_only():
-    code = Code(imports="", code="")
+    code = CodeBlock(imports="", code="")
     out = format_code_response(code)
     assert "```julia" not in out
 
 
 def test_format_code_response_code_only():
-    code = Code(imports="", code="println(1)")
+    code = CodeBlock(imports="", code="println(1)")
     out = format_code_response(code)
     assert "println(1)" in out
     assert "```julia" in out
 
 
 def test_format_code_response_imports_only():
-    code = Code(imports="using A", code="")
+    code = CodeBlock(imports="using A", code="")
     out = format_code_response(code)
     assert "using A" in out
     assert "```julia" in out
