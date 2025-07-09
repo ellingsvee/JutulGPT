@@ -1,66 +1,34 @@
-import logging
+"""Utility & helper functions."""
+
 import os
 from dataclasses import asdict
 from typing import List
 
-from jutulgpt.config import logging_level
-from jutulgpt.state import Code
+from langchain.chat_models import init_chat_model
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import BaseMessage
 
 
-def load_lines_from_txt(file_path):
-    """
-    Load lines from a text file, stripping whitespace and ignoring empty lines.
+def get_message_text(msg: BaseMessage) -> str:
+    """Get the text content of a message."""
+    content = msg.content
+    if isinstance(content, str):
+        return content
+    elif isinstance(content, dict):
+        return content.get("text", "")
+    else:
+        txts = [c if isinstance(c, str) else (c.get("text") or "") for c in content]
+        return "".join(txts).strip()
+
+
+def load_chat_model(fully_specified_name: str) -> BaseChatModel:
+    """Load a chat model from a fully specified name.
 
     Args:
-        file_path (str): Path to the text file.
-
-    Returns:
-        list: List of non-empty, stripped lines from the file.
+        fully_specified_name (str): String in the format 'provider/model'.
     """
-    if not file_path:
-        raise ValueError("File path cannot be empty.")
-    if not isinstance(file_path, str):
-        file_path = str(file_path)
-    try:
-        with open(file_path, "r") as file:
-            return [line.strip() for line in file if line.strip()]
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            f"The file at {file_path} does not exist. Current working directory is {os.getcwd()}."
-        )
-    except IOError as e:
-        raise IOError(
-            f"An error occurred while reading the file at {file_path}: {e}"
-        ) from e
-    except Exception as e:
-        raise Exception(f"An unexpected error occurred: {e}") from e
-
-
-def format_code_response(code: Code) -> str:
-    out = "Response:\n"
-    if code.prefix != "":
-        out += f"{code.prefix}\n\n"
-    if code.imports != "" or code.code != "":
-        out += "```julia\n"
-        if code.imports != "":
-            out += f"{code.imports}\n\n"
-        if code.code != "":
-            out += f"{code.code}\n"
-        out += "```"
-    return out
-
-
-# Configure logger
-logger = logging.getLogger("jutulgpt")
-logging.basicConfig(level=logging_level, format="%(name)s: %(message)s")
-
-# Set your module's log level
-logging.getLogger("jutulgpt").setLevel(logging.DEBUG)
-
-# Suppress overly verbose logs from dependencies
-logging.getLogger("httpx").setLevel(logging.ERROR)
-logging.getLogger("urllib3").setLevel(logging.ERROR)  # sometimes used under the hood
-logging.getLogger("langchain").setLevel(logging.ERROR)  # if needed
+    provider, model = fully_specified_name.split("/", maxsplit=1)
+    return init_chat_model(model, model_provider=provider, temperature=0.5)
 
 
 def get_tool_message(messages: List, n_last=2, print=False):

@@ -54,4 +54,3 @@ def get_error_message(result) -> str:
     if result["error_stacktrace"] is not None:
         out_string += f"Julia stacktrace: {result['error_stacktrace']}"
     return out_string
-    return out_string

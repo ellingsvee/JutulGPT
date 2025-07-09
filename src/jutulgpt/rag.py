@@ -6,17 +6,17 @@ from collections import defaultdict
 from typing import List
 
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import (
-    DirectoryLoader,
-    TextLoader,
-)
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
+from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import (
     MarkdownHeaderTextSplitter,
     RecursiveCharacterTextSplitter,
 )
 
-from jutulgpt.config import embedding
+# from jutulgpt.config import embedding, use_openai
+
+embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
 
 
 def _deduplicate_chunks(chunks):
@@ -172,7 +172,9 @@ class JuliaExampleIndexer(BaseIndexer):
     def __init__(
         self,
         dir_path: str = "./src/jutulgpt/rag_sources/jutuldarcy_examples/",
-        persist_path: str = "./src/jutulgpt/rag_sources/chroma_examples",
+        persist_path: str = "./src/jutulgpt/rag_sources/chroma_examples_openai"
+        if True
+        else "./src/jutulgpt/rag_sources/chroma_examples",
         cache_path: str = "./src/jutulgpt/rag_sources/loaded_examples.pkl",
     ):
         super().__init__(dir_path, persist_path, cache_path)
@@ -197,14 +199,14 @@ class JuliaExampleIndexer(BaseIndexer):
 
         if os.path.exists(self.persist_path):
             vectorstore = Chroma(
-                embedding_function=embedding,
+                embedding_function=embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_examples",
             )
         else:
             vectorstore = Chroma.from_documents(
                 documents=docs,
-                embedding=embedding,
+                embedding=embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_examples",
             )
@@ -215,7 +217,9 @@ class MarkdownDocIndexer(BaseIndexer):
     def __init__(
         self,
         dir_path: str = "./src/jutulgpt/rag_sources/jutuldarcy_docs/man/",
-        persist_path: str = "./src/jutulgpt/rag_sources/chroma_docs",
+        persist_path: str = "./src/jutulgpt/rag_sources/chroma_docs_openai"
+        if True
+        else "./src/jutulgpt/rag_sources/chroma_docs",
         cache_path: str = "./src/jutulgpt/rag_sources/loaded_docs.pkl",
         chunk_size: int = 500,
         chunk_overlap: int = 50,
@@ -262,14 +266,14 @@ class MarkdownDocIndexer(BaseIndexer):
 
         if os.path.exists(self.persist_path):
             vectorstore = Chroma(
-                embedding_function=embedding,
+                embedding_function=embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_docs",
             )
         else:
             vectorstore = Chroma.from_documents(
                 documents=docs,
-                embedding=embedding,
+                embedding=embedding_model,
                 persist_directory=self.persist_path,
                 collection_name="jutuldarcy_docs",
             )
