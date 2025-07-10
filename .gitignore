@@ -6,7 +6,7 @@ src/jutulgpt/rag_sources/chroma_docs/
 src/jutulgpt/rag_sources/chroma_examples/
 src/jutulgpt/rag_sources/chroma_docs_openai/
 src/jutulgpt/rag_sources/chroma_examples_openai/
-.langgraph_api/*
+.langgraph_api/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
