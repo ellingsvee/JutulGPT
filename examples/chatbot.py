@@ -1,9 +1,10 @@
 from langchain_core.messages import convert_to_messages
 from langchain_core.runnables.config import RunnableConfig
 
-from jutulgpt.agents import agent_config
+# from jutulgpt.agents import agent_config
 from jutulgpt.graph import graph
-from jutulgpt.state import InputState
+
+# from jutulgpt.state import InputState
 from jutulgpt.utils import get_tool_message
 
 
@@ -17,14 +18,14 @@ def main():
 
         # Build initial state from user input
         # state = make_initial_state(user_input)
-        state = InputState(
-            messages=convert_to_messages([{"role": "user", "content": user_input}]),
-        )
+        # state = InputState(
+        #     messages=convert_to_messages([{"role": "user", "content": user_input}]),
+        # )
 
         # Stream the graph's response
         print("JutulGPT:")
         prev_message = None
-        for chunk in graph.stream(state, config=agent_config):
+        for chunk in graph.stream({"messages": [("user", user_input.strip())]}):
             for node, update in chunk.items():
                 # Print only the latest message from the assistant
                 # tool_message = get_tool_message(update["messages"], print=True)
