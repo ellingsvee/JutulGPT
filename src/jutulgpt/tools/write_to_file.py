@@ -14,7 +14,7 @@ def write_to_file(
     config: Annotated[RunnableConfig, InjectedToolArg],
 ) -> None:
     """
-    Use this tool to write code to a file. Note, the tool only
+    Use this tool to write code to a file.
 
     Args:
         imports: The imports to include at the top of the file.

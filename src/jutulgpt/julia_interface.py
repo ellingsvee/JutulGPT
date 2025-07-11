@@ -4,9 +4,13 @@ from typing import Union
 from juliacall import JuliaError
 from juliacall import Main as jl
 
+from jutulgpt.configuration import retrieve_fimbul
 from jutulgpt.state import CodeBlock
 
-jl.seval("using JutulDarcy, Jutul")  # Make sure these packages are always imported
+if retrieve_fimbul:
+    jl.seval('using Pkg; Pkg.activate("."); using JutulDarcy, Jutul, Fimbul;')
+else:
+    jl.seval("using JutulDarcy, Jutul;")
 
 
 def run_string(code: str):

@@ -12,7 +12,8 @@ def read_from_file(
     config: Annotated[RunnableConfig, InjectedToolArg],
 ) -> str:
     """
-    Use this tool read the content of a file. Note, the tool only accept reading files with the following extensions: .jl, .txt, .md, .json, .yaml, .yml.
+    Use this tool read the content of a file.
+    Note, the tool only accept reading files with the following extensions: .jl, .txt, .md, .json, .yaml, .yml.
 
     Args:
         filename: The path to the file you want to read.

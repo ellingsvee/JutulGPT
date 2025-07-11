@@ -23,12 +23,12 @@ def _set_env(var: str):
 load_dotenv()
 _set_env("OPENAI_API_KEY")
 
-use_openai = False
+use_openai = True
 # embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
-max_iterations = 3
+max_iterations = 2
 check_code_bool = True
 retrieve_jutuldacy = True
-retrieve_fimbul = False
+retrieve_fimbul = True
 
 
 @dataclass(kw_only=True)

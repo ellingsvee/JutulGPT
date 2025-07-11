@@ -1,5 +1,6 @@
 """This module contains the `check_code` function which is responsible for evaluating code if it is run."""
 
+import re
 from typing import cast
 
 from langchain_core.messages import (
@@ -35,6 +36,9 @@ def check_code(state: State, config: RunnableConfig):
 
         imports = code_block.imports
         code = code_block.code
+        code = _shorter_simulations(
+            code
+        )  # If the code contains simulations, replace them with shorter ones
 
         result = run_string(imports)
         if result["error"]:
@@ -59,3 +63,25 @@ def check_code(state: State, config: RunnableConfig):
             }
 
     return {"error": False, "iterations": state.iterations + 1}
+
+
+def shorter_simulations(code: str) -> str:
+    """
+    For each simulation function, append '[1:1]' to the first argument of the function call.
+    E.g., sim_func_1(foo, bar) -> sim_func_1(foo[1:1], bar)
+    """
+    simulation_functions = []  # TODO: Add the names of the actual simulation functions here
+
+    for func in simulation_functions:
+        # Match the function call and capture the first argument
+        pattern = rf"({func}\s*\()\s*([^,)\s]+)(.*?\))"
+
+        def replacer(match):
+            before = match.group(1)
+            first_arg = match.group(2)
+            after = match.group(3)
+            return f"{before}{first_arg}[1:1]{after}"
+
+        code = re.sub(pattern, replacer, code, flags=re.DOTALL)
+
+    return code
