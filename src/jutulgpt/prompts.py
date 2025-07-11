@@ -10,7 +10,8 @@ TOOLS = ""
 TOOLS += "- **retrieve_jutuldarcy Tool**: Use to search for information in the Jutuldarcy documentation and examples.\n"
 # if retrieve_fimbul:
 TOOLS += "- **retrieve_fimbul Tool**: Use to search for information in the Fimbul documentation and examples.\n"
-TOOLS += "- **write_to_julia_file Tool**: Use this tool to write code to a Julia file."
+TOOLS += "- **write_to_file Tool**: Use this tool to write code to a file."
+TOOLS += "- **read_from_file Tool**: Use this tool to read the content of a file."
 
 
 AGENT_SYSTEM = f"""

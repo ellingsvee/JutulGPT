@@ -6,7 +6,7 @@ from langchain_core.tools import InjectedToolArg, tool
 
 
 @tool(parse_docstring=True)
-def write_to_julia_file(
+def write_to_file(
     imports: str,
     code: str,
     filename: str,
@@ -14,7 +14,7 @@ def write_to_julia_file(
     config: Annotated[RunnableConfig, InjectedToolArg],
 ) -> None:
     """
-    Use this tool to write code to a Julia file.
+    Use this tool to write code to a file. Note, the tool only
 
     Args:
         imports: The imports to include at the top of the file.
@@ -22,7 +22,7 @@ def write_to_julia_file(
         filename: The path to the file where the code should be written.
 
     Returns:
-        String containing the path to the written file.
+        String containing the content of the file.
     """
 
     with open(filename, "w") as f:

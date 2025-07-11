@@ -3,9 +3,14 @@
 from langgraph.prebuilt import ToolNode
 
 from jutulgpt.configuration import retrieve_fimbul, retrieve_jutuldacy
-from jutulgpt.tools import retrieve_fimbul, retrieve_jutuldarcy, write_to_julia_file
+from jutulgpt.tools import (
+    read_from_file,
+    retrieve_fimbul,
+    retrieve_jutuldarcy,
+    write_to_file,
+)
 
-tools = [write_to_julia_file]
+tools = [write_to_file, read_from_file]
 
 if retrieve_jutuldacy:
     tools.append(retrieve_jutuldarcy)
