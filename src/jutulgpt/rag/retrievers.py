@@ -274,7 +274,7 @@ def format_examples(
     return "\n\n---\n\n".join(formatted)
 
 
-def format_docs(docs, n: int = 2, remove_duplicates: bool = True):
+def format_docs(docs, n: int = 3, remove_duplicates: bool = True):
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)
     docs = docs[:n]
