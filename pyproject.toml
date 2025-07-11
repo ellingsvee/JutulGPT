@@ -22,6 +22,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pygraphviz>=1.14",
     "python-dotenv>=1.1.1",
+    "transformers>=4.53.1",
     "unstructured[md]>=0.18.2",
 ]
 

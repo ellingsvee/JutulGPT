@@ -15,7 +15,12 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 
-from jutulgpt.configuration import embedding_model, retrieve_fimbul, retrieve_jutuldacy
+from jutulgpt.configuration import (
+    embedding_model,
+    retrieve_fimbul,
+    retrieve_jutuldacy,
+    use_openai,
+)
 from jutulgpt.rag import split_docs, split_fimbul, split_jutuldarcy
 from jutulgpt.utils import deduplicate_document_chunks
 
@@ -181,12 +186,13 @@ class DocsIndexer(BaseIndexer):
         return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
+chroma_dir_name = "openai" if use_openai else "ollama"
 jutuldarcy_examples_indexer = ExampleIndexer(
     embedding_model=embedding_model,
     split_func=split_jutuldarcy.split_examples,
     filetype="jl",
     dir_path="./src/jutulgpt/rag/jutuldarcy/examples/",
-    persist_path="./src/jutulgpt/rag/chroma_store/chroma_jutuldarcy_examples_openai",
+    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_jutuldarcy_examples_{chroma_dir_name}",
     cache_path="./src/jutulgpt/rag/loaded_store/loaded_jutuldarcy_examples.pkl",
     collection_name="fimbul_examples",
 )
@@ -196,7 +202,7 @@ jutuldarcy_docs_indexer = DocsIndexer(
     split_func=split_docs.split_docs,
     filetype="md",
     dir_path="./src/jutulgpt/rag/jutuldarcy/docs/man/",
-    persist_path="./src/jutulgpt/rag/chroma_store/chroma_jutuldarcy_docs_openai",
+    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_jutuldarcy_docs_{chroma_dir_name}",
     cache_path="./src/jutulgpt/rag/loaded_store/loaded_jutuldarcy_docs.pkl",
     collection_name="fimbul_docs",
 )
@@ -206,7 +212,7 @@ fimbul_examples_indexer = ExampleIndexer(
     split_func=split_fimbul.split_examples,
     filetype="jl",
     dir_path="./src/jutulgpt/rag/fimbul/examples/",
-    persist_path="./src/jutulgpt/rag/chroma_store/chroma_fimbul_examples_openai",
+    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_fimbul_examples_{chroma_dir_name}",
     cache_path="./src/jutulgpt/rag/loaded_store/loaded_fimbul_examples.pkl",
     collection_name="fimbul_examples",
 )
@@ -216,7 +222,7 @@ fimbul_docs_indexer = DocsIndexer(
     split_func=split_docs.split_docs,
     filetype="md",
     dir_path="./src/jutulgpt/rag/fimbul/docs/man/",
-    persist_path="./src/jutulgpt/rag/chroma_store/chroma_fimbul_docs_openai",
+    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_fimbul_docs_{chroma_dir_name}",
     cache_path="./src/jutulgpt/rag/loaded_store/loaded_fimbul_docs.pkl",
     collection_name="fimbul_docs",
 )

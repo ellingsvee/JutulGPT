@@ -5,10 +5,11 @@ from __future__ import annotations
 import getpass
 import os
 from dataclasses import dataclass, field, fields
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Union
 
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig, ensure_config
+from langchain_ollama import OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from jutulgpt import prompts
@@ -22,11 +23,12 @@ def _set_env(var: str):
 load_dotenv()
 _set_env("OPENAI_API_KEY")
 
-embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
+use_openai = False
+# embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
 max_iterations = 3
 check_code_bool = True
 retrieve_jutuldacy = True
-retrieve_fimbul = True
+retrieve_fimbul = False
 
 
 @dataclass(kw_only=True)
@@ -41,23 +43,33 @@ class Configuration:
         },
     )
 
+    if use_openai:
+        default_model_name = "openai/gpt-4.1-mini"
+    else:
+        default_model_name = "ollama/qwen2.5:32b"
+
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="openai/gpt-4.1-mini",
+        default=default_model_name,
         metadata={
             "description": "The name of the language model to use for the agent's main interactions. "
             "Should be in the form: provider/model-name."
         },
     )
 
-    embedding_model: Annotated[
-        str,
-        {"__template_metadata__": {"kind": "embeddings"}},
-    ] = field(
-        default="openai/text-embedding-3-small",
-        metadata={
-            "description": "Name of the embedding model to use. Must be a valid embedding model name."
-        },
-    )
+    # if use_openai:
+    #     default_embedding_name = "openai/text-embedding-3-small"
+    # else:
+    #     default_embedding_name = "ollama/nomic-embed-text"
+
+    # embedding_model: Annotated[
+    #     str,
+    #     {"__template_metadata__": {"kind": "embeddings"}},
+    # ] = field(
+    #     default=default_embedding_name,
+    #     metadata={
+    #         "description": "Name of the embedding model to use. Must be a valid embedding model name."
+    #     },
+    # )
 
     # embedding_model = OpenAIEmbeddings()
 
@@ -71,11 +83,37 @@ class Configuration:
         _fields = {f.name for f in fields(cls) if f.init}
         return cls(**{k: v for k, v in configurable.items() if k in _fields})
 
-    def get_embedding_model(self) -> OpenAIEmbeddings:
-        """Instantiate the embedding model based on the config."""
-        if self.embedding_model.startswith("openai/"):
-            model_name = self.embedding_model.split("/", 1)[1]
-            return OpenAIEmbeddings(model=model_name)
-        else:
-            raise ValueError(f"Unsupported embedding model: {self.embedding_model}")
-            raise ValueError(f"Unsupported embedding model: {self.embedding_model}")
+
+if use_openai:
+    default_embedding_name = "openai/text-embedding-3-small"
+else:
+    default_embedding_name = "ollama/nomic-embed-text"
+
+# embedding_model_name: Annotated[
+#     str,
+#     {"__template_metadata__": {"kind": "embeddings"}},
+# ] = field(
+#     default=default_embedding_name,
+#     metadata={
+#         "description": "Name of the embedding model to use. Must be a valid embedding model name."
+#     },
+# )
+embedding_model_name = default_embedding_name
+
+
+def get_embedding_model(
+    embedding_model_name: str,
+) -> Union[OpenAIEmbeddings, OllamaEmbeddings]:
+    """Instantiate the embedding model based on the config."""
+
+    provider, model = embedding_model_name.split("/", maxsplit=1)
+    if provider == "openai":
+        return OpenAIEmbeddings(model=model)
+    elif provider == "ollama":
+        return OllamaEmbeddings(model=model)
+
+    else:
+        raise ValueError(f"Unsupported embedding model: {embedding_model_name}")
+
+
+embedding_model = get_embedding_model(embedding_model_name)

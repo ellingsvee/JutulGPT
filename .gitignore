@@ -1,7 +1,7 @@
 # Custom
 graph.png
-src/jutulgpt/rag/chroma_store/
-src/jutulgpt/rag/loaded_store/
+src/jutulgpt/rag/chroma_store/*
+src/jutulgpt/rag/loaded_store/*
 .langgraph_api/
 julia_scrapbook/
 *.DS_Store
