@@ -24,6 +24,9 @@ _set_env("OPENAI_API_KEY")
 
 embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
 max_iterations = 3
+check_code_bool = True
+retrieve_jutuldacy = True
+retrieve_fimbul = True
 
 
 @dataclass(kw_only=True)
@@ -39,7 +42,7 @@ class Configuration:
     )
 
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="openai/gpt-4.1",
+        default="openai/gpt-4.1-mini",
         metadata={
             "description": "The name of the language model to use for the agent's main interactions. "
             "Should be in the form: provider/model-name."

@@ -12,7 +12,7 @@ from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
 
 
-def generate_response(state: State, config: RunnableConfig) -> State:
+def generate_response(state: State, config: RunnableConfig):
     """Generate a response based on the given state and configuration.
 
     This function initializes a chat model with tool bindings, formats the system prompt,
@@ -29,6 +29,7 @@ def generate_response(state: State, config: RunnableConfig) -> State:
     """
     messages = state.messages
     error = state.error
+    error_message = state.error_message
 
     configuration = Configuration.from_runnable_config(config)
 
@@ -36,10 +37,11 @@ def generate_response(state: State, config: RunnableConfig) -> State:
     model = load_chat_model(configuration.model).bind_tools(tools)
 
     # If there was an error in the previous step, add this to the messages.
+    error_message_list = []
     if error:
-        messages += [
+        error_message_list = [
             HumanMessage(
-                content=f"Previous step failed with the provided error. Fix the error to provide runnable code."
+                content=f"The code from you previous response failed with the following error: {error_message}.\n\nFix the error to provide runnable code."
             ),
         ]
 
@@ -67,7 +69,8 @@ def generate_response(state: State, config: RunnableConfig) -> State:
     # Handle the case when it's the last step and the model still wants to use a tool
     if state.is_last_step and response.tool_calls:
         return {
-            "messages": [
+            "messages": error_message_list
+            + [
                 AIMessage(
                     id=response.id,
                     content="Sorry, I could not find an answer to your question in the specified number of steps.",
@@ -76,4 +79,4 @@ def generate_response(state: State, config: RunnableConfig) -> State:
         }
 
     # Return the model's response as a list to be added to existing messages
-    return {"messages": [response]}
+    return {"messages": error_message_list + [response]}

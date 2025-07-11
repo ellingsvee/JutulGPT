@@ -27,4 +27,3 @@ def write_to_julia_file(
 
     with open(filename, "w") as f:
         f.write(imports + "\n" + code)
-        f.write(imports + "\n" + code)

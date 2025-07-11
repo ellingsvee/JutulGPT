@@ -5,6 +5,7 @@ from dataclasses import asdict
 from typing import List
 
 from langchain.chat_models import init_chat_model
+from langchain_core.documents import Document
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
@@ -100,3 +101,14 @@ def state_to_dict(state, remove_keys: List[str] = []) -> dict:
     for key in remove_keys:
         state_dict.pop(key, None)
     return state_dict
+
+
+def deduplicate_document_chunks(chunks: List[Document]) -> List[Document]:
+    seen = set()
+    deduped = []
+    for doc in chunks:
+        content = doc.page_content.strip()
+        if content not in seen:
+            seen.add(content)
+            deduped.append(doc)
+    return deduped

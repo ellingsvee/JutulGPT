@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Sequence
+from typing import List, Sequence
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
@@ -19,9 +19,7 @@ class InputState:
     This class is used to define the initial state and structure of incoming data.
     """
 
-    messages: Annotated[Sequence[AnyMessage], add_messages] = field(
-        default_factory=list
-    )
+    messages: Annotated[List[AnyMessage], add_messages] = field(default_factory=list)
     """
     Messages tracking the primary execution state of the agent.
 
@@ -48,6 +46,7 @@ class State(InputState):
 
     is_last_step: IsLastStep = field(default=False)
     error: bool = field(default=False)
+    error_message: str = field(default="")
     iterations: int = field(default=0)
     """
     Indicates whether the current step is the last one before the graph raises an error.
