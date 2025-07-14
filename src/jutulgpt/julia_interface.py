@@ -35,6 +35,38 @@ def run_string(code: str):
         }
 
 
+def run_string_line_by_line(code: str):
+    """Execute Julia code line by line and capture output or errors. An error is returned for the first line that failed."""
+    lines = code.splitlines()
+
+    out = None
+    for line in lines:
+        if not line.strip():
+            continue  # Skip empty lines
+        try:
+            result = jl.seval(line)
+            out = result
+        except JuliaError as e:
+            full_msg = str(e).strip()
+            pre_stack, stack = _split_stacktrace(full_msg)
+            filtered_stack = _filter_stacktrace(stack) if stack else None
+            return {
+                "out": None,
+                "error": True,
+                "error_message": pre_stack,
+                "error_stacktrace": filtered_stack,
+                "line": line.strip(),
+            }
+
+    return {
+        "out": out,
+        "error": False,
+        "error_message": None,
+        "error_stacktrace": None,
+        "line": None,
+    }
+
+
 def _split_stacktrace(msg: str):
     """Helper to split Julia error messages into message and stacktrace parts."""
     marker = "\nStacktrace:\n"
@@ -56,9 +88,9 @@ def _filter_stacktrace(stack: str) -> Union[str, None]:
 
 
 def get_error_message(result) -> str:
-    out_string = f"Julia error message: {result['error_message']}\n"
+    out_string = f"{result['error_message']}"
     if result["error_stacktrace"] is not None:
-        out_string += f"Julia stacktrace: {result['error_stacktrace']}"
+        out_string += f"\n\nStacktrace:\n{result['error_stacktrace']}"
     return out_string
 
 
