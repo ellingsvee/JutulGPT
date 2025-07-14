@@ -8,7 +8,7 @@ from jutulgpt.julia_interface import (
     get_error_message,
     run_string,
 )
-from jutulgpt.state import Code
+from jutulgpt.state import CodeBlock
 
 
 def test_run_string_valid():
