@@ -6,6 +6,8 @@ from collections import defaultdict
 from os.path import splitroot
 from typing import Callable, List
 
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
@@ -16,13 +18,10 @@ from langchain_text_splitters import (
 )
 
 from jutulgpt.configuration import (
-    embedding_model,
-    retrieve_fimbul,
-    retrieve_jutuldacy,
-    use_openai,
+    static_config,
 )
 from jutulgpt.rag import split_docs, split_fimbul, split_jutuldarcy
-from jutulgpt.utils import deduplicate_document_chunks
+from jutulgpt.utils import deduplicate_document_chunks, load_embedding_model
 
 # import format_doc, split_docs, split_examples
 
@@ -186,9 +185,9 @@ class DocsIndexer(BaseIndexer):
         return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
-chroma_dir_name = "openai" if use_openai else "ollama"
+chroma_dir_name = "openai" if static_config.use_openai else "ollama"
 jutuldarcy_examples_indexer = ExampleIndexer(
-    embedding_model=embedding_model,
+    embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_jutuldarcy.split_examples,
     filetype="jl",
     dir_path="./src/jutulgpt/rag/jutuldarcy/examples/",
@@ -198,7 +197,7 @@ jutuldarcy_examples_indexer = ExampleIndexer(
 )
 
 jutuldarcy_docs_indexer = DocsIndexer(
-    embedding_model=embedding_model,
+    embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_docs.split_docs,
     filetype="md",
     dir_path="./src/jutulgpt/rag/jutuldarcy/docs/man/",
@@ -208,7 +207,7 @@ jutuldarcy_docs_indexer = DocsIndexer(
 )
 
 fimbul_examples_indexer = ExampleIndexer(
-    embedding_model=embedding_model,
+    embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_fimbul.split_examples,
     filetype="jl",
     dir_path="./src/jutulgpt/rag/fimbul/examples/",
@@ -218,7 +217,7 @@ fimbul_examples_indexer = ExampleIndexer(
 )
 
 fimbul_docs_indexer = DocsIndexer(
-    embedding_model=embedding_model,
+    embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_docs.split_docs,
     filetype="md",
     dir_path="./src/jutulgpt/rag/fimbul/docs/man/",
@@ -252,7 +251,7 @@ retrievers = get_retrievers()
 
 
 def format_examples(
-    docs: List[Document], n: int = 1, remove_duplicates: bool = True
+    docs: List[Document], n: int = 4, remove_duplicates: bool = True
 ) -> str:
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)
@@ -274,7 +273,7 @@ def format_examples(
     return "\n\n---\n\n".join(formatted)
 
 
-def format_docs(docs, n: int = 2, remove_duplicates: bool = True):
+def format_docs(docs, n: int = 4, remove_duplicates: bool = True):
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)
     docs = docs[:n]

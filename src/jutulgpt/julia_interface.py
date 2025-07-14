@@ -4,10 +4,10 @@ from typing import Union
 from juliacall import JuliaError
 from juliacall import Main as jl
 
-from jutulgpt.configuration import retrieve_fimbul
-from jutulgpt.state import CodeBlock
+from jutulgpt.configuration import static_config
+from jutulgpt.state import CodeBlock, State
 
-if retrieve_fimbul:
+if static_config.retrieve_fimbul:
     jl.seval('using Pkg; Pkg.activate("."); using JutulDarcy, Jutul, Fimbul;')
 else:
     jl.seval("using JutulDarcy, Jutul;")
@@ -87,3 +87,13 @@ def get_code_from_response(response: str) -> CodeBlock:
     return CodeBlock(
         imports="\n".join(import_lines), code="\n".join(code_lines).strip()
     )
+
+
+def get_last_code_response(state: State) -> CodeBlock:
+    last_message = state.messages[-1]
+    if last_message.type == "ai":
+        last_message_content = last_message.content
+    else:
+        last_message_content = ""
+    code_block = get_code_from_response(last_message_content)
+    return code_block

@@ -41,7 +41,7 @@ def generate_response(state: State, config: RunnableConfig):
     if error:
         error_message_list = [
             HumanMessage(
-                content=f"The code from you previous response failed with the following error: {error_message}.\n\nFix the error to provide runnable code."
+                content=f"The code from you previous response failed with the following error. Fix it to provide runnable code!\n\n {error_message}."
             ),
         ]
 

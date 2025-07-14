@@ -6,13 +6,9 @@ from langchain_core.tools import InjectedToolArg, tool
 
 from jutulgpt.configuration import Configuration
 from jutulgpt.rag.retrievers import (
-    # fimbul_docs_retriever,
-    # fimbul_examples_retriever,
     format_docs,
     format_examples,
-    # jutuldarcy_docs_retriever,
     retrievers,
-    # jutuldarcy_examples_retriever,
 )
 
 _: bool = load_dotenv(find_dotenv())
@@ -51,6 +47,8 @@ def retrieve_jutuldarcy(
 {examples}
 """
 
+    print(out)  # WARNING: DELETE LATER
+
     return out
 
 
@@ -85,5 +83,6 @@ def retrieve_fimbul(
 # Retrieved from the Fimbul examples:
 {examples}
 """
+    print(out)  # WARNING: DELETE LATER
 
     return out

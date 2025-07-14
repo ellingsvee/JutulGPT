@@ -2,7 +2,7 @@
 
 from langgraph.prebuilt import ToolNode
 
-from jutulgpt.configuration import retrieve_fimbul, retrieve_jutuldacy
+from jutulgpt.configuration import static_config
 from jutulgpt.tools import (
     read_from_file,
     retrieve_fimbul,
@@ -12,9 +12,9 @@ from jutulgpt.tools import (
 
 tools = [write_to_file, read_from_file]
 
-if retrieve_jutuldacy:
+if static_config.retrieve_jutuldacy:
     tools.append(retrieve_jutuldarcy)
-if retrieve_fimbul:
+if static_config.retrieve_fimbul:
     tools.append(retrieve_fimbul)
 
 tools_node = ToolNode(tools)

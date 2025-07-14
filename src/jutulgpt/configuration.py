@@ -23,17 +23,19 @@ def _set_env(var: str):
 load_dotenv()
 _set_env("OPENAI_API_KEY")
 
-use_openai = True
-# embedding_model = OpenAIEmbeddings()  # WARNING: TEMPORARY FIX
-max_iterations = 2
-check_code_bool = True
-retrieve_jutuldacy = True
-retrieve_fimbul = True
-
 
 @dataclass(kw_only=True)
 class Configuration:
     """The configuration for the agent."""
+
+    use_openai = True
+    max_iterations = 2
+
+    check_code_bool = True
+    ask_before_check_code = True
+
+    retrieve_jutuldacy = True
+    retrieve_fimbul = True
 
     system_prompt: str = field(
         default=prompts.AGENT_SYSTEM,
@@ -56,22 +58,12 @@ class Configuration:
         },
     )
 
-    # if use_openai:
-    #     default_embedding_name = "openai/text-embedding-3-small"
-    # else:
-    #     default_embedding_name = "ollama/nomic-embed-text"
+    if use_openai:
+        default_embedding_name = "openai/text-embedding-3-small"
+    else:
+        default_embedding_name = "ollama/nomic-embed-text"
 
-    # embedding_model: Annotated[
-    #     str,
-    #     {"__template_metadata__": {"kind": "embeddings"}},
-    # ] = field(
-    #     default=default_embedding_name,
-    #     metadata={
-    #         "description": "Name of the embedding model to use. Must be a valid embedding model name."
-    #     },
-    # )
-
-    # embedding_model = OpenAIEmbeddings()
+    embedding_model = default_embedding_name
 
     @classmethod
     def from_runnable_config(
@@ -84,36 +76,4 @@ class Configuration:
         return cls(**{k: v for k, v in configurable.items() if k in _fields})
 
 
-if use_openai:
-    default_embedding_name = "openai/text-embedding-3-small"
-else:
-    default_embedding_name = "ollama/nomic-embed-text"
-
-# embedding_model_name: Annotated[
-#     str,
-#     {"__template_metadata__": {"kind": "embeddings"}},
-# ] = field(
-#     default=default_embedding_name,
-#     metadata={
-#         "description": "Name of the embedding model to use. Must be a valid embedding model name."
-#     },
-# )
-embedding_model_name = default_embedding_name
-
-
-def get_embedding_model(
-    embedding_model_name: str,
-) -> Union[OpenAIEmbeddings, OllamaEmbeddings]:
-    """Instantiate the embedding model based on the config."""
-
-    provider, model = embedding_model_name.split("/", maxsplit=1)
-    if provider == "openai":
-        return OpenAIEmbeddings(model=model)
-    elif provider == "ollama":
-        return OllamaEmbeddings(model=model)
-
-    else:
-        raise ValueError(f"Unsupported embedding model: {embedding_model_name}")
-
-
-embedding_model = get_embedding_model(embedding_model_name)
+static_config = Configuration()

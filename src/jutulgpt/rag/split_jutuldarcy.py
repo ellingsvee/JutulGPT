@@ -15,9 +15,9 @@ from langchain_text_splitters import (
 
 def split_examples(document: Document) -> List[Document]:
     """
-    Splits a Document at lines like `# #` or `# ##`, which represent markdown headings
+    Splits a Document at lines like `# #`, which represent markdown headings
     inside Julia comments. Keeps all content grouped under each such header.
-    Note that we do not split on `# ###` or deeper headings.
+    Note that we do not split on `# ##`, `# ###` or deeper headings.
     """
     content = document.page_content
     lines = content.splitlines()
@@ -39,7 +39,7 @@ def split_examples(document: Document) -> List[Document]:
                 )
 
     for line in lines:
-        heading_match = re.match(r"^#\s+(#{1,2})\s+(.*)", line.strip())
+        heading_match = re.match(r"^#\s+(#{1,1})\s+(.*)", line.strip())
         if heading_match:
             # Finalize the previous chunk
             finalize_chunk()

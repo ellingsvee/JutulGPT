@@ -2,12 +2,14 @@
 
 import os
 from dataclasses import asdict
-from typing import List
+from typing import List, Union
 
 from langchain.chat_models import init_chat_model
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
+from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
 from jutulgpt.state import CodeBlock
 
@@ -73,6 +75,21 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
     """
     provider, model = fully_specified_name.split("/", maxsplit=1)
     return init_chat_model(model, model_provider=provider, temperature=0.1)
+
+
+def load_embedding_model(
+    embedding_model_name: str,
+) -> Union[OpenAIEmbeddings, OllamaEmbeddings]:
+    """Instantiate the embedding model based on the config."""
+
+    provider, model = embedding_model_name.split("/", maxsplit=1)
+    if provider == "openai":
+        return OpenAIEmbeddings(model=model)
+    elif provider == "ollama":
+        return OllamaEmbeddings(model=model)
+
+    else:
+        raise ValueError(f"Unsupported embedding model: {embedding_model_name}")
 
 
 def get_tool_message(messages: List, n_last=2, print=False):

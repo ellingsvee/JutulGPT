@@ -48,6 +48,7 @@ class State(InputState):
     error: bool = field(default=False)
     error_message: str = field(default="")
     iterations: int = field(default=0)
+
     """
     Indicates whether the current step is the last one before the graph raises an error.
 

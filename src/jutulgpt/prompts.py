@@ -1,10 +1,5 @@
 """This module defines the system prompt for an AI assistant."""
 
-# from jutulgpt.configuration import retrieve_fimbul, retrieve_jutuldacy
-
-# retrieve_jutuldacy = True  # Set to True to enable JutulDarcy documentation retrieval
-# retrieve_fimbul = True  # Set to True to enable Fimbul documentation retrieval
-
 TOOLS = ""
 # if retrieve_jutuldacy:
 TOOLS += "- **retrieve_jutuldarcy Tool**: Use to search for information in the Jutuldarcy documentation and examples.\n"
