@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+from langchain_core.runnables import RunnableConfig
 from langchain_core.vectorstores import in_memory
 from langgraph.constants import Send
 from langgraph.graph import END, START, StateGraph
@@ -39,50 +40,19 @@ def decide_to_finish(state: State):
         return "generate_response"
 
 
-# def human_decide_check_code(state: State) -> Command[Literal["check_code", "__end__"]]:
-#     # The Human decides whether to check the code or not.
-#
-#     # Get feedback on the report plan from interrupt
-#     interrupt_message = f"""Do you want to check the code to see if it runs?
-#                         \nType 'yes' to check the code, or 'no' to finish:"""
-#
-#     action_request = ActionRequest(
-#         action="Check_code_or_not",
-#         args={"check_code": interrupt_message},
-#     )
-#
-#     interrupt_config = HumanInterruptConfig(
-#         allow_ignore=False,  # Allow the user to `ignore` the interrupt.
-#         allow_respond=True,  # Allow the user to `respond` to the interrupt.
-#         allow_edit=False,  # Allow the user to `edit` the interrupt's args.
-#         allow_accept=False,  # Allow the user to `accept` the interrupt's args.
-#     )
-#
-#     description = (
-#         "# Decide to check code or not"
-#         + "If you accept, the agent will run the code and try to fix potential errors. "
-#         + "If you do not accept, the agent will finish."
-#     )
-#
-#     request = HumanInterrupt(
-#         action_request=action_request, config=interrupt_config, description=description
-#     )
-#
-#     human_response: HumanResponse = interrupt([request])[0]
-
-
 def human_decide_check_code(
-    state: State,
+    state: State, config: RunnableConfig
 ) -> Command[Literal["check_code", "__end__"]]:
     """
     Ask human whether to check code or proceed to end.
     """
+    configuration = Configuration.from_runnable_config(config)
 
     # Only give the option is there are any code to check.
     code_block = get_last_code_response(state)
-    if code_block.imports != "" or code_block.code != "":
-        #     interrupt_message = f"""Do you want to check the following code before proceeding?\n\n{code_str}\n\n
-        # Respond 'yes' to check the code, or 'no' to finish."""
+    if (
+        code_block.imports != "" or code_block.code != ""
+    ) and configuration.check_code_bool:
         interrupt_message = f"""Do you want to check the code before proceeding?
 
     If you accept, the agent will run the code and try to fix potential errors. If you ignore, the agent will finish. 
