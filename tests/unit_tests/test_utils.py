@@ -4,7 +4,11 @@ import tempfile
 import pytest
 
 from jutulgpt.state import CodeBlock
-from jutulgpt.utils import format_code_response, load_lines_from_txt
+from jutulgpt.utils import (
+    format_code_response,
+    load_lines_from_txt,
+    split_code_into_lines,
+)
 
 
 def test_load_lines_from_txt_normal():
@@ -60,3 +64,26 @@ def test_format_code_response_imports_only():
     out = format_code_response(code)
     assert "using A" in out
     assert "```julia" in out
+
+
+def test_split_julia_code_into_lines():
+    code = """
+func(a, b)
+func1(
+    a = 1,
+    c = k({}),
+    b = 2,
+)
+"""
+    lines = split_code_into_lines(code)
+    assert lines[0] == "func(a, b)"
+    assert (
+        lines[1]
+        in """
+func1(
+    a = 1,
+    c = k({}),
+    b = 2,
+)
+    """
+    )

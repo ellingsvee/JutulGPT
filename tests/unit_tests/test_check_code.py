@@ -1,6 +1,7 @@
 import pytest
 
 from jutulgpt.nodes.check_code import (
+    _remove_plotting,
     _replace_case,
     _shorten_first_argument,
     shorter_simulations,
@@ -80,3 +81,37 @@ def test_shorter_simulations_shorten_first_argument():
         code=code_str,
     )
     assert "simulate_reservoir(proxy[1:1], info_level=0)" in result
+
+
+def test_remove_plotting():
+    code = """
+    using GLMakie
+    using GLMakie;
+    using JutulDarcy, GLMakie, Jutul;
+    using JutulDarcy, Jutul, GLMakie
+    using JutulDarcy, Jutul, GLMakie;
+    fig = Figure(size = (1200, 400))
+    ax = Axis(fig[1, 1],
+        title = "Injector",
+        xlabel = "Time / days",
+        ylabel = "Bottom hole pressure / bar")
+    lines!(ax, t/day, bhp./bar)
+    println("Hello!)
+    ax = Axis(fig[1, 2],
+        title = "Producer",
+        xlabel = "Time / days",
+        ylabel = "Production rate / m³/day")
+    lines!(ax, t/day, abs.(grat).*day)
+    lines!(ax, t/day, abs.(lrat).*day)
+    fig
+    """
+    code_without_plotting = _remove_plotting(code)
+    assert (
+        code_without_plotting
+        in """
+    using JutulDarcy Jutul;
+    using JutulDarcy, Jutul
+    using JutulDarcy, Jutul;
+    println("Hello!)
+    """
+    )

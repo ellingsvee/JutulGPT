@@ -129,3 +129,38 @@ def deduplicate_document_chunks(chunks: List[Document]) -> List[Document]:
             seen.add(content)
             deduped.append(doc)
     return deduped
+
+
+def split_code_into_lines(code: str):
+    """
+    Splits Julia code into blocks based solely on bracket balance:
+    (), [], {}. Multi-line constructs are supported without relying
+    on language-specific keywords.
+    """
+    lines = code.splitlines()
+    blocks = []
+    current_block = []
+    parens = brackets = braces = 0
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped and not current_block:
+            continue  # Skip empty lines outside a block
+
+        # Update bracket counts
+        parens += line.count("(") - line.count(")")
+        brackets += line.count("[") - line.count("]")
+        braces += line.count("{") - line.count("}")
+
+        current_block.append(line)
+
+        # If all brackets are balanced, this is a complete block
+        if parens == 0 and brackets == 0 and braces == 0:
+            blocks.append("\n".join(current_block))
+            current_block = []
+
+    # In case something is left unbalanced (e.g., trailing incomplete block)
+    if current_block:
+        blocks.append("\n".join(current_block))
+
+    return blocks
