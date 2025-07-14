@@ -5,6 +5,7 @@ from __future__ import annotations
 import getpass
 import os
 from dataclasses import dataclass, field, fields
+from pathlib import Path
 from typing import Annotated, Optional, Union
 
 from dotenv import load_dotenv
@@ -23,6 +24,8 @@ def _set_env(var: str):
 load_dotenv()
 _set_env("OPENAI_API_KEY")
 
+PROJECT_ROOT = Path(__file__).resolve().parent
+
 
 @dataclass(kw_only=True)
 class Configuration:
@@ -35,7 +38,7 @@ class Configuration:
     ask_before_check_code = True
 
     retrieve_jutuldacy = True
-    retrieve_fimbul = True
+    retrieve_fimbul = False
 
     system_prompt: str = field(
         default=prompts.AGENT_SYSTEM,

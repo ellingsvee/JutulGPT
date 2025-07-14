@@ -17,9 +17,7 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 
-from jutulgpt.configuration import (
-    static_config,
-)
+from jutulgpt.configuration import PROJECT_ROOT, static_config
 from jutulgpt.rag import split_docs, split_fimbul, split_jutuldarcy
 from jutulgpt.utils import deduplicate_document_chunks, load_embedding_model
 
@@ -77,11 +75,11 @@ class ExampleIndexer(BaseIndexer):
         self,
         embedding_model,
         split_func: Callable,
-        filetype: str = "jl",
-        dir_path: str = "./src/jutulgpt/rag/jutuldarcy/examples/",
-        persist_path: str = "./src/jutulgpt/rag/chroma_examples_openai",
-        cache_path: str = "./src/jutulgpt/rag/loaded_examples.pkl",
-        collection_name: str = "jutuldarcy_examples",
+        filetype: str,
+        dir_path: str,
+        persist_path: str,
+        cache_path: str,
+        collection_name: str,
     ):
         super().__init__(
             embedding_model=embedding_model,
@@ -131,11 +129,11 @@ class DocsIndexer(BaseIndexer):
         self,
         embedding_model,
         split_func: Callable,
-        filetype: str = "md",
-        dir_path: str = "./src/jutulgpt/rag/jutuldarcy/docs/man/",
-        persist_path: str = "./src/jutulgpt/rag/chroma_docs_openai",
-        cache_path: str = "./src/jutulgpt/rag/loaded_docs.pkl",
-        collection_name: str = "jutuldarcy_docs",
+        filetype: str,
+        dir_path: str,
+        persist_path: str,
+        cache_path: str,
+        collection_name: str,
     ):
         super().__init__(
             embedding_model=embedding_model,
@@ -190,29 +188,54 @@ jutuldarcy_examples_indexer = ExampleIndexer(
     embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_jutuldarcy.split_examples,
     filetype="jl",
-    dir_path="./src/jutulgpt/rag/jutuldarcy/examples/",
-    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_jutuldarcy_examples_{chroma_dir_name}",
-    cache_path="./src/jutulgpt/rag/loaded_store/loaded_jutuldarcy_examples.pkl",
-    collection_name="fimbul_examples",
+    dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "examples"),
+    persist_path=str(
+        PROJECT_ROOT
+        / "rag"
+        / "chroma_store"
+        / f"chroma_jutuldarcy_examples_{chroma_dir_name}"
+    ),
+    cache_path=str(
+        PROJECT_ROOT / "rag" / "loaded_store" / "loaded_jutuldarcy_examples.pkl"
+    ),
+    collection_name="jutuldarcy_examples",
 )
 
 jutuldarcy_docs_indexer = DocsIndexer(
     embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_docs.split_docs,
     filetype="md",
-    dir_path="./src/jutulgpt/rag/jutuldarcy/docs/man/",
-    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_jutuldarcy_docs_{chroma_dir_name}",
-    cache_path="./src/jutulgpt/rag/loaded_store/loaded_jutuldarcy_docs.pkl",
-    collection_name="fimbul_docs",
+    dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "docs" / "man"),
+    persist_path=str(
+        PROJECT_ROOT
+        / "rag"
+        / "chroma_store"
+        / f"chroma_jutuldarcy_docs_{chroma_dir_name}"
+    ),
+    cache_path=str(
+        PROJECT_ROOT / "rag" / "loaded_store" / "loaded_jutuldarcy_docs.pkl"
+    ),
+    collection_name="jutuldarcy_docs",
 )
 
 fimbul_examples_indexer = ExampleIndexer(
     embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_fimbul.split_examples,
     filetype="jl",
-    dir_path="./src/jutulgpt/rag/fimbul/examples/",
-    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_fimbul_examples_{chroma_dir_name}",
-    cache_path="./src/jutulgpt/rag/loaded_store/loaded_fimbul_examples.pkl",
+    # dir_path="./src/jutulgpt/rag/fimbul/examples/",
+    # persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_fimbul_examples_{chroma_dir_name}",
+    # cache_path="./src/jutulgpt/rag/loaded_store/loaded_fimbul_examples.pkl",
+    # collection_name="fimbul_examples",
+    dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "examples"),
+    persist_path=str(
+        PROJECT_ROOT
+        / "rag"
+        / "chroma_store"
+        / f"chroma_fimbul_examples_{chroma_dir_name}"
+    ),
+    cache_path=str(
+        PROJECT_ROOT / "rag" / "loaded_store" / "loaded_fimbul_examples.pkl"
+    ),
     collection_name="fimbul_examples",
 )
 
@@ -220,14 +243,17 @@ fimbul_docs_indexer = DocsIndexer(
     embedding_model=load_embedding_model(static_config.embedding_model),
     split_func=split_docs.split_docs,
     filetype="md",
-    dir_path="./src/jutulgpt/rag/fimbul/docs/man/",
-    persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_fimbul_docs_{chroma_dir_name}",
-    cache_path="./src/jutulgpt/rag/loaded_store/loaded_fimbul_docs.pkl",
+    dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "docs" / "man"),
+    persist_path=str(
+        PROJECT_ROOT / "rag" / "chroma_store" / f"chroma_fimbul_docs_{chroma_dir_name}"
+    ),
+    cache_path=str(PROJECT_ROOT / "rag" / "loaded_store" / "loaded_fimbul_docs.pkl"),
     collection_name="fimbul_docs",
 )
 
 
 def get_retrievers():
+    print(f"Loading JutulDarcy and Fimbul retrievers. CWD: {os.getcwd()}")
     jutuldarcy_docs_retriever = jutuldarcy_docs_indexer.get_retriever()
     jutuldarcy_examples_retriever = jutuldarcy_examples_indexer.get_retriever()
     fimbul_docs_retriever = fimbul_docs_indexer.get_retriever()
