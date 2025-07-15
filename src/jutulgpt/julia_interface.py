@@ -8,20 +8,18 @@ from jutulgpt.configuration import static_config
 from jutulgpt.state import CodeBlock, State
 from jutulgpt.utils import split_code_into_lines
 
-# To handle the impoort of GLMakie.
+# TODO: To handle the impoort of GLMakie. This works when run from terminal, but not in the iteractive environment.
 # See: https://juliapy.github.io/PythonCall.jl/stable/compat/#Asynchronous-Julia-code-(including-Makie)
 jl_yield = getattr(jl, "yield")
 
-if static_config.retrieve_fimbul:
-    jl.seval('using Pkg; Pkg.activate("."); using JutulDarcy, Jutul, Fimbul;')
-else:
-    jl.seval("using JutulDarcy, Jutul;")
+# jl.seval("using JutulDarcy, Jutul")  # Ensure JutulDarcy is loaded
 
 
 def run_string(code: str):
     """Execute Julia code from a string and capture output or detailed errors."""
     try:
         result = jl.seval(code)
+        jl_yield()
         return {
             "out": result,
             "error": False,
@@ -43,37 +41,41 @@ def run_string(code: str):
 def run_string_line_by_line(code: str):
     """Execute Julia code line by line and capture output or errors. An error is returned for the first line that failed."""
     # lines = code.splitlines()
-    lines = split_code_into_lines(code)
-
     out = None
-    for line in lines:
-        print(f"Running line: {line.strip()}")
+    if code.strip() != "":
+        lines = split_code_into_lines(code)
 
-        if not line.strip():
-            continue  # Skip empty lines
+        print("Running code line by line:")
+        for line in lines:
+            print(f"- Running line: {line.strip()}")
 
-        try:
-            import_statement = line.strip().startswith("using")
-            if import_statement:  # To handle the import of GLMakie.
-                print("Running yield for import statement")
-                jl_yield()
-                result = jl.seval(line)
-                jl_yield()
-            else:
-                result = jl.seval(line)
+            if not line.strip():
+                continue  # Skip empty lines
 
-            out = result
-        except JuliaError as e:
-            full_msg = str(e).strip()
-            pre_stack, stack = _split_stacktrace(full_msg)
-            filtered_stack = _filter_stacktrace(stack) if stack else None
-            return {
-                "out": None,
-                "error": True,
-                "error_message": pre_stack,
-                "error_stacktrace": filtered_stack,
-                "line": line.strip(),
-            }
+            try:
+                import_statement = line.strip().startswith("using")
+                if import_statement:  # To handle the import of GLMakie.
+                    # jl_yield()
+                    result = jl.seval(line)
+                    jl_yield()
+                else:
+                    result = jl.seval(line)
+                    jl_yield()
+
+                out = result
+            except JuliaError as e:
+                full_msg = str(e).strip()
+                pre_stack, stack = _split_stacktrace(full_msg)
+                filtered_stack = _filter_stacktrace(stack) if stack else None
+                return {
+                    "out": None,
+                    "error": True,
+                    "error_message": pre_stack,
+                    "error_stacktrace": filtered_stack,
+                    "line": line.strip(),
+                }
+
+        print("Finished running code line by line")
 
     return {
         "out": out,

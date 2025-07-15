@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.vectorstores import in_memory
 from langgraph.constants import Send
@@ -34,9 +35,15 @@ def decide_to_finish(state: State):
     error = state.error
     iterations = state.iterations
 
+    print(
+        f"decide_to_finish: error={error}, iterations={iterations}, max_iterations={static_config.max_iterations}"
+    )
+
     if not error or iterations == static_config.max_iterations:
+        print("decide_to_finish: WE GO TO END")
         return END
     else:
+        print("decide_to_finish: Generating response")
         return "generate_response"
 
 
@@ -53,12 +60,7 @@ def human_decide_check_code(
     if (
         code_block.imports != "" or code_block.code != ""
     ) and configuration.check_code_bool:
-        interrupt_message = f"""Do you want to check the code before proceeding?
-
-    If you accept, the agent will run the code and try to fix potential errors. If you ignore, the agent will finish. 
-
-    Alternatively, respond 'yes' to check the code, or 'no' to finish.
-        """
+        interrupt_message = f"Do you want to check the code before proceeding? If you accept, the agent will run the code and try to fix potential errors. If you ignore, the agent will finish. Alternatively, respond 'yes' to check the code, or 'no' to finish."
 
         description = (
             "Review the generated code and decide if it should be checked."
@@ -112,11 +114,22 @@ def human_decide_check_code(
         )
 
 
+# TODO: This is not the best solution, but not figured out how to better stream the messages.
+# WARNING: Currently let this remain unused.
+def check_code_pre_message(state: State, config: RunnableConfig):
+    return {
+        "messages": AIMessage(
+            content="Running code, please wait...",
+        )
+    }
+
+
 builder = StateGraph(State, config_schema=Configuration)
 
 builder.add_node("generate_response", generate_response)
 builder.add_node("tools", tools_node)
 builder.add_node("check_code", check_code)
+
 
 if interactive_environment:
     builder.add_node("human_decide_check_code", human_decide_check_code)
