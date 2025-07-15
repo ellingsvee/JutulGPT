@@ -27,48 +27,49 @@ from jutulgpt.utils import load_chat_model
 def check_code(state: State, config: RunnableConfig):
     configuration = Configuration.from_runnable_config(config)
 
-    code_block = get_last_code_response(state)
+    if configuration.check_code_bool:
+        code_block = get_last_code_response(state)
 
-    imports = code_block.imports
-    code = code_block.code
-    code = shorter_simulations(
-        code
-    )  # If the code contains simulations, replace them with shorter ones
+        imports = code_block.imports
+        code = code_block.code
+        code = shorter_simulations(
+            code
+        )  # If the code contains simulations, replace them with shorter ones
 
-    def gen_error_message_string(
-        test_type: str, code_line: str, julia_error_message: str
-    ) -> str:
-        error_message = f"""
-        Failure in {test_type}. The line `{code_line}` failed with the following Julia error message:
-        {julia_error_message}
-        """
-        return error_message
+        def gen_error_message_string(
+            test_type: str, code_line: str, julia_error_message: str
+        ) -> str:
+            error_message = f"""
+            Failure in {test_type}. The line `{code_line}` failed with the following Julia error message:
+            {julia_error_message}
+            """
+            return error_message
 
-    result = run_string_line_by_line(imports)
-    if result["error"]:
-        julia_error_message = get_error_message(result)
-        error_message = gen_error_message_string(
-            "import test", result["line"], julia_error_message
-        )
+        result = run_string_line_by_line(imports)
+        if result["error"]:
+            julia_error_message = get_error_message(result)
+            error_message = gen_error_message_string(
+                "import test", result["line"], julia_error_message
+            )
 
-        return {
-            "error": True,
-            "error_message": error_message,
-            "iterations": state.iterations + 1,
-        }
+            return {
+                "error": True,
+                "error_message": error_message,
+                "iterations": state.iterations + 1,
+            }
 
-    full_code = imports + "\n" + code
-    result = run_string_line_by_line(full_code)
-    if result["error"]:
-        julia_error_message = get_error_message(result)
-        error_message = gen_error_message_string(
-            "code execution test", result["line"], julia_error_message
-        )
-        return {
-            "error": True,
-            "error_message": error_message,
-            "iterations": state.iterations + 1,
-        }
+        full_code = imports + "\n" + code
+        result = run_string_line_by_line(full_code)
+        if result["error"]:
+            julia_error_message = get_error_message(result)
+            error_message = gen_error_message_string(
+                "code execution test", result["line"], julia_error_message
+            )
+            return {
+                "error": True,
+                "error_message": error_message,
+                "iterations": state.iterations + 1,
+            }
 
     return {"error": False, "iterations": state.iterations + 1}
 

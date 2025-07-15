@@ -15,7 +15,7 @@ from langgraph.prebuilt.interrupt import (
 )
 from langgraph.types import Command, interrupt
 
-from jutulgpt.configuration import Configuration, static_config
+from jutulgpt.configuration import Configuration, interactive_environment, static_config
 from jutulgpt.julia_interface import get_last_code_response
 from jutulgpt.nodes import check_code, generate_response, tools_node
 from jutulgpt.state import State
@@ -117,13 +117,19 @@ builder = StateGraph(State, config_schema=Configuration)
 builder.add_node("generate_response", generate_response)
 builder.add_node("tools", tools_node)
 builder.add_node("check_code", check_code)
-builder.add_node("human_decide_check_code", human_decide_check_code)
+
+if interactive_environment:
+    builder.add_node("human_decide_check_code", human_decide_check_code)
+    builder.add_edge("human_decide_check_code", END)
 
 builder.add_edge(START, "generate_response")
 builder.add_conditional_edges(
     "generate_response",
     tools_condition,
-    {END: "human_decide_check_code", "tools": "tools"},
+    {
+        END: "human_decide_check_code" if interactive_environment else "check_code",
+        "tools": "tools",
+    },
 )
 builder.add_edge("tools", "generate_response")
 
@@ -136,7 +142,6 @@ builder.add_conditional_edges(
     },
 )
 
-builder.add_edge("human_decide_check_code", END)
 
 graph = builder.compile(name="agent")
 
