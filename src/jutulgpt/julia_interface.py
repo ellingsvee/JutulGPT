@@ -89,9 +89,13 @@ def _run_julia_code(code_string, return_queue):
     try:
         from juliacall import Main as jl_sub
 
-        result = jl_sub.seval(code_string)
-        return_queue.put((True, result))
+        print("Running Julia code in subprocess...")
+        jl_sub.seval(code_string)
+        # result = jl_sub.seval(code_string)
+        print("Julia code executed successfully.")
+        return_queue.put((True, None))
     except JuliaError as e:
+        print("JuliaError occurred in subprocess.")
         tb = traceback.format_exc()
         msg = str(e)
         pre_stack, stack = _split_stacktrace(msg)
@@ -107,6 +111,7 @@ def _run_julia_code(code_string, return_queue):
             )
         )
     except Exception as e:
+        print("Other error occurred in subprocess.")
         tb = traceback.format_exc()
         return_queue.put(
             (False, {"type": "OtherError", "message": str(e), "traceback": tb})
