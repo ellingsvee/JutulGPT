@@ -14,14 +14,17 @@ from langgraph.config import get_stream_writer
 
 from jutulgpt.configuration import Configuration, static_config
 from jutulgpt.julia_interface import (
-    get_code_from_response,
     get_error_message,
-    get_last_code_response,
     run_string,
 )
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
-from jutulgpt.utils import load_chat_model, split_code_into_lines
+from jutulgpt.utils import (
+    get_code_from_response,
+    get_last_code_response,
+    load_chat_model,
+    split_code_into_lines,
+)
 
 
 def check_code(state: State, config: RunnableConfig):
