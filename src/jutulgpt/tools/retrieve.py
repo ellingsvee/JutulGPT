@@ -5,11 +5,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolArg, tool
 
 from jutulgpt.configuration import Configuration
-from jutulgpt.rag.retrievers import (
-    format_docs,
-    format_examples,
-    retrievers,
-)
+from jutulgpt.rag.retrievers import format_docs, format_examples, retrievers
 
 _: bool = load_dotenv(find_dotenv())
 
@@ -39,13 +35,30 @@ def retrieve_jutuldarcy(
     docs = format_docs(retrieved_docs)
     examples = format_examples(retrieved_examples)
 
-    out = f"""
-# Retrieved from the JutulDarcy documentation:
-{docs}
+    #     out = f"""
+    # # Retrieved from the JutulDarcy documentation:
+    # {docs}
 
-# Retrieved from the JutulDarcy examples:
-{examples}
-"""
+    # # Retrieved from the JutulDarcy examples:
+    # {examples}
+    # """
+    out = f"""
+    # Retrieved from the JutulDarcy documentation
+    <details>
+    <summary>Show documentation</summary>
+
+    {docs}
+
+    </details>
+
+    # Retrieved from the JutulDarcy examples
+    <details>
+    <summary>Show examples</summary>
+
+    {examples}
+
+    </details>
+    """
 
     print(out)  # WARNING: DELETE LATER
 
@@ -76,13 +89,30 @@ def retrieve_fimbul(
     docs = format_docs(retrieved_docs)
     examples = format_examples(retrieved_examples)
 
-    out = f"""
-# Retrieved from the Fimbul documentation:
-{docs}
+    #     out = f"""
+    # # Retrieved from the Fimbul documentation:
+    # {docs}
 
-# Retrieved from the Fimbul examples:
-{examples}
-"""
+    # # Retrieved from the Fimbul examples:
+    # {examples}
+    # """
+    out = f"""
+    # Retrieved from the Fimbul documentation
+    <details>
+    <summary>Show documentation</summary>
+
+    {docs}
+
+    </details>
+
+    # Retrieved from the Fimbul examples
+    <details>
+    <summary>Show examples</summary>
+
+    {examples}
+
+    </details>
+    """
     print(out)  # WARNING: DELETE LATER
 
     return out

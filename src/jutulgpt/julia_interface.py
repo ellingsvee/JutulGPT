@@ -1,4 +1,5 @@
 import re
+from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Union
 
 from juliacall import JuliaError
@@ -19,7 +20,12 @@ def run_string(code: str):
     """Execute Julia code from a string and capture output or detailed errors."""
     try:
         result = jl.seval(code)
-        jl_yield()
+        while True:
+            jl_yield()
+            state = wait(result, timeout=0.1)
+            if not state.not_done:
+                break
+
         return {
             "out": result,
             "error": False,

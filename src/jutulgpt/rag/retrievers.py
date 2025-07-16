@@ -17,7 +17,12 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 
-from jutulgpt.configuration import PROJECT_ROOT, embedding_model, static_config
+from jutulgpt.configuration import (
+    PROJECT_ROOT,
+    compressor,
+    embedding_model,
+    static_config,
+)
 from jutulgpt.rag import split_docs, split_fimbul, split_jutuldarcy
 from jutulgpt.utils import deduplicate_document_chunks
 
@@ -253,11 +258,23 @@ fimbul_docs_indexer = DocsIndexer(
 
 
 def get_retrievers():
-    # print(f"Loading JutulDarcy and Fimbul retrievers. CWD: {os.getcwd()}")
-    jutuldarcy_docs_retriever = jutuldarcy_docs_indexer.get_retriever()
-    jutuldarcy_examples_retriever = jutuldarcy_examples_indexer.get_retriever()
-    fimbul_docs_retriever = fimbul_docs_indexer.get_retriever()
-    fimbul_examples_retriever = fimbul_examples_indexer.get_retriever()
+    def apply_compressor(compressor, retriever):
+        return ContextualCompressionRetriever(
+            base_compressor=compressor, base_retriever=retriever
+        )
+
+    jutuldarcy_docs_retriever = apply_compressor(
+        compressor, jutuldarcy_docs_indexer.get_retriever()
+    )
+    jutuldarcy_examples_retriever = apply_compressor(
+        compressor, jutuldarcy_examples_indexer.get_retriever()
+    )
+    fimbul_docs_retriever = apply_compressor(
+        compressor, fimbul_docs_indexer.get_retriever()
+    )
+    fimbul_examples_retriever = apply_compressor(
+        compressor, fimbul_examples_indexer.get_retriever()
+    )
 
     jutuldarcy = {
         "docs": jutuldarcy_docs_retriever,
@@ -277,7 +294,7 @@ retrievers = get_retrievers()
 
 
 def format_examples(
-    docs: List[Document], n: int = 2, remove_duplicates: bool = True
+    docs: List[Document], n: int = 5, remove_duplicates: bool = True
 ) -> str:
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)
@@ -294,12 +311,13 @@ def format_examples(
 
     formatted = []
     for (source, heading), contents in grouped.items():
-        section = "\n".join(contents)
+        # section = "\n".join(contents)
+        section = "\n".join(f"```julia\n{c}\n```" for c in contents)
         formatted.append(f"## From `{source}` — Section: `{heading}`\n{section}")
     return "\n\n---\n\n".join(formatted)
 
 
-def format_docs(docs, n: int = 2, remove_duplicates: bool = True):
+def format_docs(docs, n: int = 5, remove_duplicates: bool = True):
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)
     docs = docs[:n]

@@ -18,7 +18,6 @@ from jutulgpt.julia_interface import (
     get_error_message,
     get_last_code_response,
     run_string,
-    run_string_line_by_line,
 )
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
@@ -39,21 +38,17 @@ def check_code(state: State, config: RunnableConfig):
         code
     )  # If the code contains simulations, replace them with shorter ones
 
-    def gen_error_message_string(
-        test_type: str, code_line: str, julia_error_message: str
-    ) -> str:
+    def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
         error_message = f"""
-        Failure in {test_type}. The line `{code_line}` failed with the following Julia error message:
+        Failure in {test_type}. The code failed with the following Julia error message:
         {julia_error_message}
         """
         return error_message
 
-    result = run_string_line_by_line(imports)
+    result = run_string(imports)
     if result["error"]:
         julia_error_message = get_error_message(result)
-        error_message = gen_error_message_string(
-            "import test", result["line"], julia_error_message
-        )
+        error_message = gen_error_message_string("import test", julia_error_message)
         print(f"check_code: {error_message}")
         return {
             "error": True,
@@ -62,11 +57,11 @@ def check_code(state: State, config: RunnableConfig):
         }
 
     full_code = imports + "\n" + code
-    result = run_string_line_by_line(full_code)
+    result = run_string(full_code)
     if result["error"]:
         julia_error_message = get_error_message(result)
         error_message = gen_error_message_string(
-            "code execution test", result["line"], julia_error_message
+            "code execution test", julia_error_message
         )
         print(f"check_code: {error_message}")
         return {
@@ -145,6 +140,7 @@ def _remove_plotting(code: str) -> str:
         "plot_mesh_edges",
         "plot_mesh",
         "plot_co2_inventory",
+        "println",  # To avoid printing to terminal
     ]
 
     # lines = code.splitlines()
