@@ -17,12 +17,12 @@ from langgraph.prebuilt.interrupt import (
 from langgraph.types import Command, interrupt
 
 from jutulgpt.configuration import Configuration, interactive_environment, static_config
-from jutulgpt.julia_interface import get_last_code_response
 from jutulgpt.nodes import check_code, generate_response, tools_node
 from jutulgpt.state import State
+from jutulgpt.utils import get_last_code_response
 
 
-def decide_to_finish(state: State):
+def decide_to_finish(state: State) -> Literal["generate_response", END]:
     """
     Determines whether to finish.
 
@@ -49,7 +49,7 @@ def decide_to_finish(state: State):
 
 def human_decide_check_code(
     state: State, config: RunnableConfig
-) -> Command[Literal["check_code", "__end__"]]:
+) -> Command[Literal["check_code", END]]:
     """
     Ask human whether to check code or proceed to end.
     """
@@ -60,7 +60,7 @@ def human_decide_check_code(
     if (
         code_block.imports != "" or code_block.code != ""
     ) and configuration.check_code_bool:
-        interrupt_message = f"Do you want to check the code before proceeding? If you accept, the agent will run the code and try to fix potential errors. If you ignore, the agent will finish. Alternatively, respond 'yes' to check the code, or 'no' to finish."
+        interrupt_message = f"Do you want to check the code before proceeding? If you accept, the agent will run the code and try to fix potential errors. If you ignore, the agent will finish."
 
         description = (
             "Review the generated code and decide if it should be checked."
@@ -76,7 +76,7 @@ def human_decide_check_code(
             config=HumanInterruptConfig(
                 allow_ignore=True,
                 allow_accept=True,
-                allow_respond=True,
+                allow_respond=False,
                 allow_edit=False,
             ),
             description=description,
@@ -85,13 +85,13 @@ def human_decide_check_code(
         human_response: HumanResponse = interrupt([request])[0]
         response_type = human_response.get("type")
 
-        if response_type == "response":
-            resp = human_response.get("args").strip().lower()
-            if resp in {"yes", "y"}:
-                return Command(goto="check_code")
-            else:
-                return Command(goto=Send(END, arg={}))
-        elif response_type == "accept":
+        # if response_type == "response":
+        #     resp = human_response.get("args").strip().lower()
+        #     if resp in {"yes", "y"}:
+        #         return Command(goto="check_code")
+        #     else:
+        #         return Command(goto=Send(END, arg={}))
+        if response_type == "accept":
             return Command(goto="check_code")
         elif human_response.get("type") == "ignore":
             return Command(
@@ -112,16 +112,6 @@ def human_decide_check_code(
                 arg={},
             )
         )
-
-
-# TODO: This is not the best solution, but not figured out how to better stream the messages.
-# WARNING: Currently let this remain unused.
-def check_code_pre_message(state: State, config: RunnableConfig):
-    return {
-        "messages": AIMessage(
-            content="Running code, please wait...",
-        )
-    }
 
 
 builder = StateGraph(State, config_schema=Configuration)

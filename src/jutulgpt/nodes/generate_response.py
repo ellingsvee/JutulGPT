@@ -28,27 +28,17 @@ def generate_response(state: State, config: RunnableConfig):
         dict[str, list[AIMessage]]: A dictionary containing the model's response messages.
     """
     messages = state.messages
-    error = state.error
-    error_message = state.error_message
 
     configuration = Configuration.from_runnable_config(config)
 
     # Initialize the model with tool binding. Change the model or add more tools here.
     model = load_chat_model(configuration.model).bind_tools(tools)
 
-    # If there was an error in the previous step, add this to the messages.
-    error_message_list = []
-    if error:
-        error_message_list = [
-            HumanMessage(
-                content=f"The code from you previous response failed with the following error. Fix it to provide runnable code!\n\n {error_message}."
-            ),
-        ]
-
     # Format the system prompt. Customize this to change the agent's behavior.
     system_message = configuration.system_prompt
 
     trimmedStateMessages = trim_messages(
+        # messages + error_message_list,
         messages,
         max_tokens=40000,  # adjust for model's context window minus system & files message
         strategy="last",
@@ -69,8 +59,7 @@ def generate_response(state: State, config: RunnableConfig):
     # Handle the case when it's the last step and the model still wants to use a tool
     if state.is_last_step and response.tool_calls:
         return {
-            "messages": error_message_list
-            + [
+            "messages": [
                 AIMessage(
                     id=response.id,
                     content="Sorry, I could not find an answer to your question in the specified number of steps.",
@@ -79,4 +68,6 @@ def generate_response(state: State, config: RunnableConfig):
         }
 
     # Return the model's response as a list to be added to existing messages
-    return {"messages": error_message_list + [response]}
+    return {
+        "messages": [response],
+    }

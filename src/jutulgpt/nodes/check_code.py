@@ -1,6 +1,7 @@
 """This module contains the `check_code` function which is responsible for evaluating code if it is run."""
 
 import re
+from os import error
 from typing import List, cast
 
 from langchain_core.messages import (
@@ -31,8 +32,7 @@ def check_code(state: State, config: RunnableConfig):
     # writer = get_stream_writer()
 
     # writer(f"Running code. Please wait...")
-
-    print("Running code, please wait...")
+    messages = state.messages
     code_block = get_last_code_response(state)
     imports = code_block.imports
     code = code_block.code
@@ -43,9 +43,11 @@ def check_code(state: State, config: RunnableConfig):
 
     def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
         error_message = f"""
-        Failure in {test_type}. The code failed with the following Julia error message:
-        {julia_error_message}
-        """
+The code from you previous response failed with the following error. Fix it to provide runnable code!
+
+Failure in {test_type}. The code failed with the following Julia error message:
+{julia_error_message}
+"""
         return error_message
 
     result = run_string(imports)
@@ -53,7 +55,9 @@ def check_code(state: State, config: RunnableConfig):
         julia_error_message = get_error_message(result)
         error_message = gen_error_message_string("import test", julia_error_message)
         print(f"check_code: {error_message}")
+
         return {
+            "messages": [HumanMessage(content=error_message)],
             "error": True,
             "error_message": error_message,
             "iterations": state.iterations + 1,
@@ -68,14 +72,18 @@ def check_code(state: State, config: RunnableConfig):
         )
         print(f"check_code: {error_message}")
         return {
+            # "messages": messages,
+            "messages": [HumanMessage(content=error_message)],
             "error": True,
             "error_message": error_message,
             "iterations": state.iterations + 1,
         }
 
-    print("Code executed successfully.")
-
-    return {"error": False, "iterations": state.iterations + 1}
+    return {
+        "messages": [AIMessage(content="Code executed successfully.")],
+        "error": False,
+        "iterations": 0,
+    }
 
 
 def _shorten_first_argument(code: str, simulation_functions: List[str]) -> str:
@@ -199,7 +207,5 @@ def shorter_simulations(code: str) -> str:
         )
 
     code = _remove_plotting(code)
-
-    print(f"Shortened code:\n{code}")
 
     return code

@@ -50,10 +50,7 @@ class State(InputState):
     iterations: int = field(default=0)
 
     """
-    Indicates whether the current step is the last one before the graph raises an error.
-
-    This is a 'managed' variable, controlled by the state machine rather than user code.
-    It is set to 'True' when the step count reaches recursion_limit - 1.
+    is_last_step: Indicates whether the current step is the last one before the graph raises an error. This is a 'managed' variable, controlled by the state machine rather than user code. It is set to 'True' when the step count reaches recursion_limit - 1.
     """
 
 
