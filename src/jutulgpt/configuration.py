@@ -10,6 +10,7 @@ from typing import Annotated, Optional, Union
 
 from dotenv import load_dotenv
 from juliacall import interactive
+from langchain.retrievers.document_compressors import FlashrankRerank
 from langchain_core.runnables import RunnableConfig, ensure_config
 from langchain_ollama import OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -28,14 +29,14 @@ _set_env("OPENAI_API_KEY")
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 # If the code is not run from the interactive environment we avoid human-in-the-loop interaction
-interactive_environment = False
+interactive_environment = True
 
 
 @dataclass(kw_only=True)
 class Configuration:
     """The configuration for the agent."""
 
-    use_openai = False
+    use_openai = True
     max_iterations = 2
 
     check_code_bool = True
@@ -103,3 +104,4 @@ def load_embedding_model(
 
 
 embedding_model = load_embedding_model(static_config.embedding_model_name)
+compressor = FlashrankRerank(top_n=3)
