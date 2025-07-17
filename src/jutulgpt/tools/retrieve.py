@@ -42,12 +42,47 @@ def retrieve_jutuldarcy(
     docs = format_docs(retrieved_docs)
     examples = format_examples(retrieved_examples)
 
-    #     out = f"""
-    # # Retrieved from the JutulDarcy documentation:
+    interrupt_message = f"Can you review the retrieved documentation\n{docs}"
+
+    request = HumanInterrupt(
+        action_request=ActionRequest(
+            action="review_retrieved_docs",
+            args={"code": interrupt_message},
+        ),
+        config=HumanInterruptConfig(
+            allow_ignore=False,
+            allow_accept=True,
+            allow_respond=False,
+            allow_edit=True,
+        ),
+        description="Test",
+    )
+
+    human_response: HumanResponse = interrupt([request])[0]
+    response_type = human_response.get("type")
+    print(f"human_response: {human_response}")
+    if response_type == "response":
+        docs = human_response.get("args").strip().lower()
+
+    if response_type == "accept":
+        docs = docs
+
+    # out = f"""
+    # # Retrieved from the JutulDarcy documentation
+    # <details>
+    # <summary>Show documentation</summary>
+
     # {docs}
 
-    # # Retrieved from the JutulDarcy examples:
+    # </details>
+
+    # # Retrieved from the JutulDarcy examples
+    # <details>
+    # <summary>Show examples</summary>
+
     # {examples}
+
+    # </details>
     # """
 
     interrupt_message = f"Modify the retrieved documentation and examples!"
@@ -100,15 +135,6 @@ def retrieve_jutuldarcy(
 
     {docs}
 
-    </details>
-
-    # Retrieved from the JutulDarcy examples
-    <details>
-    <summary>Show examples</summary>
-
-    {examples}
-
-    </details>
     """
 
     print(out)  # WARNING: DELETE LATER
