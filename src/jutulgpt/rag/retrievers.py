@@ -8,8 +8,8 @@ from typing import Callable, List
 
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor
-from langchain_chroma import Chroma
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import (
@@ -46,7 +46,7 @@ def _load_or_retrieve_from_storage(
     return loaded
 
 
-class BaseIndexer(ABC):
+class Indexer:
     def __init__(
         self,
         embedding_model,
@@ -65,37 +65,6 @@ class BaseIndexer(ABC):
         self.filetype = filetype
         self.collection_name = collection_name
 
-    def load(self) -> List[Document]:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    def split(self, docs: List[Document]) -> List[Document]:
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    def get_retriever(self):
-        raise NotImplementedError("Subclasses should implement this method.")
-
-
-class ExampleIndexer(BaseIndexer):
-    def __init__(
-        self,
-        embedding_model,
-        split_func: Callable,
-        filetype: str,
-        dir_path: str,
-        persist_path: str,
-        cache_path: str,
-        collection_name: str,
-    ):
-        super().__init__(
-            embedding_model=embedding_model,
-            split_func=split_func,
-            filetype=filetype,
-            dir_path=dir_path,
-            persist_path=persist_path,
-            cache_path=cache_path,
-            collection_name=collection_name,
-        )
-
     def load(self):
         loader = DirectoryLoader(
             path=self.dir_path,
@@ -113,83 +82,25 @@ class ExampleIndexer(BaseIndexer):
 
     def get_retriever(self):
         if os.path.exists(self.persist_path):
-            vectorstore = Chroma(
-                embedding_function=self.embedding_model,
-                persist_directory=self.persist_path,
-                collection_name=self.collection_name,
+            print(f"Loading existing FAISS index from {self.persist_path}")
+            vectorstore = FAISS.load_local(
+                self.persist_path,
+                self.embedding_model,
+                allow_dangerous_deserialization=True,
             )
         else:
+            print(f"Creating new FAISS index at {self.persist_path}")
             docs = self.split(self.load())
-            vectorstore = Chroma.from_documents(
+            vectorstore = FAISS.from_documents(
                 documents=docs,
                 embedding=self.embedding_model,
-                persist_directory=self.persist_path,
-                collection_name=self.collection_name,
             )
+            vectorstore.save_local(self.persist_path)
         return vectorstore.as_retriever(search_kwargs={"k": 8})
 
 
-class DocsIndexer(BaseIndexer):
-    def __init__(
-        self,
-        embedding_model,
-        split_func: Callable,
-        filetype: str,
-        dir_path: str,
-        persist_path: str,
-        cache_path: str,
-        collection_name: str,
-    ):
-        super().__init__(
-            embedding_model=embedding_model,
-            split_func=split_func,
-            filetype=filetype,
-            dir_path=dir_path,
-            persist_path=persist_path,
-            cache_path=cache_path,
-            collection_name=collection_name,
-        )
-
-    def load(self):
-        loader = DirectoryLoader(
-            path=self.dir_path,
-            glob=f"**/*.{self.filetype}",
-            show_progress=True,
-            loader_cls=TextLoader,
-        )
-        return _load_or_retrieve_from_storage(loader, self.cache_path)
-
-    def split(self, docs: List[Document]) -> List[Document]:
-        chunks = []
-        for doc in docs:
-            chunks.extend(
-                self.split_func(
-                    doc,
-                )
-            )
-        return chunks
-
-    def get_retriever(self):
-        if os.path.exists(self.persist_path):
-            vectorstore = Chroma(
-                embedding_function=self.embedding_model,
-                persist_directory=self.persist_path,
-                collection_name=self.collection_name,
-            )
-        else:
-            docs = self.split(self.load())
-            vectorstore = Chroma.from_documents(
-                documents=docs,
-                embedding=self.embedding_model,
-                persist_directory=self.persist_path,
-                collection_name=self.collection_name,
-            )
-
-        return vectorstore.as_retriever(search_kwargs={"k": 8})
-
-
-chroma_dir_name = "openai" if static_config.use_openai else "ollama"
-jutuldarcy_examples_indexer = ExampleIndexer(
+faiss_dir_name = "openai" if static_config.use_openai else "ollama"
+jutuldarcy_examples_indexer = Indexer(
     embedding_model=embedding_model,
     split_func=split_jutuldarcy.split_examples,
     filetype="jl",
@@ -197,8 +108,8 @@ jutuldarcy_examples_indexer = ExampleIndexer(
     persist_path=str(
         PROJECT_ROOT
         / "rag"
-        / "chroma_store"
-        / f"chroma_jutuldarcy_examples_{chroma_dir_name}"
+        / "faiss_store"
+        / f"faiss_jutuldarcy_examples_{faiss_dir_name}"
     ),
     cache_path=str(
         PROJECT_ROOT / "rag" / "loaded_store" / "loaded_jutuldarcy_examples.pkl"
@@ -206,16 +117,13 @@ jutuldarcy_examples_indexer = ExampleIndexer(
     collection_name="jutuldarcy_examples",
 )
 
-jutuldarcy_docs_indexer = DocsIndexer(
+jutuldarcy_docs_indexer = Indexer(
     embedding_model=embedding_model,
     split_func=split_docs.split_docs,
     filetype="md",
     dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "docs" / "man"),
     persist_path=str(
-        PROJECT_ROOT
-        / "rag"
-        / "chroma_store"
-        / f"chroma_jutuldarcy_docs_{chroma_dir_name}"
+        PROJECT_ROOT / "rag" / "faiss_store" / f"faiss_jutuldarcy_docs_{faiss_dir_name}"
     ),
     cache_path=str(
         PROJECT_ROOT / "rag" / "loaded_store" / "loaded_jutuldarcy_docs.pkl"
@@ -223,20 +131,13 @@ jutuldarcy_docs_indexer = DocsIndexer(
     collection_name="jutuldarcy_docs",
 )
 
-fimbul_examples_indexer = ExampleIndexer(
+fimbul_examples_indexer = Indexer(
     embedding_model=embedding_model,
     split_func=split_fimbul.split_examples,
     filetype="jl",
-    # dir_path="./src/jutulgpt/rag/fimbul/examples/",
-    # persist_path=f"./src/jutulgpt/rag/chroma_store/chroma_fimbul_examples_{chroma_dir_name}",
-    # cache_path="./src/jutulgpt/rag/loaded_store/loaded_fimbul_examples.pkl",
-    # collection_name="fimbul_examples",
     dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "examples"),
     persist_path=str(
-        PROJECT_ROOT
-        / "rag"
-        / "chroma_store"
-        / f"chroma_fimbul_examples_{chroma_dir_name}"
+        PROJECT_ROOT / "rag" / "faiss_store" / f"faiss_fimbul_examples_{faiss_dir_name}"
     ),
     cache_path=str(
         PROJECT_ROOT / "rag" / "loaded_store" / "loaded_fimbul_examples.pkl"
@@ -244,13 +145,13 @@ fimbul_examples_indexer = ExampleIndexer(
     collection_name="fimbul_examples",
 )
 
-fimbul_docs_indexer = DocsIndexer(
+fimbul_docs_indexer = Indexer(
     embedding_model=embedding_model,
     split_func=split_docs.split_docs,
     filetype="md",
     dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "docs" / "man"),
     persist_path=str(
-        PROJECT_ROOT / "rag" / "chroma_store" / f"chroma_fimbul_docs_{chroma_dir_name}"
+        PROJECT_ROOT / "rag" / "faiss_store" / f"faiss_fimbul_docs_{faiss_dir_name}"
     ),
     cache_path=str(PROJECT_ROOT / "rag" / "loaded_store" / "loaded_fimbul_docs.pkl"),
     collection_name="fimbul_docs",
