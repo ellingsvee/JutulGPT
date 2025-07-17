@@ -14,10 +14,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.config import get_stream_writer
 
 from jutulgpt.configuration import Configuration, static_config
-from jutulgpt.julia_interface import (
-    get_error_message,
-    run_string,
-)
+from jutulgpt.julia_interface import get_error_message, run_string
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.utils import (
