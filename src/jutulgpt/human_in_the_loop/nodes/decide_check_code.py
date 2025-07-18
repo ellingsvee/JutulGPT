@@ -22,7 +22,17 @@ def decide_check_code(
     state: State, config: RunnableConfig
 ) -> Command[Literal["check_code", END]]:
     """
-    Ask human whether to check code or proceed to end.
+    Ask the user whether to check the generated code or proceed to the end of the workflow.
+
+    If in an interactive environment and code is present, prompts the user to decide if the code should be checked (executed and validated)
+    or if the agent should finish. If not in an interactive environment, defaults to checking the code.
+
+    Args:
+        state (State): The current agent state, including messages and code.
+        config (RunnableConfig): The current configuration for the agent run.
+
+    Returns:
+        Command[Literal["check_code", END]]: A command indicating the next node to execute ("check_code" or END).
     """
     print("Inside decide_check_code")
     if interactive_environment:

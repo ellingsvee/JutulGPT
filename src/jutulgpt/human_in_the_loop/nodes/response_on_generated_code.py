@@ -15,6 +15,19 @@ from jutulgpt.utils import get_last_code_response
 
 
 def response_on_generated_code(state: State, config: RunnableConfig):
+    """
+    Presents the generated code to the user for optional modification before execution or validation.
+
+    If in an interactive environment, displays the generated code in a UI and allows the user to edit it. If the user edits the code,
+    a new message is added to the state reflecting the updated code. If the user ignores the prompt, the state is returned unmodified.
+
+    Args:
+        state (State): The current agent state, including messages and code.
+        config (RunnableConfig): The current configuration for the agent run.
+
+    Returns:
+        dict: A dictionary with updated messages if the code was edited, or an empty dict if not.
+    """
     if interactive_environment:
         configuration = Configuration.from_runnable_config(config)
 

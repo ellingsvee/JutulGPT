@@ -20,17 +20,21 @@ def response_on_rag(
     action_name: str = "Modify",
 ):
     """
-    Human in the loop. The user can modify the retrieved documents before it is sent as context to the LLM.
-    Deleting all content in the input box for a document will remove that document from the list of documents.
+    Presents retrieved RAG documents to the user for optional modification before sending them as LLM context.
+
+    This function enables a human-in-the-loop workflow, allowing the user to review and edit the content of each document.
+    If the user deletes all content for a document, that document is removed from the list. The function supports custom
+    formatting and section/file labeling for each document.
 
     Args:
-        docs: List of documents retrieved by the RAG system.
-        get_file_source: Function to get the file source of a document.
-        get_section_path: Function to get the section path of a document.
-        format_doc: Function to format a document for display.
-        action_name: Name of the action to be displayed in the UI.
+        docs (List[Document]): List of documents retrieved by the RAG system.
+        get_file_source (Callable): Function to get the file source of a document (for UI display).
+        get_section_path (Callable): Function to get the section path of a document (for UI display).
+        format_doc (Callable): Function to format a document for display in the UI.
+        action_name (str, optional): Name of the action to be displayed in the UI. Defaults to "Modify".
+
     Returns:
-        List of documents after potential modifications by the user.
+        List[Document]: The list of documents after potential modifications by the user. Documents with empty content are removed.
     """
     if not docs:
         return docs
