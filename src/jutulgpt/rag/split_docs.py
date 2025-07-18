@@ -52,8 +52,12 @@ def format_doc(doc: Document) -> str:
         for k in header_keys
         if k in doc.metadata and doc.metadata[k] is not None
     ]
-    section_path = " > ".join(section_path_parts) if section_path_parts else "Root"
-    return f"{doc.page_content.strip()}"
+    # section_path = " > ".join(section_path_parts) if section_path_parts else "Root"
+    page_content = doc.page_content.strip()
+
+    # Make the page content more readable
+
+    return f"{page_content}"
 
 
 def get_file_source(doc: Document, for_ui_printing: bool = False) -> str:

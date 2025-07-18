@@ -20,12 +20,19 @@ def response_on_generated_code(state: State, config: RunnableConfig):
 
         messages = state.messages
         code_block = get_last_code_response(state)
+        full_code = f"```julia"
+        if code_block.imports:
+            full_code += f"\n{code_block.imports}"
+        if code_block.code:
+            full_code += f"\n{code_block.code}"
+        full_code += f"\n```"
 
         description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
         request = HumanInterrupt(
             action_request=ActionRequest(
                 action="Modify the generated code",
-                args={"imports": code_block.imports, "code": code_block.code},
+                # args={"imports": code_block.imports, "code": code_block.code},
+                args={"code": full_code},
             ),
             config=HumanInterruptConfig(
                 allow_ignore=True,
@@ -42,19 +49,20 @@ def response_on_generated_code(state: State, config: RunnableConfig):
             args_dics = human_response.get("args", {}).get("args", {})
 
             # Get the updated imports and code
-            imports = args_dics.get("imports", code_block.imports)
-            code = args_dics.get("code", code_block.code)
+            # imports = args_dics.get("imports", code_block.imports)
+            # code = args_dics.get("code", code_block.code)
+            full_code = args_dics.get("code", full_code)
+
+            # print(f"Updated imports: {imports}")
+            # print(f"Updated code: {code}")
 
             # Add a new message to the state
-            human_message_content = f"""The code was updated by the user. The followng is what will be run and checked:
-```julia
-{imports}
-
-{code}
-```
+            human_message_content = f"""The code was updated by the user. The following is what will be run and checked:
+{full_code}
 """
 
             # Return the updated message.
+            # TODO: This should be a message from the user, not an AI message. However, then it does not go correctly to the next node.
             return {"messages": [AIMessage(content=human_message_content)]}
 
         elif response_type == "ignore":
