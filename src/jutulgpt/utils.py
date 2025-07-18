@@ -242,8 +242,14 @@ def get_last_code_response(state: State) -> CodeBlock:
         CodeBlock: The extracted code block from the last AI message, or empty if not found.
     """
     last_message = state.messages[-1]
-    if last_message.type == "ai":
+
+    # Include the human in case the human-in-the-loop updates the generated code.
+
+    print(f"Inside: get_last_code_response")
+    print(f"last_message.type: {last_message.type}")
+    if last_message.type == "ai" or last_message.type == "human":
         last_message_content = last_message.content
+        print(f"last_message_content: {last_message_content}")
     else:
         last_message_content = ""
     code_block = get_code_from_response(last_message_content)

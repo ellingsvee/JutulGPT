@@ -29,7 +29,6 @@ def check_code(state: State, config: RunnableConfig):
     # writer = get_stream_writer()
 
     # writer(f"Running code. Please wait...")
-    messages = state.messages
     code_block = get_last_code_response(state)
     imports = code_block.imports
     code = code_block.code

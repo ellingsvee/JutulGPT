@@ -26,10 +26,6 @@ from jutulgpt.configuration import (
 from jutulgpt.rag import split_docs, split_examples
 from jutulgpt.utils import deduplicate_document_chunks
 
-# import format_doc, split_docs, split_examples
-
-# import format_doc, split_docs, split_examples
-
 
 def _load_or_retrieve_from_storage(
     loader: DirectoryLoader, storage_path: str
@@ -192,43 +188,3 @@ def get_retrievers():
 
 
 retrievers = get_retrievers()
-
-
-def format_examples(
-    docs: List[Document], n: int = 5, remove_duplicates: bool = True
-) -> str:
-    if remove_duplicates:
-        docs = deduplicate_document_chunks(docs)
-
-    docs = docs[:n]
-
-    grouped = defaultdict(list)
-    for doc in docs:
-        key = (
-            doc.metadata.get("source", "Unknown file"),
-            doc.metadata.get("heading", "No heading"),
-        )
-        grouped[key].append(doc.page_content.strip())
-
-    formatted = []
-    for (source, heading), contents in grouped.items():
-        section = "\n".join(f"```julia\n{c}\n```" for c in contents)
-        formatted.append(f"# From `{source}`\n# Section: `{heading}`\n{section}")
-    return "\n\n".join(formatted)
-
-
-# def format_docs(docs, n: int = 5, remove_duplicates: bool = True):
-#     if remove_duplicates:
-#         docs = deduplicate_document_chunks(docs)
-#     docs = docs[:n]
-
-#     formatted = []
-#     for doc in docs:
-#         doc_string = ""
-#         # file_source, section_path = split_docs.get_file_source_and_section_path(doc)
-#         file_source = split_docs.get_file_source(doc)
-#         section_path = split_docs.get_section_path(doc)
-#         doc_string += f"# From `{file_source}`\n# Section: `{section_path}`\n"
-#         doc_string += f"{split_docs.format_doc(doc)}"
-#         formatted.append(doc_string)
-#     return "\n\n".join(formatted)
