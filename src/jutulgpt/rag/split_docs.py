@@ -45,6 +45,11 @@ def split_docs(
     return splits
 
 
+def remove_markdown_links(text: str) -> str:
+    # Replace [text](url) with just text
+    return re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+
+
 def format_doc(doc: Document) -> str:
     header_keys = ["Header 1", "Header 2", "Header 3"]
     section_path_parts = [
@@ -56,6 +61,7 @@ def format_doc(doc: Document) -> str:
     page_content = doc.page_content.strip()
 
     # Make the page content more readable
+    page_content = remove_markdown_links(page_content)
 
     return f"{page_content}"
 

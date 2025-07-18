@@ -72,7 +72,7 @@ def get_section_path(doc: Document, for_ui_printing: bool = False) -> str:
 
 
 def format_doc(doc: Document) -> str:
-    return doc.page_content.strip()
+    return f"```julia\n{doc.page_content.strip()}\n```"
 
 
 def format_examples(
