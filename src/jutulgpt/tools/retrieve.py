@@ -28,7 +28,6 @@ def retrieve_jutuldarcy(
     Returns:
         String containing the formatted output from the retriever
     """
-    print("TOOL INVOKED: retrieve_jutuldarcy")
 
     retrieved_docs = retrievers["jutuldarcy"]["docs"].invoke(input=query)
     retrieved_examples = retrievers["jutuldarcy"]["examples"].invoke(input=query)
@@ -51,7 +50,6 @@ def retrieve_jutuldarcy(
     docs = split_docs.format_docs(retrieved_docs)
     examples = split_examples.format_examples(retrieved_examples)
 
-    print("Creating output")  # WARNING: DELETE LATER
     out = f"""
     # Retrieved from the JutulDarcy documentation:
 
@@ -61,8 +59,6 @@ def retrieve_jutuldarcy(
 
     {examples}
     """
-
-    print(out)  # WARNING: DELETE LATER
 
     return out
 
