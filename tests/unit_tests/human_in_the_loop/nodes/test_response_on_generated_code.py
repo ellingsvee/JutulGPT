@@ -15,6 +15,11 @@ def dummy_state():
         imports = "using Foo"
         code = "bar()"
 
+        def get_full_code(self, within_julia_context: bool = False):
+            if within_julia_context:
+                return f"```julia\n{self.imports}\n{self.code}\n```"
+            return f"{self.imports}\n{self.code}"
+
     state = MagicMock(spec=State)
     state.messages = []
     return state, DummyCodeBlock()

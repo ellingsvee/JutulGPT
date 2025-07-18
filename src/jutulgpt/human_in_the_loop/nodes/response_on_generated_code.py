@@ -33,12 +33,7 @@ def response_on_generated_code(state: State, config: RunnableConfig):
 
         messages = state.messages
         code_block = get_last_code_response(state)
-        full_code = f"```julia"
-        if code_block.imports:
-            full_code += f"\n{code_block.imports}"
-        if code_block.code:
-            full_code += f"\n{code_block.code}"
-        full_code += f"\n```"
+        full_code = code_block.get_full_code(within_julia_context=True)
 
         description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
         request = HumanInterrupt(

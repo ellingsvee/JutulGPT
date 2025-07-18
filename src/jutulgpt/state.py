@@ -59,3 +59,15 @@ class CodeBlock(BaseModel):
     code: str = Field(
         default="", description="Code block not including import statements"
     )
+
+    def get_full_code(self, within_julia_context: bool = False) -> str:
+        """Returns the full code block including imports."""
+        full_code = "```julia" if within_julia_context else ""
+        if self.imports:
+            full_code += "\n" if within_julia_context else ""
+            full_code += f"{self.imports}"
+        if self.code:
+            full_code += "\n" if within_julia_context or self.imports else ""
+            full_code += f"{self.code}"
+        full_code += "\n```" if within_julia_context else ""
+        return full_code
