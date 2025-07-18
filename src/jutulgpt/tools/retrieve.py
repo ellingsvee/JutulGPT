@@ -1,6 +1,7 @@
-from typing import Annotated, Any, Optional, cast
+from typing import Annotated, Any, Callable, List, Optional, cast
 
 from dotenv import find_dotenv, load_dotenv
+from langchain_core.documents import Document
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolArg, tool
 from langgraph.prebuilt.interrupt import (
@@ -11,10 +12,77 @@ from langgraph.prebuilt.interrupt import (
 )
 from langgraph.types import Command, interrupt
 
+# from jutulgpt.rag.split_docs import (
+#     format_doc,
+#     format_docs,
+#     get_file_source,
+#     get_section_path,
+#     modify_doc_content,
+# )
+import jutulgpt.rag.split_docs as split_docs
+import jutulgpt.rag.split_examples as split_examples
 from jutulgpt.configuration import Configuration
-from jutulgpt.rag.retrievers import format_docs, format_examples, retrievers
+from jutulgpt.rag.retrievers import retrievers
+from jutulgpt.rag.utils import modify_doc_content
 
 _: bool = load_dotenv(find_dotenv())
+
+
+def get_human_response_on_rag(
+    docs: List[Document],
+    get_file_source: Callable,
+    get_section_path: Callable,
+    format_doc: Callable,
+    action_name: str = "Modify",
+):
+    if not docs:
+        return docs
+
+    # TODO: Handle the case when the get_section_path retrieved the same section path for multiple documents
+    action_request_args = {}
+    arg_names = []
+    for _, doc in enumerate(docs):
+        section_path = get_section_path(doc, for_ui_printing=True)
+        file_source = get_file_source(doc, for_ui_printing=True)
+        arg_name = f"{file_source} - {section_path}"
+        # arg_name = section_path
+        arg_names.append(arg_name)
+        action_request_args[f"{arg_name}"] = format_doc(doc)
+
+    description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
+    request = HumanInterrupt(
+        action_request=ActionRequest(
+            action=action_name,
+            args=action_request_args,
+        ),
+        config=HumanInterruptConfig(
+            allow_ignore=True,
+            allow_accept=False,
+            allow_respond=False,
+            allow_edit=True,
+        ),
+        description=description,
+    )
+
+    human_response: HumanResponse = interrupt([request])[0]
+    response_type = human_response.get("type")
+    if response_type == "edit":
+        args_dics = human_response.get("args", {}).get("args", {})
+        for arg_name, new_content in args_dics.items():
+            if not new_content:
+                # Remove the document if new_content is empty
+                docs.pop(arg_names.index(arg_name))
+                arg_names.pop(arg_names.index(arg_name))
+                continue
+            doc = docs[arg_names.index(arg_name)]
+            docs[arg_names.index(arg_name)] = modify_doc_content(doc, new_content)
+
+    elif response_type == "ignore":
+        pass
+    else:
+        raise TypeError(f"Interrupt value of type {response_type} is not supported.")
+
+    return docs
 
 
 @tool(parse_docstring=True)
@@ -37,103 +105,37 @@ def retrieve_jutuldarcy(
 
     retrieved_docs = retrievers["jutuldarcy"]["docs"].invoke(input=query)
     retrieved_examples = retrievers["jutuldarcy"]["examples"].invoke(input=query)
-    # retrieved = retrieved_docs + retrieved_examples
 
-    docs = format_docs(retrieved_docs)
-    examples = format_examples(retrieved_examples)
-
-    interrupt_message = f"Can you review the retrieved documentation\n{docs}"
-
-    request = HumanInterrupt(
-        action_request=ActionRequest(
-            action="review_retrieved_docs",
-            args={"code": interrupt_message},
-        ),
-        config=HumanInterruptConfig(
-            allow_ignore=False,
-            allow_accept=True,
-            allow_respond=False,
-            allow_edit=True,
-        ),
-        description="Test",
+    retrieved_docs = get_human_response_on_rag(
+        retrieved_docs,
+        get_file_source=split_docs.get_file_source,
+        get_section_path=split_docs.get_section_path,
+        format_doc=split_docs.format_doc,
+        action_name="Modify retrieved documentation",
+    )
+    retrieved_examples = get_human_response_on_rag(
+        retrieved_examples,
+        get_file_source=split_examples.get_file_source,
+        get_section_path=split_examples.get_section_path,
+        format_doc=split_examples.format_doc,
+        action_name="Modify retrieved examples",
     )
 
-    human_response: HumanResponse = interrupt([request])[0]
-    response_type = human_response.get("type")
-    print(f"human_response: {human_response}")
-    if response_type == "response":
-        docs = human_response.get("args").strip().lower()
+    print("Retrieved documents:", retrieved_docs)  # WARNING: DELETE LATER
+    print("Retrieved examples:", retrieved_examples)  # WARNING: DELETE LATER
 
-    if response_type == "accept":
-        docs = docs
+    docs = split_docs.format_docs(retrieved_docs)
+    examples = split_examples.format_examples(retrieved_examples)
 
-    # out = f"""
-    # # Retrieved from the JutulDarcy documentation
-    # <details>
-    # <summary>Show documentation</summary>
-
-    # {docs}
-
-    # </details>
-
-    # # Retrieved from the JutulDarcy examples
-    # <details>
-    # <summary>Show examples</summary>
-
-    # {examples}
-
-    # </details>
-    # """
-
-    interrupt_message = f"Modify the retrieved documentation and examples!"
-
-    description = "Modify the retrieved documentation and examples"
-    request = HumanInterrupt(
-        action_request=ActionRequest(
-            action="Modify docs and examples",
-            args={"docs": docs, "examples": examples},
-        ),
-        config=HumanInterruptConfig(
-            allow_ignore=True,
-            allow_accept=False,
-            allow_respond=False,
-            allow_edit=True,
-        ),
-        description=description,
-    )
-
-    human_response: HumanResponse = interrupt([request])[0]
-    response_type = human_response.get("type")
-
-    print(f"Response type: {response_type}")  # WARNING: DELETE LATER
-    print(f"Human response: {human_response}")  # WARNING: DELETE LATER
-
-    if response_type == "edit":
-        print("Inside response type")  # WARNING: DELETE LATER
-        args_dics = human_response.get("args", {}).get("args", {})
-        print(f"Args dicts: {args_dics}")  # WARNING: DELETE LATER
-        docs: str = cast(str, args_dics.get("docs", ""))
-        examples: str = cast(str, args_dics.get("examples", ""))
-
-    elif response_type == "ignore":
-        pass
-    else:
-        print("Invalid response type, using original docs")
-
-    # elif human_response.get("type") == "ignore":
-    #     return Command(
-    #         goto=Send(
-    #             END,
-    #             arg={},
-    #         )
-    #     )
     print("Creating output")  # WARNING: DELETE LATER
     out = f"""
-    # Retrieved from the JutulDarcy documentation
-    <details>
-    <summary>Show documentation</summary>
+    # Retrieved from the JutulDarcy documentation:
 
     {docs}
+
+    # Retrieved from the JutulDarcy examples:
+
+    {examples}
 
     """
 

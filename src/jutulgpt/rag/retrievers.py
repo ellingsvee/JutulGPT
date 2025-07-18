@@ -23,7 +23,7 @@ from jutulgpt.configuration import (
     embedding_model,
     static_config,
 )
-from jutulgpt.rag import split_docs, split_fimbul, split_jutuldarcy
+from jutulgpt.rag import split_docs, split_examples
 from jutulgpt.utils import deduplicate_document_chunks
 
 # import format_doc, split_docs, split_examples
@@ -102,7 +102,7 @@ class Indexer:
 faiss_dir_name = "openai" if static_config.use_openai else "ollama"
 jutuldarcy_examples_indexer = Indexer(
     embedding_model=embedding_model,
-    split_func=split_jutuldarcy.split_examples,
+    split_func=split_examples.split_examples,
     filetype="jl",
     dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "examples"),
     persist_path=str(
@@ -133,7 +133,7 @@ jutuldarcy_docs_indexer = Indexer(
 
 fimbul_examples_indexer = Indexer(
     embedding_model=embedding_model,
-    split_func=split_fimbul.split_examples,
+    split_func=split_examples.split_examples,
     filetype="jl",
     dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "examples"),
     persist_path=str(
@@ -212,16 +212,23 @@ def format_examples(
 
     formatted = []
     for (source, heading), contents in grouped.items():
-        # section = "\n".join(contents)
         section = "\n".join(f"```julia\n{c}\n```" for c in contents)
-        formatted.append(f"## From `{source}` — Section: `{heading}`\n{section}")
-    return "\n\n---\n\n".join(formatted)
+        formatted.append(f"# From `{source}`\n# Section: `{heading}`\n{section}")
+    return "\n\n".join(formatted)
 
 
-def format_docs(docs, n: int = 5, remove_duplicates: bool = True):
-    if remove_duplicates:
-        docs = deduplicate_document_chunks(docs)
-    docs = docs[:n]
+# def format_docs(docs, n: int = 5, remove_duplicates: bool = True):
+#     if remove_duplicates:
+#         docs = deduplicate_document_chunks(docs)
+#     docs = docs[:n]
 
-    formatted = [split_docs.format_doc(doc) for doc in docs]
-    return "\n\n---\n\n".join(formatted)
+#     formatted = []
+#     for doc in docs:
+#         doc_string = ""
+#         # file_source, section_path = split_docs.get_file_source_and_section_path(doc)
+#         file_source = split_docs.get_file_source(doc)
+#         section_path = split_docs.get_section_path(doc)
+#         doc_string += f"# From `{file_source}`\n# Section: `{section_path}`\n"
+#         doc_string += f"{split_docs.format_doc(doc)}"
+#         formatted.append(doc_string)
+#     return "\n\n".join(formatted)
