@@ -163,9 +163,8 @@ def run_string(code: str):
         dict: A dictionary with keys 'out', 'error', 'error_message', and 'error_stacktrace'.
     """
     try:
-        result = jl_eval_in_subprocess(code)
+        jl_eval_in_subprocess(code)
         return {
-            "out": result,
             "error": False,
             "error_message": None,
             "error_stacktrace": None,
@@ -179,7 +178,6 @@ def run_string(code: str):
         )
         print(f"filtered_stack: {filtered_stack}")
         return {
-            "out": None,
             "error": True,
             "error_message": str(e),
             "error_stacktrace": filtered_stack,
@@ -188,7 +186,6 @@ def run_string(code: str):
     # Handle other Python-side errors from the subprocess
     except JuliaSubprocessOtherError as e:
         return {
-            "out": None,
             "error": True,
             "error_message": str(e),
             "error_stacktrace": e.traceback_str,
@@ -197,7 +194,6 @@ def run_string(code: str):
     # Handle timeout
     except TimeoutError as e:
         return {
-            "out": None,
             "error": True,
             "error_message": str(e),
             "error_stacktrace": None,
@@ -206,7 +202,6 @@ def run_string(code: str):
     # Catch unexpected Python errors
     except Exception as e:
         return {
-            "out": None,
             "error": True,
             "error_message": f"Unexpected error: {str(e)}",
             "error_stacktrace": traceback.format_exc(),
