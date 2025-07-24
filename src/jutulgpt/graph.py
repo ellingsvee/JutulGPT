@@ -5,7 +5,7 @@ from typing import Literal
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import tools_condition
 
-from jutulgpt.configuration import Configuration, interactive_environment, static_config
+from jutulgpt.configuration import MAX_ITERATIONS, AgentConfiguration
 from jutulgpt.human_in_the_loop import decide_check_code, response_on_generated_code
 from jutulgpt.nodes import check_code, generate_response, tools_node
 from jutulgpt.state import State
@@ -24,19 +24,15 @@ def decide_to_finish(state: State) -> Literal["generate_response", END]:
     error = state.error
     iterations = state.iterations
 
-    print(
-        f"decide_to_finish: error={error}, iterations={iterations}, max_iterations={static_config.max_iterations}"
-    )
-
-    if not error or iterations == static_config.max_iterations:
-        print("decide_to_finish: WE GO TO END")
+    if not error or iterations == MAX_ITERATIONS:
+        print("decide_to_finish: END")
         return END
     else:
-        print("decide_to_finish: Generating response")
+        print("decide_to_finish: generate_response")
         return "generate_response"
 
 
-builder = StateGraph(State, config_schema=Configuration)
+builder = StateGraph(State, config_schema=AgentConfiguration)
 
 builder.add_node("generate_response", generate_response)
 builder.add_node("tools", tools_node)
@@ -56,9 +52,19 @@ builder.add_conditional_edges(
 )
 builder.add_edge("tools", "generate_response")
 
-builder.add_edge("response_on_generated_code", "decide_check_code")
-builder.add_edge("decide_check_code", END)
-builder.add_edge("decide_check_code", "check_code")
+# builder.add_edge("response_on_generated_code", "decide_check_code")
+# builder.add_edge("decide_check_code", END)
+# builder.add_edge("decide_check_code", "check_code")
+
+
+builder.add_conditional_edges(
+    "response_on_generated_code",
+    decide_check_code,
+    {
+        END: END,
+        "check_code": "check_code",
+    },
+)
 
 
 builder.add_conditional_edges(

@@ -1,6 +1,5 @@
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.graph import END
 from langgraph.prebuilt.interrupt import (
     ActionRequest,
     HumanInterrupt,
@@ -9,7 +8,7 @@ from langgraph.prebuilt.interrupt import (
 )
 from langgraph.types import interrupt
 
-from jutulgpt.configuration import Configuration, interactive_environment
+from jutulgpt.configuration import AgentConfiguration, INTERACTIVE_ENVIRONMENT
 from jutulgpt.state import State
 from jutulgpt.utils import get_last_code_response
 
@@ -28,11 +27,14 @@ def response_on_generated_code(state: State, config: RunnableConfig):
     Returns:
         dict: A dictionary with updated messages if the code was edited, or an empty dict if not.
     """
-    if interactive_environment:
-        configuration = Configuration.from_runnable_config(config)
+    configuration = AgentConfiguration.from_runnable_config(config)
 
-        messages = state.messages
+    if INTERACTIVE_ENVIRONMENT:
         code_block = get_last_code_response(state)
+
+        if code_block.imports == "" and code_block.code == "":
+            return {}
+
         full_code = code_block.get_full_code(within_julia_context=True)
 
         description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
@@ -57,12 +59,7 @@ def response_on_generated_code(state: State, config: RunnableConfig):
             args_dics = human_response.get("args", {}).get("args", {})
 
             # Get the updated imports and code
-            # imports = args_dics.get("imports", code_block.imports)
-            # code = args_dics.get("code", code_block.code)
             full_code = args_dics.get("code", full_code)
-
-            # print(f"Updated imports: {imports}")
-            # print(f"Updated code: {code}")
 
             # Add a new message to the state
             human_message_content = f"""The code was updated by the user. The following is what will be run and checked:
@@ -74,7 +71,8 @@ def response_on_generated_code(state: State, config: RunnableConfig):
             return {"messages": [AIMessage(content=human_message_content)]}
 
         elif response_type == "ignore":
-            pass
+            print("Resonse_on_generated_code: Ignored")
+            return {}
         else:
             raise TypeError(
                 f"Interrupt value of type {response_type} is not supported."

@@ -1,85 +1,79 @@
 """This module contains the `check_code` function which is responsible for evaluating code if it is run."""
 
 import re
-from os import error
-from typing import List, cast
+from typing import List
 
 from langchain_core.messages import (
     AIMessage,
     HumanMessage,
-    SystemMessage,
-    trim_messages,
 )
 from langchain_core.runnables import RunnableConfig
-from langgraph.config import get_stream_writer
 
-from jutulgpt.configuration import Configuration, static_config
 from jutulgpt.julia_interface import get_error_message, run_string
-from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.utils import (
-    get_code_from_response,
     get_last_code_response,
-    load_chat_model,
     split_code_into_lines,
 )
 
 
 def check_code(state: State, config: RunnableConfig):
-    # writer = get_stream_writer()
+    print("INSIDE CHECK_CODE")
 
-    # writer(f"Running code. Please wait...")
     code_block = get_last_code_response(state)
     imports = code_block.imports
     code = code_block.code
-    imports = shorter_simulations(imports)
-    code = shorter_simulations(
-        code
-    )  # If the code contains simulations, replace them with shorter ones
 
-    def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
-        error_message = f"""
-The code from you previous response failed with the following error. Fix it to provide runnable code!
+    if imports != "" or code != "":
+        imports = shorter_simulations(imports)
+        code = shorter_simulations(
+            code
+        )  # If the code contains simulations, replace them with shorter ones
 
-Failure in {test_type}. The code failed with the following Julia error message:
-{julia_error_message}
-"""
-        return error_message
+        def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
+            error_message = f"""
+    The code from you previous response failed with the following error. Fix it to provide runnable code!
 
-    result = run_string(imports)
-    if result["error"]:
-        julia_error_message = get_error_message(result)
-        error_message = gen_error_message_string("import test", julia_error_message)
-        print(f"check_code: {error_message}")
+    Failure in {test_type}. The code failed with the following Julia error message:
+    {julia_error_message}
+    """
+            return error_message
+
+        result = run_string(imports)
+        if result["error"]:
+            julia_error_message = get_error_message(result)
+            error_message = gen_error_message_string("import test", julia_error_message)
+            print(f"check_code: {error_message}")
+
+            return {
+                "messages": [HumanMessage(content=error_message)],
+                "error": True,
+                "error_message": error_message,
+                "iterations": state.iterations + 1,
+            }
+
+        full_code = imports + "\n" + code
+        result = run_string(full_code)
+        if result["error"]:
+            julia_error_message = get_error_message(result)
+            error_message = gen_error_message_string(
+                "code execution test", julia_error_message
+            )
+            print(f"check_code: {error_message}")
+            return {
+                # "messages": messages,
+                "messages": [HumanMessage(content=error_message)],
+                "error": True,
+                "error_message": error_message,
+                "iterations": state.iterations + 1,
+            }
 
         return {
-            "messages": [HumanMessage(content=error_message)],
-            "error": True,
-            "error_message": error_message,
-            "iterations": state.iterations + 1,
+            "messages": [AIMessage(content="Code executed successfully.")],
+            "error": False,
+            "iterations": 0,
         }
-
-    full_code = imports + "\n" + code
-    result = run_string(full_code)
-    if result["error"]:
-        julia_error_message = get_error_message(result)
-        error_message = gen_error_message_string(
-            "code execution test", julia_error_message
-        )
-        print(f"check_code: {error_message}")
-        return {
-            # "messages": messages,
-            "messages": [HumanMessage(content=error_message)],
-            "error": True,
-            "error_message": error_message,
-            "iterations": state.iterations + 1,
-        }
-
-    return {
-        "messages": [AIMessage(content="Code executed successfully.")],
-        "error": False,
-        "iterations": 0,
-    }
+    return {}
 
 
 def _shorten_first_argument(code: str, simulation_functions: List[str]) -> str:

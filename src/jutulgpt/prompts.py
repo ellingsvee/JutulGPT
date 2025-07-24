@@ -1,15 +1,13 @@
 """This module defines the system prompt for an AI assistant."""
 
 TOOLS = ""
-# if retrieve_jutuldacy:
 TOOLS += "- **retrieve_jutuldarcy Tool**: Use to search for information in the Jutuldarcy documentation and examples.\n"
-# if retrieve_fimbul:
 TOOLS += "- **retrieve_fimbul Tool**: Use to search for information in the Fimbul documentation and examples.\n"
 TOOLS += "- **write_to_file Tool**: Use this tool to write code to a file."
 TOOLS += "- **read_from_file Tool**: Use this tool to read the content of a file."
 
 
-AGENT_SYSTEM = f"""
+DEFAULT_CODER_PROMPT = f"""
 
 You are a helpful and precise coding assistant specialized in the **Julia** programming language. 
 

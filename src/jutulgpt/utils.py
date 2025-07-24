@@ -10,7 +10,6 @@ from langchain_core.documents import Document
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from jutulgpt.configuration import static_config
 from jutulgpt.state import CodeBlock, State
 
 
@@ -83,12 +82,15 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
         fully_specified_name (str): String in the format 'provider/model'.
     """
     provider, model = fully_specified_name.split("/", maxsplit=1)
-    if static_config.use_openai:
-        return init_chat_model(model, model_provider=provider, temperature=0.1)
-    else:
-        return init_chat_model(
-            model, model_provider=provider, temperature=0.1, extract_reasoning=True
-        )
+    match provider:
+        case "openai":
+            return init_chat_model(model, model_provider=provider, temperature=0.1)
+        case "ollama":
+            return init_chat_model(
+                model, model_provider=provider, temperature=0.1, reasoning=True
+            )
+        case _:
+            raise ValueError(f"Unsupported chat model provider: {provider}")
 
 
 def get_tool_message(messages: List, n_last=2, print=False):
@@ -245,7 +247,7 @@ def get_last_code_response(state: State) -> CodeBlock:
 
     # Include the human in case the human-in-the-loop updates the generated code.
 
-    print(f"Inside: get_last_code_response")
+    print("Inside: get_last_code_response")
     print(f"last_message.type: {last_message.type}")
     if last_message.type == "ai" or last_message.type == "human":
         last_message_content = last_message.content

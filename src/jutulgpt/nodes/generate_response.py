@@ -1,12 +1,11 @@
 """This module contains the `generate_response` function which is responsible for generating a response."""
 
-from os import error
 from typing import cast
 
-from langchain_core.messages import AIMessage, HumanMessage, trim_messages
+from langchain_core.messages import AIMessage, trim_messages
 from langchain_core.runnables import RunnableConfig
 
-from jutulgpt.configuration import Configuration
+from jutulgpt.configuration import AgentConfiguration
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
@@ -29,13 +28,13 @@ def generate_response(state: State, config: RunnableConfig):
     """
     messages = state.messages
 
-    configuration = Configuration.from_runnable_config(config)
+    configuration = AgentConfiguration.from_runnable_config(config)
 
     # Initialize the model with tool binding. Change the model or add more tools here.
-    model = load_chat_model(configuration.model).bind_tools(tools)
+    model = load_chat_model(configuration.response_model).bind_tools(tools)
 
     # Format the system prompt. Customize this to change the agent's behavior.
-    system_message = configuration.system_prompt
+    system_message = configuration.default_coder_prompt
 
     trimmedStateMessages = trim_messages(
         # messages + error_message_list,
