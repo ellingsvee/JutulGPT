@@ -1,0 +1,109 @@
+import os
+from contextlib import contextmanager
+from typing import Generator
+
+from langchain_core.embeddings import Embeddings
+from langchain_core.runnables import RunnableConfig
+from langchain_core.vectorstores import VectorStoreRetriever
+
+from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.rag.retriever_specs import RetrieverSpec
+
+
+def make_text_encoder(model: str) -> Embeddings:
+    """Connect to the configured text encoder."""
+    provider, model = model.split("/", maxsplit=1)
+    match provider:
+        case "openai":
+            from langchain_openai import OpenAIEmbeddings
+
+            return OpenAIEmbeddings(model=model)
+        case "ollama":
+            from langchain_ollama import OllamaEmbeddings
+
+            return OllamaEmbeddings(model=model)
+
+        case _:
+            raise ValueError(f"Unsupported embedding provider: {provider}")
+
+
+def _load_and_split_docs(spec: RetrieverSpec) -> list:
+    import pickle
+
+    from langchain_community.document_loaders import DirectoryLoader, TextLoader
+
+    # Load or cache documents
+    loader = DirectoryLoader(
+        path=spec.dir_path,
+        glob=f"**/*.{spec.filetype}",
+        show_progress=True,
+        loader_cls=TextLoader,
+    )
+
+    if os.path.exists(spec.cache_path):
+        with open(spec.cache_path, "rb") as f:
+            docs = pickle.load(f)
+    else:
+        docs = loader.load()
+
+        with open(spec.cache_path, "wb") as f:
+            pickle.dump(docs, f)
+
+    # Split documents
+    chunks = []
+    for doc in docs:
+        chunks.extend(spec.split_func(doc))
+    return chunks
+
+
+@contextmanager
+def make_faiss_retriever(
+    configuration: BaseConfiguration, spec: RetrieverSpec, embedding_model: Embeddings
+) -> Generator[VectorStoreRetriever, None, None]:
+    """
+    Create or load a FAISS retriever, saving the index locally to avoid re-indexing.
+    Uses configuration to determine file paths and splitting functions.
+    """
+    import os
+
+    from langchain_community.vectorstores import FAISS
+
+    # Load or create FAISS index
+    if os.path.exists(spec.persist_path):
+        vectorstore = FAISS.load_local(
+            spec.persist_path,
+            embedding_model,
+            allow_dangerous_deserialization=True,
+        )
+    else:
+        print(f"Creating new FAISS index at {spec.persist_path}")
+        docs = _load_and_split_docs(spec)
+        vectorstore = FAISS.from_documents(
+            documents=docs,
+            embedding=embedding_model,
+        )
+        vectorstore.save_local(spec.persist_path)
+
+    yield vectorstore.as_retriever(search_kwargs=configuration.search_kwargs)
+
+
+@contextmanager
+def make_retriever(
+    config: RunnableConfig, spec: RetrieverSpec
+) -> Generator[VectorStoreRetriever, None, None]:
+    """Create a retriever for the agent, based on the current configuration."""
+    configuration = BaseConfiguration.from_runnable_config(config)
+    embedding_model = make_text_encoder(configuration.embedding_model)
+    match configuration.retriever_provider:
+        case "faiss":
+            with make_faiss_retriever(
+                configuration, spec, embedding_model
+            ) as retriever:
+                yield retriever
+
+        case _:
+            raise ValueError(
+                "Unrecognized retriever_provider in configuration. "
+                f"Expected one of: {', '.join(BaseConfiguration.__annotations__['retriever_provider'].__args__)}\n"
+                f"Got: {configuration.retriever_provider}"
+            )
