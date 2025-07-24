@@ -52,11 +52,6 @@ builder.add_conditional_edges(
 )
 builder.add_edge("tools", "generate_response")
 
-# builder.add_edge("response_on_generated_code", "decide_check_code")
-# builder.add_edge("decide_check_code", END)
-# builder.add_edge("decide_check_code", "check_code")
-
-
 builder.add_conditional_edges(
     "response_on_generated_code",
     decide_check_code,
