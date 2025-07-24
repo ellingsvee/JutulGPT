@@ -9,6 +9,7 @@ from langchain_core.messages import (
 )
 from langchain_core.runnables import RunnableConfig
 
+from jutulgpt.configuration import ALLOW_PACKAGE_INSTALLATION, ALLOWED_PACKAGES
 from jutulgpt.julia_interface import get_error_message, run_string
 from jutulgpt.state import State
 from jutulgpt.utils import (
@@ -25,6 +26,9 @@ def check_code(state: State, config: RunnableConfig):
     code = code_block.code
 
     if imports != "" or code != "":
+        if not ALLOW_PACKAGE_INSTALLATION:
+            print(ALLOWED_PACKAGES)
+
         imports = shorter_simulations(imports)
         code = shorter_simulations(
             code
@@ -199,3 +203,25 @@ def shorter_simulations(code: str) -> str:
     code = _remove_plotting(code)
 
     return code
+
+
+def check_for_package_install(code: str) -> bool:
+    not_allowed = [
+        "using Pkg",  # Pkg is used to install packages, which is not allowed
+        "Pkg.add",  # Pkg.add is used to install packages, which is not allowed
+        "Pkg.update",  # Pkg.update is used to update packages, which is not allowed
+        "Pkg.instantiate",  # Pkg.instantiate is used to install dependencies, which is not allowed
+    ]
+    if any(item in code for item in not_allowed):
+        return True
+    return False
+
+
+def check_for_unallowed_packages(code: str) -> bool:
+    """
+    Check if the code contains any unallowed packages.
+    """
+    for package in ALLOWED_PACKAGES:
+        if package in code:
+            return False
+    return True
