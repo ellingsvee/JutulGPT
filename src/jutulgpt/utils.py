@@ -256,3 +256,24 @@ def get_last_code_response(state: State) -> CodeBlock:
         last_message_content = ""
     code_block = get_code_from_response(last_message_content)
     return code_block
+
+
+def _get_relevant_part_of_file_source(source: str, relevant_doc_name: str = "rag"):
+    """
+    Remove the part of the soure up to and including the relevant_doc_name.
+    """
+    idx = source.find(f"/{relevant_doc_name}/")
+    if idx != -1:
+        source = source[idx + len("/rag/") :]
+    return source
+
+
+def get_file_source(
+    doc: Document, for_ui_printing: bool = False, only_relevant_part: bool = True
+) -> str:
+    file_source = doc.metadata.get("source", "Unknown Document")
+    if only_relevant_part:
+        file_source = _get_relevant_part_of_file_source(file_source)
+    if for_ui_printing:
+        return f"{file_source}"
+    return file_source

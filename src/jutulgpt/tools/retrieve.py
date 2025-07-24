@@ -5,6 +5,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolArg, tool
 
 import jutulgpt.rag.retrieval as retrieval
+from jutulgpt.utils import get_file_source
 import jutulgpt.rag.split_docs as split_docs
 import jutulgpt.rag.split_examples as split_examples
 from jutulgpt.configuration import BaseConfiguration, INTERACTIVE_ENVIRONMENT
@@ -41,14 +42,14 @@ def retrieve_jutuldarcy(
     if INTERACTIVE_ENVIRONMENT:
         retrieved_docs = response_on_rag(
             retrieved_docs,
-            get_file_source=split_docs.get_file_source,
+            get_file_source=get_file_source,
             get_section_path=split_docs.get_section_path,
             format_doc=split_docs.format_doc,
             action_name="Modify retrieved documentation",
         )
         retrieved_examples = response_on_rag(
             retrieved_examples,
-            get_file_source=split_examples.get_file_source,
+            get_file_source=get_file_source,
             get_section_path=split_examples.get_section_path,
             format_doc=split_examples.format_doc,
             action_name="Modify retrieved examples",

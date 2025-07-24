@@ -1,11 +1,9 @@
-import os
 import re
-from collections import defaultdict
 from typing import List
 
 from langchain_core.documents import Document
 
-from jutulgpt.utils import deduplicate_document_chunks
+from jutulgpt.utils import deduplicate_document_chunks, get_file_source
 
 
 def split_examples(document: Document) -> List[Document]:
@@ -49,12 +47,11 @@ def split_examples(document: Document) -> List[Document]:
     return chunks
 
 
-def get_file_source(doc: Document, for_ui_printing: bool = False) -> str:
-    file_source = doc.metadata.get("source", "Unknown Document")
-    if for_ui_printing:
-        file_source = os.path.basename(file_source)
-        # return f"{file_source}"
-    return file_source
+# def get_file_source(doc: Document, for_ui_printing: bool = False) -> str:
+#     file_source = doc.metadata.get("source", "Unknown Document")
+#     if for_ui_printing:
+#         file_source = os.path.basename(file_source)
+#     return file_source
 
 
 def get_section_path(doc: Document, for_ui_printing: bool = False) -> str:
@@ -68,6 +65,7 @@ def format_doc(doc: Document) -> str:
     return f"```julia\n{doc.page_content.strip()}\n```"
 
 
+# TODO: This is currently the exact same code as the format-docs. Should be generalized.
 def format_examples(
     docs: List[Document], n: int = 5, remove_duplicates: bool = True
 ) -> str:
@@ -75,17 +73,14 @@ def format_examples(
         docs = deduplicate_document_chunks(docs)
 
     docs = docs[:n]
-
-    grouped = defaultdict(list)
-    for doc in docs:
-        key = (
-            doc.metadata.get("source", "Unknown file"),
-            doc.metadata.get("heading", "No heading"),
-        )
-        grouped[key].append(doc.page_content.strip())
-
     formatted = []
-    for (source, heading), contents in grouped.items():
-        section = "\n".join(f"```julia\n{c}\n```" for c in contents)
-        formatted.append(f"# From `{source}`\n# Section: `{heading}`\n{section}")
+    for doc in docs:
+        example_string = ""
+        file_source = get_file_source(doc)
+        section_path = get_section_path(doc)
+        # section = "\n".join(f"```julia\n{c}\n```" for c in doc.page_content.strip())
+        example_string += f"# From `{file_source}`\n# Section: `{section_path}`\n"
+        example_string += f"{format_doc(doc)}"
+        formatted.append(example_string)
+
     return "\n\n".join(formatted)
