@@ -38,8 +38,6 @@ builder.add_node("generate_response", generate_response)
 builder.add_node("tools", tools_node)
 builder.add_node("check_code", check_code)
 builder.add_node("response_on_generated_code", response_on_generated_code)
-builder.add_node("decide_check_code", decide_check_code)
-
 
 builder.add_edge(START, "generate_response")
 builder.add_conditional_edges(
@@ -51,7 +49,6 @@ builder.add_conditional_edges(
     },
 )
 builder.add_edge("tools", "generate_response")
-
 builder.add_conditional_edges(
     "response_on_generated_code",
     decide_check_code,
@@ -60,8 +57,6 @@ builder.add_conditional_edges(
         "check_code": "check_code",
     },
 )
-
-
 builder.add_conditional_edges(
     "check_code",
     decide_to_finish,
