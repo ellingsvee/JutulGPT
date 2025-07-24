@@ -23,7 +23,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pygraphviz>=1.14",
     "python-dotenv>=1.1.1",
-    "transformers>=4.53.1",
+    "transformers>=4.53.3",
     "unstructured[md]>=0.18.2",
 ]
 
@@ -47,5 +47,7 @@ venvPath = "."
 venv = ".venv"
 
 [tool.ruff]
-select = ["I"]
-extend-select = ["I"]
+lint.select = ["I", "F"]
+lint.extend-select = ["I", "F"]
+# select = ["F", "E", "W", "I", "RUF"]
+# fixable = ["ALL"]
