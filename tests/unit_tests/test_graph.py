@@ -23,9 +23,7 @@ def test_decide_to_finish_end_on_no_error():
 
 
 def test_decide_to_finish_end_on_max_iterations():
-    from jutulgpt.configuration import static_config
-
-    state = make_state(error=True, iterations=static_config.max_iterations)
+    state = make_state(error=True, iterations=3)
     assert decide_to_finish(state) == END
 
 
