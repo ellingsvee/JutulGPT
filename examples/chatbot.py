@@ -29,12 +29,15 @@ def main():
             for node, update in chunk.items():
                 # Print only the latest message from the assistant
                 # tool_message = get_tool_message(update["messages"], print=True)
-                msg = update["messages"][-1]
-                # Only print AI messages (not user echo)
-                if getattr(msg, "type", None) == "ai":
-                    if prev_message is None or msg.content != prev_message.content:
-                        print(msg.content)
-                    prev_message = msg
+                try:
+                    msg = update["messages"][-1]
+                    # Only print AI messages (not user echo)
+                    if getattr(msg, "type", None) == "ai":
+                        if prev_message is None or msg.content != prev_message.content:
+                            print(msg.content)
+                        prev_message = msg
+                except Exception as e:
+                    pass
 
 
 if __name__ == "__main__":
