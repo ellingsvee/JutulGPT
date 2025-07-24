@@ -45,9 +45,3 @@ dev = [
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-
-[tool.ruff]
-lint.select = ["I", "F"]
-lint.extend-select = ["I", "F"]
-# select = ["F", "E", "W", "I", "RUF"]
-# fixable = ["ALL"]
