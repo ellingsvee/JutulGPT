@@ -1,11 +1,14 @@
 import os
 from contextlib import contextmanager
-from typing import Generator
+from typing import Generator, Union
 
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import FlashrankRerank
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables import RunnableConfig
 from langchain_core.vectorstores import VectorStoreRetriever
 
+# from langchain_core.documents import BaseDocumentCompressor
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.rag.retriever_specs import RetrieverSpec
 
@@ -87,23 +90,50 @@ def make_faiss_retriever(
     yield vectorstore.as_retriever(search_kwargs=configuration.search_kwargs)
 
 
+def apply_flash_reranker(
+    configuration: BaseConfiguration, retriever: VectorStoreRetriever
+):
+    compressor = FlashrankRerank(**configuration.rerank_kwargs)
+
+    return ContextualCompressionRetriever(
+        base_compressor=compressor, base_retriever=retriever
+    )
+
+
 @contextmanager
 def make_retriever(
     config: RunnableConfig, spec: RetrieverSpec
-) -> Generator[VectorStoreRetriever, None, None]:
+) -> Generator[Union[VectorStoreRetriever, ContextualCompressionRetriever], None, None]:
     """Create a retriever for the agent, based on the current configuration."""
     configuration = BaseConfiguration.from_runnable_config(config)
     embedding_model = make_text_encoder(configuration.embedding_model)
+
+    # Get the retriever
+    selected_retriever = None
     match configuration.retriever_provider:
-        case "faiss":
+        case "FAISS":
             with make_faiss_retriever(
                 configuration, spec, embedding_model
             ) as retriever:
-                yield retriever
+                # yield retriever
+                selected_retriever = retriever
 
         case _:
             raise ValueError(
                 "Unrecognized retriever_provider in configuration. "
                 f"Expected one of: {', '.join(BaseConfiguration.__annotations__['retriever_provider'].__args__)}\n"
                 f"Got: {configuration.retriever_provider}"
+            )
+
+    # Apply the reranker
+    match configuration.rerank_provider:
+        case "Flash":
+            yield apply_flash_reranker(configuration, selected_retriever)
+        case "None":
+            yield selected_retriever
+        case _:
+            raise ValueError(
+                "Unrecognized rerank_provider in configuration. "
+                f"Expected one of: {', '.join(BaseConfiguration.__annotations__['rerank_provider'].__args__)}\n"
+                f"Got: {configuration.rerank_provider}"
             )

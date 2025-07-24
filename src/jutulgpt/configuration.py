@@ -15,9 +15,11 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 from jutulgpt import prompts
 
 # Settings
-USE_LOCAL_MODEL = True
-MAX_ITERATIONS = 3
-INTERACTIVE_ENVIRONMENT = True
+USE_LOCAL_MODEL = True  # Local models uses Ollama. Non-local models uses the OpenAI API
+MAX_ITERATIONS = (
+    3  # If the generated code fails. How many times the model will try to fix the code.
+)
+INTERACTIVE_ENVIRONMENT = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
 
 
 # Initialization
@@ -54,10 +56,10 @@ class BaseConfiguration:
     )
 
     retriever_provider: Annotated[
-        Literal["faiss"],
+        Literal["FAISS"],
         {"__template_metadata__": {"kind": "retriever"}},
     ] = field(
-        default="faiss",
+        default="FAISS",
         metadata={"description": "The vector store provider to use for retrieval."},
     )
 
@@ -66,6 +68,21 @@ class BaseConfiguration:
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever."
         },
+    )
+
+    rerank_provider: Annotated[
+        Literal["None", "Flash"],
+        {"__template_metadata__": {"kind": "reranker"}},
+    ] = field(
+        default="Flash",
+        metadata={
+            "description": "The provider user for reranking the retrieved documents."
+        },
+    )
+
+    rerank_kwargs: dict[str, Any] = field(
+        default_factory=lambda: {"top_n": 3},
+        metadata={"description": "Keyword arguments provided to the Flash reranker"},
     )
 
     @classmethod
@@ -105,5 +122,5 @@ class AgentConfiguration(BaseConfiguration):
     # Prompts
     default_coder_prompt: str = field(
         default=prompts.DEFAULT_CODER_PROMPT,
-        metadata={"description": "The prompt used for generating Julia code."},
+        metadata={"description": "The default prompt used for generating Julia code."},
     )
