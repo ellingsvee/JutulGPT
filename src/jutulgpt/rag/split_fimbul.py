@@ -1,17 +1,8 @@
-import os
-import pickle
 import re
-from abc import ABC
-from collections import defaultdict
 from textwrap import dedent
-from typing import Callable, List
+from typing import List
 
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
-from langchain_text_splitters import (
-    MarkdownHeaderTextSplitter,
-    RecursiveCharacterTextSplitter,
-)
 
 
 def _extract_docstring_function_pairs(code: str):

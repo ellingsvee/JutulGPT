@@ -1,16 +1,7 @@
-import os
-import pickle
 import re
-from abc import ABC
-from collections import defaultdict
-from typing import Callable, List
+from typing import List
 
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_core.documents import Document
-from langchain_text_splitters import (
-    MarkdownHeaderTextSplitter,
-    RecursiveCharacterTextSplitter,
-)
 
 
 def split_examples(document: Document) -> List[Document]:
