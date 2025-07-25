@@ -6,8 +6,5 @@
     "agent": "./src/jutulgpt/graph.py:graph"
   },
   "image_distro": "wolfi",
-  "ui": {
-    "agent": "./src/ui/index.tsx"
-  },
   "env": ".env"
 }
