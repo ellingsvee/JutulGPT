@@ -90,6 +90,40 @@ def make_faiss_retriever(
     yield vectorstore.as_retriever(search_kwargs=configuration.search_kwargs)
 
 
+@contextmanager
+def make_chroma_retriever(
+    configuration: BaseConfiguration, spec: RetrieverSpec, embedding_model: Embeddings
+) -> Generator[VectorStoreRetriever, None, None]:
+    """
+    Create or load a FAISS retriever, saving the index locally to avoid re-indexing.
+    Uses configuration to determine file paths and splitting functions.
+    """
+    import os
+
+    from langchain_chroma import Chroma
+
+    # Load or create FAISS index
+    if os.path.exists(spec.persist_path):
+        vectorstore = Chroma(
+            embedding_function=embedding_model,
+            persist_directory=spec.persist_path,
+            collection_name=spec.collection_name,
+        )
+
+    else:
+        print(f"Creating new Chroma index at {spec.persist_path}")
+        docs = _load_and_split_docs(spec)
+
+        vectorstore = Chroma.from_documents(
+            documents=docs,
+            embedding=embedding_model,
+            persist_directory=spec.persist_path,
+            collection_name=spec.collection_name,
+        )
+
+    yield vectorstore.as_retriever(search_kwargs=configuration.search_kwargs)
+
+
 def apply_flash_reranker(
     configuration: BaseConfiguration, retriever: VectorStoreRetriever
 ):
@@ -111,8 +145,14 @@ def make_retriever(
     # Get the retriever
     selected_retriever = None
     match configuration.retriever_provider:
-        case "FAISS":
+        case "faiss":
             with make_faiss_retriever(
+                configuration, spec, embedding_model
+            ) as retriever:
+                # yield retriever
+                selected_retriever = retriever
+        case "chroma":
+            with make_chroma_retriever(
                 configuration, spec, embedding_model
             ) as retriever:
                 # yield retriever
@@ -127,7 +167,7 @@ def make_retriever(
 
     # Apply the reranker
     match configuration.rerank_provider:
-        case "Flash":
+        case "flash":
             yield apply_flash_reranker(configuration, selected_retriever)
         case "None":
             yield selected_retriever
