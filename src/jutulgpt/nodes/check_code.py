@@ -13,72 +13,74 @@ from jutulgpt.utils import get_last_code_response, split_code_into_lines
 
 
 def check_code(state: State, config: RunnableConfig):
-    print("INSIDE CHECK_CODE")
-
+    # Get the code block to check
     code_block = get_last_code_response(state)
     imports = code_block.imports
     code = code_block.code
 
-    if imports != "" or code != "":
-        if not ALLOW_PACKAGE_INSTALLATION and check_for_package_install(code_block):
-            error_message = """
-The code you generated tries to install a package, which is not allowed. If your are certain that the package is needed, ask the user to manually install it.
-"""
-            return {
-                "messages": [HumanMessage(content=error_message)],
-                "error": True,
-                "error_message": error_message,
-                "iterations": state.iterations + 1,
-            }
+    # If there is no code, nothing to check
+    if not imports and not code:
+        return {}
 
-        # WARNING: This is a very naive implementation, it should be improved.
-        imports = shorter_simulations(imports)
-        code = shorter_simulations(code)
-
-        def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
-            error_message = f"""
-    The code from you previous response failed with the following error. Fix it to provide runnable code!
-
-    Failure in {test_type}. The code failed with the following Julia error message:
-    {julia_error_message}
-    """
-            return error_message
-
-        result = run_string(imports)
-        if result["error"]:
-            julia_error_message = get_error_message(result)
-            error_message = gen_error_message_string("import test", julia_error_message)
-            print(f"check_code: {error_message}")
-
-            return {
-                "messages": [HumanMessage(content=error_message)],
-                "error": True,
-                "error_message": error_message,
-                "iterations": state.iterations + 1,
-            }
-
-        full_code = imports + "\n" + code
-        result = run_string(full_code)
-        if result["error"]:
-            julia_error_message = get_error_message(result)
-            error_message = gen_error_message_string(
-                "code execution test", julia_error_message
-            )
-            print(f"check_code: {error_message}")
-            return {
-                # "messages": messages,
-                "messages": [HumanMessage(content=error_message)],
-                "error": True,
-                "error_message": error_message,
-                "iterations": state.iterations + 1,
-            }
-
+    # Disallow package installation if not permitted
+    if not ALLOW_PACKAGE_INSTALLATION and check_for_package_install(code_block):
+        error_message = (
+            "The code you generated tries to install a package, which is not allowed. "
+            "If you are certain that the package is needed, ask the user to manually install it."
+        )
         return {
-            "messages": [AIMessage(content="Code executed successfully.")],
-            "error": False,
-            "iterations": 0,
+            "messages": [HumanMessage(content=error_message)],
+            "error": True,
+            "error_message": error_message,
+            "iterations": state.iterations + 1,
         }
-    return {}
+
+    # Preprocess code to shorten simulations and remove plotting (naive implementation)
+    imports = shorter_simulations(imports)
+    code = shorter_simulations(code)
+
+    def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
+        # Helper for formatting error messages
+        return (
+            f"The code from your previous response failed with the following error. Fix it to provide runnable code!\n\n"
+            f"Failure in {test_type}. The code failed with the following Julia error message:\n{julia_error_message}"
+        )
+
+    # First, test imports only (to catch missing packages or bad imports early)
+    result = run_string(imports)
+    if result["error"]:
+        julia_error_message = get_error_message(result)
+        error_message = gen_error_message_string("import test", julia_error_message)
+        print(f"check_code: {error_message}")
+        return {
+            "messages": [HumanMessage(content=error_message)],
+            "error": True,
+            "error_message": error_message,
+            "iterations": state.iterations + 1,
+        }
+
+    # Then, test full code (imports + code)
+    full_code = imports + "\n" + code
+    result = run_string(full_code)
+    if result["error"]:
+        julia_error_message = get_error_message(result)
+        error_message = gen_error_message_string(
+            "code execution test", julia_error_message
+        )
+        print(f"check_code: {error_message}")
+        return {
+            "messages": [HumanMessage(content=error_message)],
+            "error": True,
+            "error_message": error_message,
+            "iterations": state.iterations + 1,
+        }
+
+    # If everything succeeded, return success
+    return {
+        "messages": [AIMessage(content="Code executed successfully.")],
+        "error": False,
+        "iterations": 0,
+    }
 
 
 def _shorten_first_argument(code: str, simulation_functions: List[str]) -> str:
