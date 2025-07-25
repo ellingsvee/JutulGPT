@@ -8,9 +8,9 @@ from jutulgpt.utils import deduplicate_document_chunks, get_file_source
 
 def split_examples(document: Document) -> List[Document]:
     """
-    Splits a Document at lines like ``# #` and `# ##`, which represent markdown headings
+    Splits a Document at lines like `# #` and `# ##`, which represent markdown headings
     inside Julia comments. Keeps all content grouped under each such header.
-    Note that we do not split on `# ###` or deeper headings.
+    Note that we do not split on `# ##` or deeper headings.
     """
     content = document.page_content
     lines = content.splitlines()
@@ -32,7 +32,9 @@ def split_examples(document: Document) -> List[Document]:
                 )
 
     for line in lines:
-        heading_match = re.match(r"^#\s+(#{1,2})\s+(.*)", line.strip())
+        heading_match = re.match(
+            r"^#\s+(#{1,2})\s+(.*)", line.strip()
+        )  # Change from {1,2} to f.ex. {1,3} to also split on `# ###`
         if heading_match:
             # Finalize the previous chunk
             finalize_chunk()
@@ -66,13 +68,10 @@ def format_doc(doc: Document) -> str:
 
 
 # TODO: This is currently the exact same code as the format-docs. Should be generalized.
-def format_examples(
-    docs: List[Document], n: int = 5, remove_duplicates: bool = True
-) -> str:
+def format_examples(docs: List[Document], remove_duplicates: bool = True) -> str:
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)
 
-    docs = docs[:n]
     formatted = []
     for doc in docs:
         example_string = ""
