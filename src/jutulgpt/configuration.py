@@ -15,11 +15,16 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 from jutulgpt import prompts
 
 # Settings
-USE_LOCAL_MODEL = True  # Local models uses Ollama. Non-local models uses the OpenAI API
+USE_LOCAL_MODEL = (
+    False  # Local models uses Ollama. Non-local models uses the OpenAI API
+)
 MAX_ITERATIONS = (
     3  # If the generated code fails. How many times the model will try to fix the code.
 )
 INTERACTIVE_ENVIRONMENT = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
+RETRIEVE_FIMBUL = True  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
+RETRIEVED_DOCS = 2
+RETRIEVED_EXAMPLES = 2
 
 
 # Initialization
@@ -56,32 +61,32 @@ class BaseConfiguration:
     )
 
     retriever_provider: Annotated[
-        Literal["FAISS"],
+        Literal["faiss", "chroma"],
         {"__template_metadata__": {"kind": "retriever"}},
     ] = field(
-        default="FAISS",
+        default="chroma",
         metadata={"description": "The vector store provider to use for retrieval."},
     )
 
     search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"k": 8},
+        default_factory=lambda: {"k": 6},
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever."
         },
     )
 
     rerank_provider: Annotated[
-        Literal["None", "Flash"],
+        Literal["None", "flash"],
         {"__template_metadata__": {"kind": "reranker"}},
     ] = field(
-        default="Flash",
+        default="flash",
         metadata={
             "description": "The provider user for reranking the retrieved documents."
         },
     )
 
     rerank_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"top_n": 3},
+        default_factory=lambda: {"top_n": 2},
         metadata={"description": "Keyword arguments provided to the Flash reranker"},
     )
 
