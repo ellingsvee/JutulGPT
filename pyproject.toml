@@ -10,6 +10,7 @@ dependencies = [
     "ipython>=9.4.0",
     "jutuldarcy>=1.1.0",
     "langchain>=0.3.26",
+    "langchain-chroma>=0.2.5",
     "langchain-community>=0.3.26",
     "langchain-core>=0.3.67",
     "langchain-ollama>=0.3.3",
