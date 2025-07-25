@@ -39,16 +39,22 @@ def response_on_rag(
     if not docs:
         return docs
 
-    # TODO: Handle the case when the get_section_path retrieved the same section path for multiple documents
     action_request_args = {}
     arg_names = []
+
     for _, doc in enumerate(docs):
-        section_path = get_section_path(doc, for_ui_printing=True)
-        file_source = get_file_source(doc, for_ui_printing=True)
+        section_path = get_section_path(doc)
+        file_source = get_file_source(doc)
         arg_name = f"{file_source} - {section_path}"
-        # arg_name = section_path
+        # Ensure arg_name is unique by appending a suffix if needed
+        original_arg_name = arg_name
+        suffix = 1
+        while arg_name in action_request_args:
+            arg_name = f"{original_arg_name} ({suffix}kh"
+            suffix += 1
         arg_names.append(arg_name)
-        action_request_args[f"{arg_name}"] = format_doc(doc)
+        content = format_doc(doc)
+        action_request_args[arg_name] = content
 
     description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
     request = HumanInterrupt(
