@@ -3,18 +3,13 @@
 import re
 from typing import List
 
-from langchain_core.messages import (
-    AIMessage,
-    HumanMessage,
-)
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
+from jutulgpt.configuration import ALLOW_PACKAGE_INSTALLATION
 from jutulgpt.julia_interface import get_error_message, run_string
-from jutulgpt.state import State
-from jutulgpt.utils import (
-    get_last_code_response,
-    split_code_into_lines,
-)
+from jutulgpt.state import CodeBlock, State
+from jutulgpt.utils import get_last_code_response, split_code_into_lines
 
 
 def check_code(state: State, config: RunnableConfig):
@@ -25,10 +20,20 @@ def check_code(state: State, config: RunnableConfig):
     code = code_block.code
 
     if imports != "" or code != "":
+        if not ALLOW_PACKAGE_INSTALLATION and check_for_package_install(code_block):
+            error_message = """
+The code you generated tries to install a package, which is not allowed. If your are certain that the package is needed, ask the user to manually install it.
+"""
+            return {
+                "messages": [HumanMessage(content=error_message)],
+                "error": True,
+                "error_message": error_message,
+                "iterations": state.iterations + 1,
+            }
+
+        # WARNING: This is a very naive implementation, it should be improved.
         imports = shorter_simulations(imports)
-        code = shorter_simulations(
-            code
-        )  # If the code contains simulations, replace them with shorter ones
+        code = shorter_simulations(code)
 
         def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
             error_message = f"""
@@ -199,3 +204,17 @@ def shorter_simulations(code: str) -> str:
     code = _remove_plotting(code)
 
     return code
+
+
+def check_for_package_install(code_block: CodeBlock) -> bool:
+    not_allowed = [
+        "using Pkg",  # Pkg is used to install packages, which is not allowed
+        "Pkg.add",  # Pkg.add is used to install packages, which is not allowed
+        "Pkg.update",  # Pkg.update is used to update packages, which is not allowed
+        "Pkg.instantiate",  # Pkg.instantiate is used to install dependencies, which is not allowed
+    ]
+    if any(item in code_block.imports for item in not_allowed):
+        return True
+    if any(item in code_block.code for item in not_allowed):
+        return True
+    return False

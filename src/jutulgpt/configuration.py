@@ -25,6 +25,7 @@ INTERACTIVE_ENVIRONMENT = True  # The human-in-the-loop works poorly in the term
 RETRIEVE_FIMBUL = True  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
 RETRIEVED_DOCS = 2
 RETRIEVED_EXAMPLES = 2
+ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
 
 
 # Initialization
