@@ -33,9 +33,10 @@ def decide_check_code(
     print("Inside decide_check_code")
 
     if INTERACTIVE_ENVIRONMENT:
-        # Only give the option is there are any code to check.
+        # Only prompt the user if there is code to check
         code_block = get_last_code_response(state)
         if code_block.imports != "" or code_block.code != "":
+            # Prepare the message and UI description for the human-in-the-loop prompt
             interrupt_message = "Do you want to check the code before proceeding? If you accept, the agent will run the code and try to fix potential errors. If you ignore, the agent will finish."
 
             description = (
@@ -44,6 +45,7 @@ def decide_check_code(
                 + "If you ignore, the agent will finish."
             )
 
+            # Create the human interrupt request
             request = HumanInterrupt(
                 action_request=ActionRequest(
                     action="Check code?",
@@ -58,6 +60,7 @@ def decide_check_code(
                 description=description,
             )
 
+            # Wait for the user's response
             human_response: HumanResponse = interrupt([request])[0]
             response_type = human_response.get("type")
 
@@ -72,5 +75,5 @@ def decide_check_code(
         else:
             # Go to end if no code has been generated.
             return END
-    # Go to check_code if not in an interactive environment
+    # If not in an interactive environment, always check the code
     return "check_code"

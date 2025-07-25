@@ -1,9 +1,14 @@
-"""Define the state structures for the agent."""
+"""
+State structures for the agent, including:
+- InputState: initial and ongoing message state for the agent's execution.
+- State: main agent state, tracks errors, iterations, and step control.
+- CodeBlock: container for code and imports, with formatting helpers.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Sequence
+from typing import List
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
@@ -14,34 +19,25 @@ from typing_extensions import Annotated
 
 @dataclass
 class InputState:
-    """Defines the input state for the agent, representing a narrower interface to the outside world.
+    """
+    Base input state for the agent, representing the evolving conversation and tool interaction history.
 
-    This class is used to define the initial state and structure of incoming data.
+    - messages: List of all messages exchanged so far (user, AI, tool, etc.).
+      The `add_messages` annotation ensures new messages are merged by ID, so the state is append-only unless a message is replaced.
     """
 
     messages: Annotated[List[AnyMessage], add_messages] = field(default_factory=list)
-    """
-    Messages tracking the primary execution state of the agent.
-
-    Typically accumulates a pattern of:
-    1. HumanMessage - user input
-    2. AIMessage with .tool_calls - agent picking tool(s) to use to collect information
-    3. ToolMessage(s) - the responses (or errors) from the executed tools
-    4. AIMessage without .tool_calls - agent responding in unstructured format to the user
-    5. HumanMessage - user responds with the next conversational turn
-
-    Steps 2-5 may repeat as needed.
-
-    The `add_messages` annotation ensures that new messages are merged with existing ones,
-    updating by ID to maintain an "append-only" state unless a message with the same ID is provided.
-    """
 
 
 @dataclass
 class State(InputState):
-    """Represents the complete state of the agent, extending InputState with additional attributes.
+    """
+    Main agent state, extends InputState with error tracking, step control, and iteration count.
 
-    This class can be used to store any information needed throughout the agent's lifecycle.
+    - is_last_step: True if the next step will hit the recursion limit (managed by the graph, not user code).
+    - error: True if the agent encountered an error in the last step.
+    - error_message: Details of the last error, if any.
+    - iterations: Number of steps/turns taken so far (useful for limiting recursion or debugging).
     """
 
     is_last_step: IsLastStep = field(default=False)
@@ -49,19 +45,26 @@ class State(InputState):
     error_message: str = field(default="")
     iterations: int = field(default=0)
 
-    """
-    is_last_step: Indicates whether the current step is the last one before the graph raises an error. This is a 'managed' variable, controlled by the state machine rather than user code. It is set to 'True' when the step count reaches recursion_limit - 1.
-    """
-
 
 class CodeBlock(BaseModel):
+    """
+    Container for a code block, split into imports and main code.
+
+    - imports: Any import statements needed for the code to run.
+    - code: The main code body (excluding imports).
+
+    """
+
     imports: str = Field(default="", description="Code block import statements")
     code: str = Field(
         default="", description="Code block not including import statements"
     )
 
     def get_full_code(self, within_julia_context: bool = False) -> str:
-        """Returns the full code block including imports."""
+        """
+        Returns the full code block, optionally wrapped as a Julia markdown code block.
+        If within_julia_context is True, wraps the code in triple backticks and 'julia' for syntax highlighting.
+        """
         full_code = "```julia" if within_julia_context else ""
         if self.imports:
             full_code += "\n" if within_julia_context else ""

@@ -37,11 +37,12 @@ def response_on_rag(
         List[Document]: The list of documents after potential modifications by the user. Documents with empty content are removed.
     """
     if not docs:
-        return docs
+        return docs  # Nothing to do if no documents
 
     action_request_args = {}
     arg_names = []
 
+    # Build the arguments for the UI, ensuring unique names for each document
     for _, doc in enumerate(docs):
         section_path = get_section_path(doc)
         file_source = get_file_source(doc)
@@ -56,6 +57,7 @@ def response_on_rag(
         content = format_doc(doc)
         action_request_args[arg_name] = content
 
+    # Prepare the human-in-the-loop UI request
     description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
     request = HumanInterrupt(
         action_request=ActionRequest(
@@ -71,9 +73,11 @@ def response_on_rag(
         description=description,
     )
 
+    # Wait for the user's response from the UI
     human_response: HumanResponse = interrupt([request])[0]
     response_type = human_response.get("type")
     if response_type == "edit":
+        # User edited one or more documents
         args_dics = human_response.get("args", {}).get("args", {})
         for arg_name, new_content in args_dics.items():
             if not new_content:
@@ -81,12 +85,15 @@ def response_on_rag(
                 docs.pop(arg_names.index(arg_name))
                 arg_names.pop(arg_names.index(arg_name))
                 continue
+            # Update the document with the new content
             doc = docs[arg_names.index(arg_name)]
             docs[arg_names.index(arg_name)] = modify_doc_content(doc, new_content)
 
     elif response_type == "ignore":
+        # User chose to ignore editing
         pass
     else:
+        # Unexpected response type
         raise TypeError(f"Interrupt value of type {response_type} is not supported.")
 
     return docs

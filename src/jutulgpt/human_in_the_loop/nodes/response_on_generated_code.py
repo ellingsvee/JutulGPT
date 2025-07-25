@@ -8,7 +8,7 @@ from langgraph.prebuilt.interrupt import (
 )
 from langgraph.types import interrupt
 
-from jutulgpt.configuration import AgentConfiguration, INTERACTIVE_ENVIRONMENT
+from jutulgpt.configuration import INTERACTIVE_ENVIRONMENT
 from jutulgpt.state import State
 from jutulgpt.utils import get_last_code_response
 
@@ -27,16 +27,18 @@ def response_on_generated_code(state: State, config: RunnableConfig):
     Returns:
         dict: A dictionary with updated messages if the code was edited, or an empty dict if not.
     """
-    configuration = AgentConfiguration.from_runnable_config(config)
-
     if INTERACTIVE_ENVIRONMENT:
+        # Get the most recent code block from the state
         code_block = get_last_code_response(state)
 
+        # If there is no code to edit, return immediately
         if code_block.imports == "" and code_block.code == "":
             return {}
 
+        # Format the code for display in the UI
         full_code = code_block.get_full_code(within_julia_context=True)
 
+        # Prepare the human-in-the-loop UI request
         description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
         request = HumanInterrupt(
             action_request=ActionRequest(
@@ -53,12 +55,13 @@ def response_on_generated_code(state: State, config: RunnableConfig):
             description=description,
         )
 
+        # Wait for the user's response from the UI
         human_response: HumanResponse = interrupt([request])[0]
         response_type = human_response.get("type")
         if response_type == "edit":
             args_dics = human_response.get("args", {}).get("args", {})
 
-            # Get the updated imports and code
+            # Get the updated code (or the original if unchanged)
             full_code_edited = args_dics.get("code", full_code)
 
             # If the code was just submitted without any edits
@@ -68,7 +71,7 @@ def response_on_generated_code(state: State, config: RunnableConfig):
 
             full_code = full_code_edited
 
-            # Add a new message to the state
+            # Add a new message to the state reflecting the user's update
             human_message_content = f"""The code was updated by the user. The following is what will be run and checked:
 {full_code}
 """
