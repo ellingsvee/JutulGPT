@@ -59,7 +59,14 @@ def response_on_generated_code(state: State, config: RunnableConfig):
             args_dics = human_response.get("args", {}).get("args", {})
 
             # Get the updated imports and code
-            full_code = args_dics.get("code", full_code)
+            full_code_edited = args_dics.get("code", full_code)
+
+            # If the code was just submitted without any edits
+            if full_code_edited == full_code:
+                print("Code was submitted without edits.")
+                return {}
+
+            full_code = full_code_edited
 
             # Add a new message to the state
             human_message_content = f"""The code was updated by the user. The following is what will be run and checked:
