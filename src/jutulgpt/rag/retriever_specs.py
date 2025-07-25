@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from jutulgpt.configuration import PROJECT_ROOT, USE_LOCAL_MODEL
+from jutulgpt.configuration import (
+    PROJECT_ROOT,
+    USE_LOCAL_MODEL,
+)
 from jutulgpt.rag import split_docs, split_examples
 
 
@@ -48,5 +51,37 @@ RETRIEVER_SPECS = {
             filetype="jl",
             split_func=split_examples.split_examples,
         ),
-    }
+    },
+    "fimbul": {
+        "docs": RetrieverSpec(
+            dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "docs" / "man"),
+            persist_path=str(
+                PROJECT_ROOT
+                / "rag"
+                / "faiss_store"
+                / f"faiss_fimbul_docs_{faiss_dir_name}"
+            ),
+            cache_path=str(
+                PROJECT_ROOT / "rag" / "loaded_store" / "loaded_fimbul_docs.pkl"
+            ),
+            collection_name="fimbul_docs",
+            filetype="md",
+            split_func=split_docs.split_docs,
+        ),
+        "examples": RetrieverSpec(
+            dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "examples"),
+            persist_path=str(
+                PROJECT_ROOT
+                / "rag"
+                / "faiss_store"
+                / f"faiss_fimbul_examples_{faiss_dir_name}"
+            ),
+            cache_path=str(
+                PROJECT_ROOT / "rag" / "loaded_store" / "loaded_fimbul_examples.pkl"
+            ),
+            collection_name="fimbul_examples",
+            filetype="jl",
+            split_func=split_examples.split_examples,
+        ),
+    },
 }
