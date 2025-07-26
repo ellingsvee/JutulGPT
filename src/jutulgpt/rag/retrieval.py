@@ -87,7 +87,9 @@ def make_faiss_retriever(
         )
         vectorstore.save_local(spec.persist_path)
 
-    yield vectorstore.as_retriever(search_kwargs=configuration.search_kwargs)
+    yield vectorstore.as_retriever(
+        search_type=configuration.search_type, search_kwargs=configuration.search_kwargs
+    )
 
 
 @contextmanager
@@ -121,7 +123,9 @@ def make_chroma_retriever(
             collection_name=spec.collection_name,
         )
 
-    yield vectorstore.as_retriever(search_kwargs=configuration.search_kwargs)
+    yield vectorstore.as_retriever(
+        search_type=configuration.search_type, search_kwargs=configuration.search_kwargs
+    )
 
 
 def apply_flash_reranker(

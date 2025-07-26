@@ -23,12 +23,10 @@ MAX_ITERATIONS = (
 )
 INTERACTIVE_ENVIRONMENT = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
 RETRIEVE_FIMBUL = True  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
-RETRIEVED_DOCS = 2
-RETRIEVED_EXAMPLES = 2
 ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
 
 
-# Initialization
+# Setup of the environment and some logging. Not neccessary to touch this.
 def _set_env(var: str):
     if not os.environ.get(var):
         os.environ[var] = getpass.getpass(f"{var}: ")
@@ -69,10 +67,20 @@ class BaseConfiguration:
         metadata={"description": "The vector store provider to use for retrieval."},
     )
 
-    search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"k": 6},
+    search_type: Annotated[
+        Literal["similarity", "mmr", "similarity_score_threshold"],
+        {"__template_metadata__": {"kind": "reranker"}},
+    ] = field(
+        default="mmr",
         metadata={
-            "description": "Additional keyword arguments to pass to the search function of the retriever."
+            "description": "Defines the type of search that the Retriever should perform."
+        },
+    )
+
+    search_kwargs: dict[str, Any] = field(
+        default_factory=lambda: {"k": 3, "fetch_k": 15},
+        metadata={
+            "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types."
         },
     )
 
@@ -80,14 +88,14 @@ class BaseConfiguration:
         Literal["None", "flash"],
         {"__template_metadata__": {"kind": "reranker"}},
     ] = field(
-        default="flash",
+        default="None",
         metadata={
             "description": "The provider user for reranking the retrieved documents."
         },
     )
 
     rerank_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"top_n": 2},
+        default_factory=lambda: {"top_n": 3, "score_threshold": 0.75},
         metadata={"description": "Keyword arguments provided to the Flash reranker"},
     )
 
