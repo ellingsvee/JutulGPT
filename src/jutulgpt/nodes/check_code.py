@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 from jutulgpt.configuration import ALLOW_PACKAGE_INSTALLATION
+from jutulgpt.human_in_the_loop import check_shortened_code
 from jutulgpt.julia_interface import get_error_message, run_string
 from jutulgpt.state import CodeBlock, State
 from jutulgpt.utils import get_last_code_response, split_code_into_lines
@@ -38,6 +39,12 @@ def check_code(state: State, config: RunnableConfig):
     # Preprocess code to shorten simulations and remove plotting (naive implementation)
     imports = shorter_simulations(imports)
     code = shorter_simulations(code)
+
+    # Add a human interagtion to check the shortened code
+    imports, code = check_shortened_code(imports, code)
+
+    # WARNING: If we try to use the Fimbul package, we for some reason need to activate the package environment. This should be fixed in the future.
+    imports = fix_fimbul_imports(imports)
 
     def gen_error_message_string(test_type: str, julia_error_message: str) -> str:
         # Helper for formatting error messages
@@ -220,3 +227,10 @@ def check_for_package_install(code_block: CodeBlock) -> bool:
     if any(item in code_block.code for item in not_allowed):
         return True
     return False
+
+
+def fix_fimbul_imports(imports: str) -> str:
+    if "Fimbul" not in imports:
+        return imports  # No need to fix if Fimbul is not imported
+    imports = 'using Pkg; Pkg.activate(".");\n' + imports
+    return imports
