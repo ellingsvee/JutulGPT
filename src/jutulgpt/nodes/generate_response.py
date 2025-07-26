@@ -37,7 +37,6 @@ def generate_response(state: State, config: RunnableConfig):
     system_message = configuration.default_coder_prompt
 
     trimmedStateMessages = trim_messages(
-        # messages + error_message_list,
         messages,
         max_tokens=40000,  # adjust for model's context window minus system & files message
         strategy="last",

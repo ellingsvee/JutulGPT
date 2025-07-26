@@ -49,6 +49,8 @@ builder.add_conditional_edges(
     },
 )
 builder.add_edge("tools", "generate_response")
+
+# TODO: Using the conditional edge here means that the code updated by the user is not printed to the UI before after the decide_check_code interaction.
 builder.add_conditional_edges(
     "response_on_generated_code",
     decide_check_code,
