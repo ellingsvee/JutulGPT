@@ -1,7 +1,7 @@
 # Custom
 graph.png
-src/jutulgpt/rag/faiss_store/*
-!src/jutulgpt/rag/faiss_store/__init__.py
+src/jutulgpt/rag/retriever_store/*
+!src/jutulgpt/rag/retriever_store/__init__.py
 src/jutulgpt/rag/loaded_store/*
 !src/jutulgpt/rag/loaded_store/__init__.py
 .langgraph_api/
