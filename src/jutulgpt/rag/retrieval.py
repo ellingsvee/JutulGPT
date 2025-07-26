@@ -88,7 +88,8 @@ def make_faiss_retriever(
         vectorstore.save_local(spec.persist_path)
 
     yield vectorstore.as_retriever(
-        search_type=configuration.search_type, search_kwargs=configuration.search_kwargs
+        search_type=configuration.search_type,
+        search_kwargs={**configuration.search_kwargs, "k": spec.n_retrieved},
     )
 
 
@@ -124,7 +125,8 @@ def make_chroma_retriever(
         )
 
     yield vectorstore.as_retriever(
-        search_type=configuration.search_type, search_kwargs=configuration.search_kwargs
+        search_type=configuration.search_type,
+        search_kwargs={**configuration.search_kwargs, "k": spec.n_retrieved},
     )
 
 

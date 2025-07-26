@@ -33,6 +33,11 @@ def split_docs(
                     r"\s*\{#[^}]*\}", "", split.metadata[key]
                 ).strip()
 
+        # Remove ```ansi blocks from each split's page_content
+        split.page_content = re.sub(
+            r"```ansi[\s\S]*?```", "", split.page_content, flags=re.MULTILINE
+        ).strip()
+
     return splits
 
 

@@ -6,11 +6,12 @@ from langchain_core.documents import Document
 from jutulgpt.utils import deduplicate_document_chunks, get_file_source
 
 
-def split_examples(document: Document) -> List[Document]:
+def split_examples(document: Document, header_to_split_on: int = 2) -> List[Document]:
     """
-    Splits a Document at lines like `# #` and `# ##`, which represent markdown headings
+    Splits a Document at lines like `# #`, which represent markdown headings
     inside Julia comments. Keeps all content grouped under each such header.
-    Note that we do not split on `# ##` or deeper headings.
+
+    For the headers_to_split_on set 1 to split on "# #", 2 to split on "# #" and "# ##", and so on.
     """
     content = document.page_content
     lines = content.splitlines()
@@ -33,8 +34,8 @@ def split_examples(document: Document) -> List[Document]:
 
     for line in lines:
         heading_match = re.match(
-            r"^#\s+(#{1,2})\s+(.*)", line.strip()
-        )  # Change from {1,2} to f.ex. {1,3} to also split on `# ###`
+            rf"^#\s+(#{{1,{header_to_split_on}}})\s+(.*)", line.strip()
+        )
         if heading_match:
             # Finalize the previous chunk
             finalize_chunk()

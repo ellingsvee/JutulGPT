@@ -24,6 +24,8 @@ MAX_ITERATIONS = (
 INTERACTIVE_ENVIRONMENT = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
 RETRIEVE_FIMBUL = True  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
 ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
+N_RETRIEVED_DOCS = 4  # Number of documents to retrieve in RAG.
+N_RETRIEVED_EXAMPLES = 2  # Number of examples to retrieve in RAG.
 
 
 # Setup of the environment and some logging. Not neccessary to touch this.
@@ -78,7 +80,9 @@ class BaseConfiguration:
     )
 
     search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"k": 3, "fetch_k": 15},
+        default_factory=lambda: {
+            "fetch_k": 15
+        },  # NOTE: The "k" is set in the retriever specs by the N_RETRIEVED_DOCS and N_RETRIEVED_EXAMPLES variables.
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types."
         },
