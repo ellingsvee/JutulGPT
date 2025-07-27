@@ -8,7 +8,7 @@ import jutulgpt.rag.retrieval as retrieval
 import jutulgpt.rag.split_docs as split_docs
 import jutulgpt.rag.split_examples as split_examples
 from jutulgpt.configuration import HUMAN_INTERACTION
-from jutulgpt.human_in_the_loop.response_on_rag import response_on_rag
+from jutulgpt.human_in_the_loop import modify_rag_query, response_on_rag
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
 
@@ -28,6 +28,9 @@ def retrieve_jutuldarcy(
     Returns:
         String containing the formatted output from the retriever
     """
+    # Modify the query:
+    query = modify_rag_query(query=query, retriever_name="JutulDarcy")
+
     with retrieval.make_retriever(
         config=config, spec=RETRIEVER_SPECS["jutuldarcy"]["docs"]
     ) as retriever:
@@ -43,27 +46,28 @@ def retrieve_jutuldarcy(
             get_file_source=get_file_source,
             get_section_path=split_docs.get_section_path,
             format_doc=split_docs.format_doc,
-            action_name="Modify retrieved documentation",
+            action_name="Modify retrieved JutulDarcy documentation",
         )
         retrieved_examples = response_on_rag(
             retrieved_examples,
             get_file_source=get_file_source,
             get_section_path=split_examples.get_section_path,
             format_doc=split_examples.format_doc,
-            action_name="Modify retrieved examples",
+            action_name="Modify retrieved JutulDarcy examples",
         )
 
     docs = split_docs.format_docs(retrieved_docs)
     examples = split_examples.format_examples(retrieved_examples)
 
+    format_str = lambda s: s if s != "" else "(empty)"
     out = f"""
     # Retrieved from the JutulDarcy documentation:
 
-    {docs}
+    {format_str(docs)}
 
     # Retrieved from the JutulDarcy examples:
 
-    {examples}
+    {format_str(examples)}
     """
 
     return out
@@ -82,6 +86,9 @@ def retrieve_fimbul(
     Returns:
         String containing the formatted output from the retriever
     """
+    # Modify the query:
+    query = modify_rag_query(query=query, retriever_name="Fimbul")
+
     with retrieval.make_retriever(
         config=config, spec=RETRIEVER_SPECS["fimbul"]["docs"]
     ) as retriever:
@@ -102,27 +109,31 @@ def retrieve_fimbul(
             get_file_source=get_file_source,
             get_section_path=split_docs.get_section_path,
             format_doc=split_docs.format_doc,
-            action_name="Modify retrieved documentation",
+            action_name="Modify retrieved Fimbul documentation",
         )
         retrieved_examples = response_on_rag(
             retrieved_examples,
             get_file_source=get_file_source,
             get_section_path=split_examples.get_section_path,
             format_doc=split_examples.format_doc,
-            action_name="Modify retrieved examples",
+            action_name="Modify retrieved Fimbul examples",
         )
 
     docs = split_docs.format_docs(retrieved_docs)
     examples = split_examples.format_examples(retrieved_examples)
 
+    print(f"retrieved docs: {docs}")
+    print(f"retrieved examples: {examples}")
+
+    format_str = lambda s: s if s != "" else "(empty)"
     out = f"""
     # Retrieved from the Fimbul documentation:
 
-    {docs}
+    {format_str(docs)}
 
     # Retrieved from the Fimbul examples:
 
-    {examples}
+    {format_str(examples)}
     """
 
     return out

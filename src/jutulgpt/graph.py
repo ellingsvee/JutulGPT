@@ -6,7 +6,6 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import tools_condition
 
 from jutulgpt.configuration import MAX_ITERATIONS, AgentConfiguration
-from jutulgpt.human_in_the_loop import decide_check_code, response_on_generated_code
 from jutulgpt.nodes import check_code, generate_response, tools_node
 from jutulgpt.state import State
 
@@ -37,28 +36,18 @@ builder = StateGraph(State, config_schema=AgentConfiguration)
 builder.add_node("generate_response", generate_response)
 builder.add_node("tools", tools_node)
 builder.add_node("check_code", check_code)
-builder.add_node("response_on_generated_code", response_on_generated_code)
 
 builder.add_edge(START, "generate_response")
 builder.add_conditional_edges(
     "generate_response",
     tools_condition,
     {
-        END: "response_on_generated_code",
+        END: "check_code",
         "tools": "tools",
     },
 )
 builder.add_edge("tools", "generate_response")
 
-# TODO: Using the conditional edge here means that the code updated by the user is not printed to the UI before after the decide_check_code interaction.
-builder.add_conditional_edges(
-    "response_on_generated_code",
-    decide_check_code,
-    {
-        END: END,
-        "check_code": "check_code",
-    },
-)
 builder.add_conditional_edges(
     "check_code",
     decide_to_finish,

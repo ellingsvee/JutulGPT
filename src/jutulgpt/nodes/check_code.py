@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 from jutulgpt.configuration import ALLOW_PACKAGE_INSTALLATION
-from jutulgpt.human_in_the_loop import check_shortened_code
+from jutulgpt.human_in_the_loop import response_on_check_code
 from jutulgpt.julia_interface import get_error_message, run_string
 from jutulgpt.state import CodeBlock, State
 from jutulgpt.utils import get_last_code_response, split_code_into_lines
@@ -16,12 +16,16 @@ from jutulgpt.utils import get_last_code_response, split_code_into_lines
 def check_code(state: State, config: RunnableConfig):
     # Get the code block to check
     code_block = get_last_code_response(state)
+
+    # Human interaction to potentially modify the code of not check it
+    code_block, check_code_bool, extra_messages = response_on_check_code(code_block)
+
+    # Return early if the user chose to ignore the code check
+    if not check_code_bool:
+        return {}
+
     imports = code_block.imports
     code = code_block.code
-
-    # If there is no code, nothing to check
-    if not imports and not code:
-        return {}
 
     # Disallow package installation if not permitted
     if not ALLOW_PACKAGE_INSTALLATION and check_for_package_install(code_block):
@@ -30,7 +34,7 @@ def check_code(state: State, config: RunnableConfig):
             "If you are certain that the package is needed, ask the user to manually install it."
         )
         return {
-            "messages": [HumanMessage(content=error_message)],
+            "messages": extra_messages + [HumanMessage(content=error_message)],
             "error": True,
             "error_message": error_message,
             "iterations": state.iterations + 1,
@@ -39,9 +43,6 @@ def check_code(state: State, config: RunnableConfig):
     # Preprocess code to shorten simulations and remove plotting (naive implementation)
     imports = shorter_simulations(imports)
     code = shorter_simulations(code)
-
-    # Add a human interagtion to check the shortened code
-    imports, code = check_shortened_code(imports, code)
 
     # WARNING: If we try to use the Fimbul package, we for some reason need to activate the package environment. This should be fixed in the future.
     imports = fix_fimbul_imports(imports)
@@ -60,7 +61,7 @@ def check_code(state: State, config: RunnableConfig):
         error_message = gen_error_message_string("import test", julia_error_message)
         print(f"check_code: {error_message}")
         return {
-            "messages": [HumanMessage(content=error_message)],
+            "messages": extra_messages + [HumanMessage(content=error_message)],
             "error": True,
             "error_message": error_message,
             "iterations": state.iterations + 1,
@@ -76,7 +77,7 @@ def check_code(state: State, config: RunnableConfig):
         )
         print(f"check_code: {error_message}")
         return {
-            "messages": [HumanMessage(content=error_message)],
+            "messages": extra_messages + [HumanMessage(content=error_message)],
             "error": True,
             "error_message": error_message,
             "iterations": state.iterations + 1,
@@ -84,7 +85,7 @@ def check_code(state: State, config: RunnableConfig):
 
     # If everything succeeded, return success
     return {
-        "messages": [AIMessage(content="Code executed successfully.")],
+        "messages": extra_messages + [AIMessage(content="Code executed successfully.")],
         "error": False,
         "iterations": 0,
     }

@@ -66,7 +66,7 @@ def response_on_rag(
         ),
         config=HumanInterruptConfig(
             allow_ignore=True,
-            allow_accept=False,
+            allow_accept=True,
             allow_respond=False,
             allow_edit=True,
         ),
@@ -76,22 +76,36 @@ def response_on_rag(
     # Wait for the user's response from the UI
     human_response: HumanResponse = interrupt([request])[0]
     response_type = human_response.get("type")
+    # if response_type == "edit":
+    #     # User edited one or more documents
+    #     args_dics = human_response.get("args", {}).get("args", {})
+    #     for arg_name, new_content in args_dics.items():
+    #         if not new_content or not new_content.strip():
+    #             # Remove the document if new_content is empty or only whitespace
+    #             docs.pop(arg_names.index(arg_name))
+    #             arg_names.pop(arg_names.index(arg_name))
+    #             continue
+    #         # Update the document with the new content
+    #         doc = docs[arg_names.index(arg_name)]
+    #         docs[arg_names.index(arg_name)] = modify_doc_content(doc, new_content)
     if response_type == "edit":
         # User edited one or more documents
         args_dics = human_response.get("args", {}).get("args", {})
-        for arg_name, new_content in args_dics.items():
-            if not new_content:
-                # Remove the document if new_content is empty
-                docs.pop(arg_names.index(arg_name))
-                arg_names.pop(arg_names.index(arg_name))
-                continue
-            # Update the document with the new content
-            doc = docs[arg_names.index(arg_name)]
-            docs[arg_names.index(arg_name)] = modify_doc_content(doc, new_content)
+        new_docs = []
+        for i, (arg_name, doc) in enumerate(zip(arg_names, docs)):
+            new_content = args_dics.get(arg_name, None)
+            if new_content and new_content.strip():
+                # Keep and update the document if content is not empty/whitespace
+                new_docs.append(modify_doc_content(doc, new_content))
+            # else: skip (remove) the doc
+        docs = new_docs
 
-    elif response_type == "ignore":
-        # User chose to ignore editing
+    elif response_type == "accept":
+        # If accepted, no changes to documents
         pass
+    elif response_type == "ignore":
+        # If ignores, all retrieved documents are removed
+        docs = []
     else:
         # Unexpected response type
         raise TypeError(f"Interrupt value of type {response_type} is not supported.")

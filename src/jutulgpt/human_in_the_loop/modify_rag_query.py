@@ -9,23 +9,22 @@ from langgraph.types import interrupt
 from jutulgpt.configuration import HUMAN_INTERACTION
 
 
-def check_shortened_code(imports: str, code: str) -> tuple[str, str]:
+def modify_rag_query(query: str, retriever_name: str) -> str:
     """
     The code is shortened before the test run. This interaction allows the user to previev the shoretned code to make sure nothing breaking has happened.
     """
     if HUMAN_INTERACTION:
-        interrupt_message = "The code has automatically been shortened for faster runtime and for avoiding potential softlocks. Fix potential errors, or ifnore to run it as is."
+        interrupt_message = f"Trying to retrieve documents from {retriever_name}. Modify the query if needed."
 
         description = interrupt_message
 
         # Create the human interrupt request
         request = HumanInterrupt(
             action_request=ActionRequest(
-                action="Check shortened code",
-                args={"imports": imports, "code": code},
+                action=f"Modify {retriever_name} query", args={"Query": query}
             ),
             config=HumanInterruptConfig(
-                allow_ignore=True,
+                allow_ignore=False,
                 allow_accept=True,
                 allow_respond=False,
                 allow_edit=True,
@@ -39,15 +38,15 @@ def check_shortened_code(imports: str, code: str) -> tuple[str, str]:
 
         if response_type == "edit":
             args_dics = human_response.get("args", {}).get("args", {})
-            imports = args_dics.get("imports", imports)
-            code = args_dics.get("code", code)
-
-        elif human_response.get("type") == "accept":
-            pass
+            new_query = args_dics.get("Query", query)
+            if new_query.strip() != "":
+                query = new_query
         elif human_response.get("type") == "ignore":
+            pass
+        elif human_response.get("type") == "accept":
             pass
         else:
             raise TypeError(
                 f"Interrupt value of type {type(human_response)} is not supported."
             )
-    return imports, code
+    return query
