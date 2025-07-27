@@ -7,7 +7,7 @@ from langchain_core.tools import InjectedToolArg, tool
 import jutulgpt.rag.retrieval as retrieval
 import jutulgpt.rag.split_docs as split_docs
 import jutulgpt.rag.split_examples as split_examples
-from jutulgpt.configuration import INTERACTIVE_ENVIRONMENT
+from jutulgpt.configuration import HUMAN_INTERACTION
 from jutulgpt.human_in_the_loop.response_on_rag import response_on_rag
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
@@ -37,7 +37,7 @@ def retrieve_jutuldarcy(
     ) as retriever:
         retrieved_examples = retriever.invoke(query)
 
-    if INTERACTIVE_ENVIRONMENT:
+    if HUMAN_INTERACTION:
         retrieved_docs = response_on_rag(
             retrieved_docs,
             get_file_source=get_file_source,
@@ -96,7 +96,7 @@ def retrieve_fimbul(
         print(f"Source: {doc.metadata['source']}")
         print(f"- {doc.page_content[:100]}...\n")
 
-    if INTERACTIVE_ENVIRONMENT:
+    if HUMAN_INTERACTION:
         retrieved_docs = response_on_rag(
             retrieved_docs,
             get_file_source=get_file_source,

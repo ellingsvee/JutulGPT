@@ -21,7 +21,7 @@ USE_LOCAL_MODEL = (
 MAX_ITERATIONS = (
     3  # If the generated code fails. How many times the model will try to fix the code.
 )
-INTERACTIVE_ENVIRONMENT = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
+HUMAN_INTERACTION = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
 RETRIEVE_FIMBUL = True  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
 ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
 N_RETRIEVED_DOCS = 4  # Number of documents to retrieve in RAG.

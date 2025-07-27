@@ -6,14 +6,14 @@ from langgraph.prebuilt.interrupt import (
 )
 from langgraph.types import interrupt
 
-from jutulgpt.configuration import INTERACTIVE_ENVIRONMENT
+from jutulgpt.configuration import HUMAN_INTERACTION
 
 
 def check_shortened_code(imports: str, code: str) -> tuple[str, str]:
     """
     The code is shortened before the test run. This interaction allows the user to previev the shoretned code to make sure nothing breaking has happened.
     """
-    if INTERACTIVE_ENVIRONMENT:
+    if HUMAN_INTERACTION:
         interrupt_message = "The code has automatically been shortened for faster runtime and for avoiding potential softlocks. Fix potential errors, or ifnore to run it as is."
 
         description = interrupt_message

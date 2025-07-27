@@ -8,7 +8,7 @@ from langgraph.prebuilt.interrupt import (
 )
 from langgraph.types import interrupt
 
-from jutulgpt.configuration import INTERACTIVE_ENVIRONMENT
+from jutulgpt.configuration import HUMAN_INTERACTION
 from jutulgpt.state import State
 from jutulgpt.utils import get_last_code_response
 
@@ -27,7 +27,7 @@ def response_on_generated_code(state: State, config: RunnableConfig):
     Returns:
         dict: A dictionary with updated messages if the code was edited, or an empty dict if not.
     """
-    if INTERACTIVE_ENVIRONMENT:
+    if HUMAN_INTERACTION:
         # Get the most recent code block from the state
         code_block = get_last_code_response(state)
 

@@ -9,7 +9,7 @@ from langgraph.prebuilt.interrupt import (
 )
 from langgraph.types import interrupt
 
-from jutulgpt.configuration import INTERACTIVE_ENVIRONMENT
+from jutulgpt.configuration import HUMAN_INTERACTION
 from jutulgpt.state import State
 from jutulgpt.utils import get_last_code_response
 
@@ -32,7 +32,7 @@ def decide_check_code(
     """
     print("Inside decide_check_code")
 
-    if INTERACTIVE_ENVIRONMENT:
+    if HUMAN_INTERACTION:
         # Only prompt the user if there is code to check
         code_block = get_last_code_response(state)
         if code_block.imports != "" or code_block.code != "":
