@@ -14,7 +14,7 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 
 from jutulgpt import prompts
 
-# Settings
+# Static settings
 USE_LOCAL_MODEL = (
     False  # Local models uses Ollama. Non-local models uses the OpenAI API
 )
@@ -22,7 +22,7 @@ MAX_ITERATIONS = (
     3  # If the generated code fails. How many times the model will try to fix the code.
 )
 HUMAN_INTERACTION = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
-RETRIEVE_FIMBUL = True  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
+RETRIEVE_FIMBUL = False  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
 ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
 N_RETRIEVED_DOCS = 4  # Number of documents to retrieve in RAG.
 N_RETRIEVED_EXAMPLES = 2  # Number of examples to retrieve in RAG.
@@ -37,7 +37,7 @@ def _set_env(var: str):
 PROJECT_ROOT = Path(__file__).resolve().parent
 load_dotenv()
 _set_env("OPENAI_API_KEY")
-logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)  # Less warnings in the output
 logging.getLogger("faiss").setLevel(logging.WARNING)
 
 
@@ -75,7 +75,7 @@ class BaseConfiguration:
     ] = field(
         default="mmr",
         metadata={
-            "description": "Defines the type of search that the Retriever should perform."
+            "description": "Defines the type of search that the retriever should perform."
         },
     )
 
@@ -100,7 +100,7 @@ class BaseConfiguration:
 
     rerank_kwargs: dict[str, Any] = field(
         default_factory=lambda: {"top_n": 3, "score_threshold": 0.75},
-        metadata={"description": "Keyword arguments provided to the Flash reranker"},
+        metadata={"description": "Keyword arguments provided to the reranker"},
     )
 
     @classmethod
