@@ -1,3 +1,7 @@
+"""
+File for defining the specifics related to the different retrievers. Gives flexibility to vary the splitting functions etc.
+"""
+
 from dataclasses import dataclass
 from functools import partial
 from typing import Callable
