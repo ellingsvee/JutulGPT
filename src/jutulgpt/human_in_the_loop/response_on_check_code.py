@@ -39,7 +39,6 @@ def response_on_check_code(
     full_code = code_block.get_full_code(within_julia_context=True)
 
     # Prepare the human-in-the-loop UI request
-    description = ""
     request = HumanInterrupt(
         action_request=ActionRequest(
             action="Accept or modify the generated code to check it. Ignore to not check it.",
@@ -51,7 +50,6 @@ def response_on_check_code(
             allow_respond=False,
             allow_edit=True,
         ),
-        description=description,
     )
 
     # Wait for the user's response from the UI

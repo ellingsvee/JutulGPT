@@ -16,8 +16,6 @@ def modify_rag_query(query: str, retriever_name: str) -> str:
     if HUMAN_INTERACTION:
         interrupt_message = f"Trying to retrieve documents from {retriever_name}. Modify the query if needed."
 
-        description = interrupt_message
-
         # Create the human interrupt request
         request = HumanInterrupt(
             action_request=ActionRequest(
@@ -29,7 +27,6 @@ def modify_rag_query(query: str, retriever_name: str) -> str:
                 allow_respond=False,
                 allow_edit=True,
             ),
-            description=description,
         )
 
         # Wait for the user's response

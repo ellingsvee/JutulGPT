@@ -30,7 +30,6 @@ def check_shortened_code(imports: str, code: str) -> tuple[str, str]:
                 allow_respond=False,
                 allow_edit=True,
             ),
-            description=description,
         )
 
         # Wait for the user's response

@@ -58,7 +58,6 @@ def response_on_rag(
         action_request_args[arg_name] = content
 
     # Prepare the human-in-the-loop UI request
-    description = "The RAG provided you with the following documents. You can modify the content of any of these documents by editing the text in the input boxes below. If you do not want to modify a document, leave the input box empty."
     request = HumanInterrupt(
         action_request=ActionRequest(
             action=action_name,
@@ -70,7 +69,6 @@ def response_on_rag(
             allow_respond=False,
             allow_edit=True,
         ),
-        description=description,
     )
 
     # Wait for the user's response from the UI
