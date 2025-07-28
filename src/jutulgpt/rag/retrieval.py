@@ -95,7 +95,7 @@ def make_faiss_retriever(
 
     yield vectorstore.as_retriever(
         search_type=configuration.search_type,
-        search_kwargs={**configuration.search_kwargs, "k": spec.n_retrieved},
+        search_kwargs={**configuration.search_kwargs},
     )
 
 
@@ -135,11 +135,13 @@ def make_chroma_retriever(
             collection_name=spec.collection_name,
         )
 
+    print(f"configuration.search_type: {configuration.search_type}")
     print(f"configuration.search_kwargs: {configuration.search_kwargs}")
 
     yield vectorstore.as_retriever(
         search_type=configuration.search_type,
-        search_kwargs={**configuration.search_kwargs, "k": configuration.n_retrieve},
+        # search_kwargs={**configuration.search_kwargs},
+        search_kwargs={**{"score_threshold": 0.3}},
     )
 
 

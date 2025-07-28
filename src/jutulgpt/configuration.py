@@ -14,17 +14,6 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 
 from jutulgpt import prompts
 
-# # Static settings
-# USE_LOCAL_MODEL = True  # Local models uses Ollama. Non-local models uses the OpenAI API
-# MAX_ITERATIONS = (
-#     3  # If the generated code fails. How many times the model will try to fix the code.
-# )
-# HUMAN_INTERACTION = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
-# RETRIEVE_FIMBUL = False  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
-# ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
-# N_RETRIEVED_DOCS = 4  # Number of documents to retrieve in RAG.
-# N_RETRIEVED_EXAMPLES = 2  # Number of examples to retrieve in RAG.
-
 
 # Setup of the environment and some logging. Not neccessary to touch this.
 def _set_env(var: str):
@@ -105,21 +94,10 @@ class BaseConfiguration:
         },
     )
 
-    n_retrieve: Annotated[
-        int,
-        {"description": "Number of documents to retrieve in RAG."},
-    ] = field(
-        default=4,
-        metadata={"description": "Number of documents to retrieve in RAG."},
-    )
-
     embedding_model: Annotated[
         str,
         {"__template_metadata__": {"kind": "embeddings"}},
     ] = field(
-        # default="ollama/nomic-embed-text"
-        # if USE_LOCAL_MODEL
-        # else "openai/text-embedding-3-small",
         default_factory=lambda: "openai/text-embedding-3-small",
         metadata={
             "description": "Name of the embedding model to use. Must be a valid embedding model name."
@@ -145,9 +123,9 @@ class BaseConfiguration:
     )
 
     search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"fetch_k": 15},
+        default_factory=lambda: {"k": 4, "fetch_k": 15, "lambda_mult": 0.5},
         metadata={
-            "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types."
+            "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types. See https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever"
         },
     )
 
@@ -162,7 +140,7 @@ class BaseConfiguration:
     )
 
     rerank_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"top_n": 3, "score_threshold": 0.75},
+        default_factory=lambda: {},
         metadata={"description": "Keyword arguments provided to the reranker"},
     )
 
