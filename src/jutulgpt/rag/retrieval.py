@@ -11,6 +11,7 @@ from langchain_core.vectorstores import VectorStoreRetriever
 # from langchain_core.documents import BaseDocumentCompressor
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.rag.retriever_specs import RetrieverSpec
+from jutulgpt.utils import get_provider_and_model
 
 
 def make_text_encoder(model: str) -> Embeddings:
@@ -71,10 +72,15 @@ def make_faiss_retriever(
 
     from langchain_community.vectorstores import FAISS
 
+    # Get the persist path by checking what is the specified embedding model
+    persist_path = spec.persist_path(
+        get_provider_and_model(configuration.embedding_model)[0]
+    )
+
     # Load or create FAISS index
-    if os.path.exists(spec.persist_path):
+    if os.path.exists(persist_path):
         vectorstore = FAISS.load_local(
-            spec.persist_path,
+            persist_path,
             embedding_model,
             allow_dangerous_deserialization=True,
         )
@@ -85,7 +91,7 @@ def make_faiss_retriever(
             documents=docs,
             embedding=embedding_model,
         )
-        vectorstore.save_local(spec.persist_path)
+        vectorstore.save_local(persist_path)
 
     yield vectorstore.as_retriever(
         search_type=configuration.search_type,
@@ -105,28 +111,35 @@ def make_chroma_retriever(
 
     from langchain_chroma import Chroma
 
+    # Get the persist path by checking what is the specified embedding model
+    persist_path = spec.persist_path(
+        get_provider_and_model(configuration.embedding_model)[0]
+    )
+
     # Load or create FAISS index
-    if os.path.exists(spec.persist_path):
+    if os.path.exists(persist_path):
         vectorstore = Chroma(
             embedding_function=embedding_model,
-            persist_directory=spec.persist_path,
+            persist_directory=persist_path,
             collection_name=spec.collection_name,
         )
 
     else:
-        print(f"Creating new Chroma index at {spec.persist_path}")
+        print(f"Creating new Chroma index at {persist_path}")
         docs = _load_and_split_docs(spec)
 
         vectorstore = Chroma.from_documents(
             documents=docs,
             embedding=embedding_model,
-            persist_directory=spec.persist_path,
+            persist_directory=persist_path,
             collection_name=spec.collection_name,
         )
 
+    print(f"configuration.search_kwargs: {configuration.search_kwargs}")
+
     yield vectorstore.as_retriever(
         search_type=configuration.search_type,
-        search_kwargs={**configuration.search_kwargs, "k": spec.n_retrieved},
+        search_kwargs={**configuration.search_kwargs, "k": configuration.n_retrieve},
     )
 
 
@@ -155,13 +168,11 @@ def make_retriever(
             with make_faiss_retriever(
                 configuration, spec, embedding_model
             ) as retriever:
-                # yield retriever
                 selected_retriever = retriever
         case "chroma":
             with make_chroma_retriever(
                 configuration, spec, embedding_model
             ) as retriever:
-                # yield retriever
                 selected_retriever = retriever
 
         case _:

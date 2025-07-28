@@ -6,7 +6,7 @@ from typing import List
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
-from jutulgpt.configuration import ALLOW_PACKAGE_INSTALLATION
+from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import response_on_check_code
 from jutulgpt.julia_interface import get_error_message, run_string
 from jutulgpt.state import CodeBlock, State
@@ -14,11 +14,15 @@ from jutulgpt.utils import get_last_code_response, split_code_into_lines
 
 
 def check_code(state: State, config: RunnableConfig):
+    configuration = BaseConfiguration.from_runnable_config(config)
+
     # Get the code block to check
     code_block = get_last_code_response(state)
 
     # Human interaction to potentially modify the code of not check it
-    code_block, check_code_bool, extra_messages = response_on_check_code(code_block)
+    code_block, check_code_bool, extra_messages = response_on_check_code(
+        code_block, human_interaction=configuration.human_interaction
+    )
 
     # Return early if the user chose to ignore the code check
     if not check_code_bool:
@@ -28,7 +32,9 @@ def check_code(state: State, config: RunnableConfig):
     code = code_block.code
 
     # Disallow package installation if not permitted
-    if not ALLOW_PACKAGE_INSTALLATION and check_for_package_install(code_block):
+    if not configuration.allow_package_installation and check_for_package_install(
+        code_block
+    ):
         error_message = (
             "The code you generated tries to install a package, which is not allowed. "
             "If you are certain that the package is needed, ask the user to manually install it."

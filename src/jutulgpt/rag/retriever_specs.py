@@ -3,10 +3,7 @@ from functools import partial
 from typing import Callable
 
 from jutulgpt.configuration import (
-    N_RETRIEVED_DOCS,
-    N_RETRIEVED_EXAMPLES,
     PROJECT_ROOT,
-    USE_LOCAL_MODEL,
 )
 from jutulgpt.rag import split_docs, split_examples
 
@@ -14,20 +11,18 @@ from jutulgpt.rag import split_docs, split_examples
 @dataclass
 class RetrieverSpec:
     dir_path: str
-    persist_path: str
+    persist_path: Callable  # Callable as we want to change where we store when we modify the embedding model in the configuration.
     cache_path: str
     collection_name: str
     filetype: str
     split_func: Callable
-    n_retrieved: int
 
 
-retriever_dir_name = "ollama" if USE_LOCAL_MODEL else "openai"
 RETRIEVER_SPECS = {
     "jutuldarcy": {
         "docs": RetrieverSpec(
             dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "docs" / "man"),
-            persist_path=str(
+            persist_path=lambda retriever_dir_name: str(
                 PROJECT_ROOT
                 / "rag"
                 / "retriever_store"
@@ -39,11 +34,10 @@ RETRIEVER_SPECS = {
             collection_name="jutuldarcy_docs",
             filetype="md",
             split_func=split_docs.split_docs,
-            n_retrieved=N_RETRIEVED_DOCS,
         ),
         "examples": RetrieverSpec(
             dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "examples"),
-            persist_path=str(
+            persist_path=lambda retriever_dir_name: str(
                 PROJECT_ROOT
                 / "rag"
                 / "retriever_store"
@@ -58,13 +52,12 @@ RETRIEVER_SPECS = {
                 split_examples.split_examples,
                 header_to_split_on=2,  # Split on `# #` and `# ##`
             ),
-            n_retrieved=N_RETRIEVED_EXAMPLES,
         ),
     },
     "fimbul": {
         "docs": RetrieverSpec(
             dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "docs" / "man"),
-            persist_path=str(
+            persist_path=lambda retriever_dir_name: str(
                 PROJECT_ROOT
                 / "rag"
                 / "retriever_store"
@@ -76,11 +69,10 @@ RETRIEVER_SPECS = {
             collection_name="fimbul_docs",
             filetype="md",
             split_func=split_docs.split_docs,
-            n_retrieved=N_RETRIEVED_DOCS,
         ),
         "examples": RetrieverSpec(
             dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "examples"),
-            persist_path=str(
+            persist_path=lambda retriever_dir_name: str(
                 PROJECT_ROOT
                 / "rag"
                 / "retriever_store"
@@ -95,7 +87,6 @@ RETRIEVER_SPECS = {
                 split_examples.split_examples,
                 header_to_split_on=1,  # Split on `# #`
             ),
-            n_retrieved=N_RETRIEVED_EXAMPLES,
         ),
     },
 }

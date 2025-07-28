@@ -81,14 +81,20 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
     Args:
         fully_specified_name (str): String in the format 'provider/model'.
     """
-    provider, model = fully_specified_name.split("/", maxsplit=1)
+    provider, model = get_provider_and_model(fully_specified_name)
     match provider:
         case "openai":
             return init_chat_model(model, model_provider=provider, temperature=0.1)
         case "ollama":
-            return init_chat_model(
-                model, model_provider=provider, temperature=0.1, reasoning=True
-            )
+            print(f"Inside the Ollama provider. Loading {model}")
+            # Resoning models need reasoning=True to hide the thinking, but this fails for non-reasoning models.
+            if model == "qwen3:14b":  # WARNING: This is VERY bad practice!
+                return init_chat_model(
+                    model, model_provider=provider, temperature=0.1, reasoning=True
+                )
+            else:
+                return init_chat_model(model, model_provider=provider, temperature=0.1)
+
         case _:
             raise ValueError(f"Unsupported chat model provider: {provider}")
 
@@ -277,3 +283,11 @@ def get_file_source(
     if for_ui_printing:
         return f"{file_source}"
     return file_source
+
+
+def get_provider_and_model(name: str) -> tuple[str, str]:
+    """
+    Get the provider and name from a string on the format 'provider/model'.
+    """
+    provider, model = name.split("/", maxsplit=1)
+    return provider, model

@@ -2,15 +2,18 @@
 
 from typing import Literal
 
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import tools_condition
 
-from jutulgpt.configuration import MAX_ITERATIONS, AgentConfiguration
+from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.nodes import check_code, generate_response, tools_node
 from jutulgpt.state import State
 
 
-def decide_to_finish(state: State) -> Literal["generate_response", END]:
+def decide_to_finish(
+    state: State, config: RunnableConfig
+) -> Literal["generate_response", END]:
     """
     Determines whether to finish.
 
@@ -23,7 +26,9 @@ def decide_to_finish(state: State) -> Literal["generate_response", END]:
     error = state.error
     iterations = state.iterations
 
-    if not error or iterations == MAX_ITERATIONS:
+    configuration = BaseConfiguration.from_runnable_config(config)
+
+    if not error or iterations == configuration.max_iterations:
         print("decide_to_finish: END")
         return END
     else:
@@ -31,7 +36,7 @@ def decide_to_finish(state: State) -> Literal["generate_response", END]:
         return "generate_response"
 
 
-builder = StateGraph(State, config_schema=AgentConfiguration)
+builder = StateGraph(State, config_schema=BaseConfiguration)
 
 builder.add_node("generate_response", generate_response)
 builder.add_node("tools", tools_node)

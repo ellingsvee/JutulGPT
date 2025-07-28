@@ -4,10 +4,11 @@ from dotenv import find_dotenv, load_dotenv
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolArg, tool
 
+# from jutulgpt import configuration
 import jutulgpt.rag.retrieval as retrieval
 import jutulgpt.rag.split_docs as split_docs
 import jutulgpt.rag.split_examples as split_examples
-from jutulgpt.configuration import HUMAN_INTERACTION
+from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import modify_rag_query, response_on_rag
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
@@ -40,7 +41,8 @@ def retrieve_jutuldarcy(
     ) as retriever:
         retrieved_examples = retriever.invoke(query)
 
-    if HUMAN_INTERACTION:
+    configuration = BaseConfiguration.from_runnable_config(config)
+    if configuration.human_interaction:
         retrieved_docs = response_on_rag(
             retrieved_docs,
             get_file_source=get_file_source,
@@ -86,8 +88,11 @@ def retrieve_fimbul(
     Returns:
         String containing the formatted output from the retriever
     """
+    configuration = BaseConfiguration.from_runnable_config(config)
+
     # Modify the query:
-    query = modify_rag_query(query=query, retriever_name="Fimbul")
+    if configuration.human_interaction:
+        query = modify_rag_query(query=query, retriever_name="Fimbul")
 
     with retrieval.make_retriever(
         config=config, spec=RETRIEVER_SPECS["fimbul"]["docs"]
@@ -103,7 +108,7 @@ def retrieve_fimbul(
         print(f"Source: {doc.metadata['source']}")
         print(f"- {doc.page_content[:100]}...\n")
 
-    if HUMAN_INTERACTION:
+    if configuration.human_interaction:
         retrieved_docs = response_on_rag(
             retrieved_docs,
             get_file_source=get_file_source,

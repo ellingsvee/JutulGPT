@@ -14,18 +14,16 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 
 from jutulgpt import prompts
 
-# Static settings
-USE_LOCAL_MODEL = (
-    False  # Local models uses Ollama. Non-local models uses the OpenAI API
-)
-MAX_ITERATIONS = (
-    3  # If the generated code fails. How many times the model will try to fix the code.
-)
-HUMAN_INTERACTION = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
-RETRIEVE_FIMBUL = False  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
-ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
-N_RETRIEVED_DOCS = 4  # Number of documents to retrieve in RAG.
-N_RETRIEVED_EXAMPLES = 2  # Number of examples to retrieve in RAG.
+# # Static settings
+# USE_LOCAL_MODEL = True  # Local models uses Ollama. Non-local models uses the OpenAI API
+# MAX_ITERATIONS = (
+#     3  # If the generated code fails. How many times the model will try to fix the code.
+# )
+# HUMAN_INTERACTION = True  # The human-in-the-loop works poorly in the terminal. Set to True when running the UI.
+# RETRIEVE_FIMBUL = False  # Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
+# ALLOW_PACKAGE_INSTALLATION = False  # Allow the agent to install packages. Set to False if you want to prevent this.
+# N_RETRIEVED_DOCS = 4  # Number of documents to retrieve in RAG.
+# N_RETRIEVED_EXAMPLES = 2  # Number of examples to retrieve in RAG.
 
 
 # Setup of the environment and some logging. Not neccessary to touch this.
@@ -49,13 +47,80 @@ class BaseConfiguration:
     retrieval processes, including embedding model selection, retriever provider choice, and search parameters.
     """
 
+    use_local_model: Annotated[
+        bool,
+        {
+            "description": "If True, use local models (Ollama). If False, use OpenAI API."
+        },
+    ] = field(
+        default=False,
+        metadata={
+            "description": "If True, use local models (Ollama). If False, use OpenAI API."
+        },
+    )
+
+    retrieve_fimbul: Annotated[
+        bool,
+        {
+            "description": "Whether to retrieve Fimbul documentation or not. If False, only JutulDarcy documentation is retrieved."
+        },
+    ] = field(
+        default=False,
+        metadata={
+            "description": "Whether to retrieve Fimbul documentation or not. If False, only JutulDarcy documentation is retrieved."
+        },
+    )
+
+    max_iterations: Annotated[
+        int,
+        {
+            "description": "How many times the model will try to fix the code if it fails."
+        },
+    ] = field(
+        default=3,
+        metadata={
+            "description": "How many times the model will try to fix the code if it fails."
+        },
+    )
+
+    human_interaction: Annotated[
+        bool,
+        {"description": "Enable human-in-the-loop. Set to True when running the UI."},
+    ] = field(
+        default=True,
+        metadata={
+            "description": "Enable human-in-the-loop. Set to True when running the UI."
+        },
+    )
+
+    allow_package_installation: Annotated[
+        bool,
+        {
+            "description": "Allow the agent to install packages. Set to False to prevent this."
+        },
+    ] = field(
+        default=False,
+        metadata={
+            "description": "Allow the agent to install packages. Set to False to prevent this."
+        },
+    )
+
+    n_retrieve: Annotated[
+        int,
+        {"description": "Number of documents to retrieve in RAG."},
+    ] = field(
+        default=4,
+        metadata={"description": "Number of documents to retrieve in RAG."},
+    )
+
     embedding_model: Annotated[
         str,
         {"__template_metadata__": {"kind": "embeddings"}},
     ] = field(
-        default="ollama/nomic-embed-text"
-        if USE_LOCAL_MODEL
-        else "openai/text-embedding-3-small",
+        # default="ollama/nomic-embed-text"
+        # if USE_LOCAL_MODEL
+        # else "openai/text-embedding-3-small",
+        default_factory=lambda: "openai/text-embedding-3-small",
         metadata={
             "description": "Name of the embedding model to use. Must be a valid embedding model name."
         },
@@ -80,9 +145,7 @@ class BaseConfiguration:
     )
 
     search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {
-            "fetch_k": 15
-        },  # NOTE: The "k" is set in the retriever specs by the N_RETRIEVED_DOCS and N_RETRIEVED_EXAMPLES variables.
+        default_factory=lambda: {"fetch_k": 15},
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types."
         },
@@ -101,6 +164,21 @@ class BaseConfiguration:
     rerank_kwargs: dict[str, Any] = field(
         default_factory=lambda: {"top_n": 3, "score_threshold": 0.75},
         metadata={"description": "Keyword arguments provided to the reranker"},
+    )
+
+    # Models
+    response_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
+        # default="ollama/qwen3:14b" if USE_LOCAL_MODEL else "openai/gpt-4.1-mini",
+        default_factory=lambda: "openai/gpt-4.1-mini",
+        metadata={
+            "description": "The language model used for generating responses. Should be in the form: provider/model-name."
+        },
+    )
+
+    # Prompts
+    default_coder_prompt: str = field(
+        default=prompts.DEFAULT_CODER_PROMPT,
+        metadata={"description": "The default prompt used for generating Julia code."},
     )
 
     @classmethod
@@ -123,22 +201,3 @@ class BaseConfiguration:
 
 
 T = TypeVar("T", bound=BaseConfiguration)
-
-
-@dataclass(kw_only=True)
-class AgentConfiguration(BaseConfiguration):
-    """The configuration for the agent."""
-
-    # Models
-    response_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="ollama/qwen3:14b" if USE_LOCAL_MODEL else "openai/gpt-4.1-mini",
-        metadata={
-            "description": "The language model used for generating responses. Should be in the form: provider/model-name."
-        },
-    )
-
-    # Prompts
-    default_coder_prompt: str = field(
-        default=prompts.DEFAULT_CODER_PROMPT,
-        metadata={"description": "The default prompt used for generating Julia code."},
-    )

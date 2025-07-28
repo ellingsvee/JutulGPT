@@ -5,7 +5,7 @@ from typing import cast
 from langchain_core.messages import AIMessage, trim_messages
 from langchain_core.runnables import RunnableConfig
 
-from jutulgpt.configuration import AgentConfiguration
+from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
@@ -28,7 +28,7 @@ def generate_response(state: State, config: RunnableConfig):
     """
     messages = state.messages
 
-    configuration = AgentConfiguration.from_runnable_config(config)
+    configuration = BaseConfiguration.from_runnable_config(config)
 
     # Initialize the model with tool binding. Change the model or add more tools here.
     model = load_chat_model(configuration.response_model).bind_tools(tools)
