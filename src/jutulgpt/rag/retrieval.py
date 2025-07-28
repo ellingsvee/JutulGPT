@@ -140,8 +140,7 @@ def make_chroma_retriever(
 
     yield vectorstore.as_retriever(
         search_type=configuration.search_type,
-        # search_kwargs={**configuration.search_kwargs},
-        search_kwargs={**{"score_threshold": 0.3}},
+        search_kwargs={**configuration.search_kwargs},
     )
 
 

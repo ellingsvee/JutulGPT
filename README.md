@@ -111,4 +111,4 @@ uv run pytest
 - Would be nice if we could modify the runnable configuration from the UI. F.ex. change what model we use, or the number of documents to retrieve during RAG.
 - Extend to a better CLI based workflow. The current setup primarily meant to be run throught the UI.
 - A more flexible RAG setup.
-- Extend the workflow to what f.ex. is described here: [Anthropic: Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
+- Extend the workflow to a sub-agent collaboration.F.ex. as described here: [Anthropic: Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
