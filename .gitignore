@@ -14,7 +14,9 @@ src/ui/pnpm-lock.yaml
 
 # The presentation
 presentation/*
-!presentation/{main,content,packages}.tex
+!presentation/main.tex
+!presentation/content.tex
+!presentation/packages.tex
 !presentation/README.md
 
 # Byte-compiled / optimized / DLL files

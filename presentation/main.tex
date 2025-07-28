@@ -1,0 +1,48 @@
+\documentclass[10pt]{beamer}
+\usepackage[utf8]{inputenc}
+
+\input{packages.tex}
+\usepackage[round]{natbib}
+% Add handout in [12pt, ]
+% \usepackage{pgfpages}
+% \pgfpagesuselayout{4 on 1}[a4paper, border shrink =5mm]
+
+% Find other themes here
+% https://www.overleaf.com/learn/latex/Beamer#Reference_guide
+\usetheme{default}
+\usecolortheme{default}
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+\usepackage{colortbl}
+\setbeamercolor{block title}{fg=white,bg=blue}
+\setbeamercolor{block body}{bg=lightgray}
+
+\usepackage{tcolorbox}
+\newtcolorbox{myblock}[1]{colback=blue!10,colframe=blue!50!black,
+fonttitle=\bfseries,title=#1}
+
+\captionsetup{font=footnotesize, skip=0pt}
+
+% Hide navigation symbols
+\setbeamertemplate{navigation symbols}{}
+% \setbeamertemplate{theorems}[numbered]
+\setbeamertemplate{theorems}[default]
+% \newtheorem*{ndefinition}{Definition}
+
+% Hide headline bar at the top
+% \setbeamertemplate{headline}{}
+
+% Transparent formatting when stuff is displayed later in the slides
+\setbeamercovered{transparent}
+
+\title{Work at SINTEF Digital}
+\author{Elling Svee}
+
+\begin{document}
+
+\maketitle
+\input{content.tex}
+
+\end{document}
