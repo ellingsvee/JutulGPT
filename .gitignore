@@ -12,6 +12,11 @@ python_scrapbook/
 src/ui/node_modules/
 src/ui/pnpm-lock.yaml
 
+# The presentation
+presentation/*
+!presentation/{main,content,packages}.tex
+!presentation/README.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
