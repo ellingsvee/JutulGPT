@@ -43,3 +43,4 @@ def modify_rag_query(query: str, retriever_name: str) -> str:
         raise TypeError(
             f"Interrupt value of type {type(human_response)} is not supported."
         )
+    return query
