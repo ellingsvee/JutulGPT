@@ -79,7 +79,7 @@ def format_examples(docs: List[Document], remove_duplicates: bool = True) -> str
         file_source = get_file_source(doc)
         section_path = get_section_path(doc)
         # section = "\n".join(f"```julia\n{c}\n```" for c in doc.page_content.strip())
-        example_string += f"# From `{file_source}`\n# Section: `{section_path}`\n"
+        example_string += f"# From `{file_source}`: Section `{section_path}`\n"
         example_string += f"{format_doc(doc)}"
         formatted.append(example_string)
 

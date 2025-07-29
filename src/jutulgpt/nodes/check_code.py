@@ -31,9 +31,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
     check_code_bool = True
     extra_messages = []
 
-    print("Human interactions: " + str(configuration.human_interaction))
-    if True:
-        # if configuration.human_interaction:
+    if configuration.human_interaction:
         if configuration.cli_mode:
             # CLI mode: use interactive CLI code review
             code_block, check_code_bool, extra_messages = cli_response_on_check_code(
@@ -66,13 +64,6 @@ def check_code(state: State, config: RunnableConfig, console: Console):
 
     if result["error"]:
         julia_error_message = get_error_message(result)
-        error_message = gen_error_message_string(
-            full_code=full_code,
-            julia_error_message=julia_error_message,
-            config=config,
-            console=console,
-        )
-        # print(f"check_code: {error_message.content}")
 
         print_to_console(
             console=console,
@@ -80,6 +71,14 @@ def check_code(state: State, config: RunnableConfig, console: Console):
             title="Code Runner",
             border_style="red",
         )
+
+        error_message = gen_error_message_string(
+            full_code=full_code,
+            julia_error_message=julia_error_message,
+            config=config,
+            console=console,
+        )
+        # print(f"check_code: {error_message.content}")
 
         return {
             "messages": extra_messages

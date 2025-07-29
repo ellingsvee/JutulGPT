@@ -135,9 +135,6 @@ def make_chroma_retriever(
             collection_name=spec.collection_name,
         )
 
-    print(f"configuration.search_type: {configuration.search_type}")
-    print(f"configuration.search_kwargs: {configuration.search_kwargs}")
-
     yield vectorstore.as_retriever(
         search_type=configuration.search_type,
         search_kwargs={**configuration.search_kwargs},

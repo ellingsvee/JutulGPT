@@ -232,7 +232,6 @@ def cli_response_on_check_code(console: Console, code_block) -> tuple:
             - check_code_bool: Whether to check the code (True) or ignore it (False)
             - extra_messages: List of AI messages to add to state
     """
-    from langchain_core.messages import AIMessage
 
     from jutulgpt.utils import get_code_from_response
 
@@ -269,13 +268,14 @@ def cli_response_on_check_code(console: Console, code_block) -> tuple:
 
         if new_code.strip():
             # Create message about the user's update
-            message_content = f"""The code was updated by the user. The following is what will be run and checked:
-{new_code}
-"""
+            #             message_content = f"""The code was updated by the user. The following is what will be run and checked:
+            # {new_code}
+            # """
             # Update the code block with the new code
             updated_code_block = get_code_from_response(new_code)
             console.print("[green]✓ Code updated and will be executed[/green]")
-            return updated_code_block, True, [AIMessage(content=message_content)]
+            # return updated_code_block, True, [AIMessage(content=message_content)]
+            return updated_code_block, True, []
         else:
             console.print("[red]✗ Empty code provided, skipping execution[/red]")
             return code_block, False, []

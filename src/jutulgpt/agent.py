@@ -21,12 +21,12 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
+from jutulgpt.cli_utils import print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.nodes import check_code, generate_response
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.tools.retrieve import RetrieveJutulDarcyTool
-from jutulgpt.cli_utils import print_to_console
 
 
 def decide_to_finish(
@@ -166,7 +166,7 @@ class JutulGPT:
                 "response_model": "ollama/qwen3:14b",
             }
             while True:
-                result = self.agent.invoke(
+                result = self.graph.invoke(
                     {"messages": [AIMessage(content="What can I do for you?")]},
                     config=config,
                 )

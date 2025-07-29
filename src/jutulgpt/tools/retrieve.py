@@ -32,8 +32,7 @@ class RetrieveJutulDarcyTool(BaseTool):
         self, query: str, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> str:
         configuration = BaseConfiguration.from_runnable_config(config)
-        if True:
-            # if configuration.human_interaction:
+        if configuration.human_interaction:
             if configuration.cli_mode:
                 # CLI mode: use interactive CLI query modification
                 from rich.console import Console

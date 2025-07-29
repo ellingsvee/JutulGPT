@@ -54,7 +54,7 @@ RETRIEVER_SPECS = {
             filetype="jl",
             split_func=partial(
                 split_examples.split_examples,
-                header_to_split_on=2,  # Split on `# #` and `# ##`
+                header_to_split_on=1,  # Split on `# #`
             ),
         ),
     },

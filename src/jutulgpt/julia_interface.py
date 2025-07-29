@@ -89,8 +89,29 @@ def _run_julia_code(code_string, return_queue):
     try:
         from juliacall import Main as jl_sub
 
-        jl_sub.seval(code_string)
-        # result = jl_sub.seval(code_string)
+        # Suppress Julia output by redirecting stdout and stderr to devnull
+        # This prevents print statements and other output from being displayed
+        suppression_code = """
+        original_stdout = stdout
+        original_stderr = stderr
+        redirect_stdout(devnull)
+        redirect_stderr(devnull)
+        """
+
+        # Execute the suppression setup
+        jl_sub.seval(suppression_code)
+
+        try:
+            # Execute the user code with suppressed output
+            jl_sub.seval(code_string)
+        finally:
+            # Restore original stdout and stderr
+            restoration_code = """
+            redirect_stdout(original_stdout)
+            redirect_stderr(original_stderr)
+            """
+            jl_sub.seval(restoration_code)
+
         return_queue.put((True, None))
     except JuliaError as e:
         tb = traceback.format_exc()
@@ -189,16 +210,13 @@ def run_string(code: str):
             "error_message": None,
             "error_stacktrace": None,
         }
-        print(f"run_string: Returning success: {result}", flush=True)
         return result
 
     # Handle Julia errors raised from within the subprocess
     except JuliaSubprocessJuliaError as e:
-        print("Inside JuliaSubprocessJuliaError in run_string", flush=True)
         filtered_stack = (
             _filter_stacktrace(e.traceback_str) if e.traceback_str else None
         )
-        print("RETURNING ERROR:", flush=True)
 
         error_message = str(e)
         result = {
@@ -206,7 +224,6 @@ def run_string(code: str):
             "error_message": error_message,
             "error_stacktrace": filtered_stack,
         }
-        print(f"About to return: {result}", flush=True)
         return result
 
     # Handle other Python-side errors from the subprocess
@@ -216,7 +233,6 @@ def run_string(code: str):
             "error_message": str(e),
             "error_stacktrace": e.traceback_str,
         }
-        print(f"run_string: Returning JuliaSubprocessOtherError: {result}", flush=True)
         return result
 
     # Handle timeout
@@ -226,7 +242,6 @@ def run_string(code: str):
             "error_message": str(e),
             "error_stacktrace": None,
         }
-        print(f"run_string: Returning TimeoutError: {result}", flush=True)
         return result
 
     # Catch unexpected Python errors
@@ -236,7 +251,6 @@ def run_string(code: str):
             "error_message": f"Unexpected error: {str(e)}",
             "error_stacktrace": traceback.format_exc(),
         }
-        print(f"run_string: Returning unexpected error: {result}", flush=True)
         return result
 
 

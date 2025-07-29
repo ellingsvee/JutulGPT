@@ -14,7 +14,7 @@ def split_docs(
         headers_to_split_on=[
             ("#", "Header 1"),
             ("##", "Header 2"),
-            ("###", "Header 3"),
+            # ("###", "Header 3"),
         ],
         strip_headers=True,
     )
@@ -75,7 +75,7 @@ def format_docs(docs, remove_duplicates: bool = True):
         doc_string = ""
         file_source = get_file_source(doc)
         section_path = get_section_path(doc)
-        doc_string += f"# From `{file_source}`\n# Section: `{section_path}`\n"
+        doc_string += f"# From `{file_source}`: Section `{section_path}`\n"
         doc_string += f"{format_doc(doc)}"
         formatted.append(doc_string)
     return "\n\n".join(formatted)
