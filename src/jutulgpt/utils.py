@@ -90,7 +90,6 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
                 temperature=0.1,
             )
         case "ollama":
-            print(f"Inside the Ollama provider. Loading {model}")
             # Resoning models need reasoning=True to hide the thinking, but this fails for non-reasoning models.
             if model == "qwen3:14b":  # WARNING: This is VERY bad practice!
                 return init_chat_model(
@@ -264,11 +263,8 @@ def get_last_code_response(state: State) -> CodeBlock:
 
     # Include the human in case the human-in-the-loop updates the generated code.
 
-    print("Inside: get_last_code_response")
-    print(f"last_message.type: {last_message.type}")
     if last_message.type == "ai" or last_message.type == "human":
         last_message_content = last_message.content
-        print(f"last_message_content: {last_message_content}")
     else:
         last_message_content = ""
     code_block = get_code_from_response(last_message_content)
@@ -289,11 +285,11 @@ def get_last_code_response_2(messages: List) -> CodeBlock:
 
     # Include the human in case the human-in-the-loop updates the generated code.
 
-    print("Inside: get_last_code_response")
-    print(f"last_message.type: {last_message.type}")
+    # print("Inside: get_last_code_response")
+    # print(f"last_message.type: {last_message.type}")
     if last_message.type == "ai" or last_message.type == "human":
         last_message_content = last_message.content
-        print(f"last_message_content: {last_message_content}")
+        # print(f"last_message_content: {last_message_content}")
     else:
         last_message_content = ""
     code_block = get_code_from_response(last_message_content)

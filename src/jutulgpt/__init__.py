@@ -1,3 +1,3 @@
-from jutulgpt.graph import graph
+from jutulgpt.agent import agent, graph
 
-__all__ = ["graph"]
+__all__ = ["graph", "agent"]

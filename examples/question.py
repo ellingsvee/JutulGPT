@@ -1,4 +1,4 @@
-from jutulgpt.graph import graph
+from jutulgpt import graph
 from jutulgpt.utils import load_lines_from_txt
 
 if __name__ == "__main__":
@@ -9,5 +9,5 @@ if __name__ == "__main__":
         for node, update in chunk.items():
             try:
                 update["messages"][-1].pretty_print()
-            except Exception as e:
+            except Exception:
                 pass

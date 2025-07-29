@@ -2,7 +2,8 @@ from typing import Annotated
 
 from dotenv import find_dotenv, load_dotenv
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import InjectedToolArg, tool
+from langchain_core.tools import BaseTool, InjectedToolArg
+from pydantic import BaseModel, Field
 
 # from jutulgpt import configuration
 import jutulgpt.rag.retrieval as retrieval
@@ -16,129 +17,200 @@ from jutulgpt.utils import get_file_source
 _: bool = load_dotenv(find_dotenv())
 
 
-@tool(parse_docstring=True)
-def retrieve_jutuldarcy(
-    query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
-) -> str:
-    """
-    Use this tool to look up any information, usage, or examples from the JutulDarcy documentation. ALWAYS use this tool before answering any Julia code question about JutulDarcy.
-
-    Args:
-        query: The string sent into the vectorstore retriever.
-
-    Returns:
-        String containing the formatted output from the retriever
-    """
-    # Modify the query:
-    query = modify_rag_query(query=query, retriever_name="JutulDarcy")
-
-    with retrieval.make_retriever(
-        config=config, spec=RETRIEVER_SPECS["jutuldarcy"]["docs"]
-    ) as retriever:
-        retrieved_docs = retriever.invoke(query)
-    with retrieval.make_retriever(
-        config=config, spec=RETRIEVER_SPECS["jutuldarcy"]["examples"]
-    ) as retriever:
-        retrieved_examples = retriever.invoke(query)
-
-    configuration = BaseConfiguration.from_runnable_config(config)
-    if configuration.human_interaction:
-        retrieved_docs = response_on_rag(
-            retrieved_docs,
-            get_file_source=get_file_source,
-            get_section_path=split_docs.get_section_path,
-            format_doc=split_docs.format_doc,
-            action_name="Modify retrieved JutulDarcy documentation",
-        )
-        retrieved_examples = response_on_rag(
-            retrieved_examples,
-            get_file_source=get_file_source,
-            get_section_path=split_examples.get_section_path,
-            format_doc=split_examples.format_doc,
-            action_name="Modify retrieved JutulDarcy examples",
-        )
-
-    docs = split_docs.format_docs(retrieved_docs)
-    examples = split_examples.format_examples(retrieved_examples)
-
-    format_str = lambda s: s if s != "" else "(empty)"
-    out = f"""
-    # Retrieved from the JutulDarcy documentation:
-
-    {format_str(docs)}
-
-    # Retrieved from the JutulDarcy examples:
-
-    {format_str(examples)}
-    """
-
-    return out
+class RetrieveJutulDarcyToolInput(BaseModel):
+    query: str = Field(
+        "The query that will be used for document and example retrieval",
+    )
 
 
-@tool(parse_docstring=True)
-def retrieve_fimbul(
-    query: str, *, config: Annotated[RunnableConfig, InjectedToolArg]
-) -> str:
-    """
-    Use this tool to look up any information, usage, or examples from the Fimbul documentation. ALWAYS use this tool before answering any Julia code question about Fimbul.
+class RetrieveJutulDarcyTool(BaseTool):
+    name: str = "retrieve_jutuldarcy"
+    description: str = "Use this tool to look up any information, usage, or examples from the JutulDarcy documentation. ALWAYS use this tool before answering any Julia code question about JutulDarcy."
+    args_schema = RetrieveJutulDarcyToolInput
 
-    Args:
-        query: The string sent into the vectorstore retriever.
+    def _run(
+        self, query: str, config: Annotated[RunnableConfig, InjectedToolArg]
+    ) -> str:
+        configuration = BaseConfiguration.from_runnable_config(config)
+        if True:
+            # if configuration.human_interaction:
+            if configuration.cli_mode:
+                # CLI mode: use interactive CLI query modification
+                from rich.console import Console
 
-    Returns:
-        String containing the formatted output from the retriever
-    """
-    configuration = BaseConfiguration.from_runnable_config(config)
+                from jutulgpt.cli_utils import cli_modify_rag_query
 
-    # Modify the query:
-    if configuration.human_interaction:
-        query = modify_rag_query(query=query, retriever_name="Fimbul")
+                console = Console()
+                query = cli_modify_rag_query(console, query, "JutulDarcy")
+            else:
+                # UI mode: use the original UI-based interaction
+                query = modify_rag_query(query, "JutulDarcy")
 
-    with retrieval.make_retriever(
-        config=config, spec=RETRIEVER_SPECS["fimbul"]["docs"]
-    ) as retriever:
-        retrieved_docs = retriever.invoke(query)
-    with retrieval.make_retriever(
-        config=config, spec=RETRIEVER_SPECS["fimbul"]["examples"]
-    ) as retriever:
-        retrieved_examples = retriever.invoke(query)
+        with retrieval.make_retriever(
+            config=config, spec=RETRIEVER_SPECS["jutuldarcy"]["docs"]
+        ) as retriever:
+            retrieved_docs = retriever.invoke(query)
+        with retrieval.make_retriever(
+            config=config, spec=RETRIEVER_SPECS["jutuldarcy"]["examples"]
+        ) as retriever:
+            retrieved_examples = retriever.invoke(query)
 
-    print("PRINTING THE RETRIEVED DOCUMENTS:")
-    for doc in retrieved_docs:
-        print(f"Source: {doc.metadata['source']}")
-        print(f"- {doc.page_content[:100]}...\n")
+        if configuration.human_interaction:
+            if configuration.cli_mode:
+                # CLI mode: use interactive CLI filtering
+                from rich.console import Console
 
-    if configuration.human_interaction:
-        retrieved_docs = response_on_rag(
-            retrieved_docs,
-            get_file_source=get_file_source,
-            get_section_path=split_docs.get_section_path,
-            format_doc=split_docs.format_doc,
-            action_name="Modify retrieved Fimbul documentation",
-        )
-        retrieved_examples = response_on_rag(
-            retrieved_examples,
-            get_file_source=get_file_source,
-            get_section_path=split_examples.get_section_path,
-            format_doc=split_examples.format_doc,
-            action_name="Modify retrieved Fimbul examples",
-        )
+                from jutulgpt.cli_utils import cli_response_on_rag
 
-    docs = split_docs.format_docs(retrieved_docs)
-    examples = split_examples.format_examples(retrieved_examples)
+                console = Console()
+                console.print("\n[bold blue]Retrieved JutulDarcy Documents[/bold blue]")
 
-    print(f"retrieved docs: {docs}")
-    print(f"retrieved examples: {examples}")
+                retrieved_docs = cli_response_on_rag(
+                    console=console,
+                    docs=retrieved_docs,
+                    get_file_source=get_file_source,
+                    get_section_path=split_docs.get_section_path,
+                    format_doc=split_docs.format_doc,
+                    action_name="Modify retrieved JutulDarcy documentation",
+                )
 
-    format_str = lambda s: s if s != "" else "(empty)"
-    out = f"""
-    # Retrieved from the Fimbul documentation:
+                console.print("\n[bold blue]Retrieved JutulDarcy Examples[/bold blue]")
+                retrieved_examples = cli_response_on_rag(
+                    console=console,
+                    docs=retrieved_examples,
+                    get_file_source=get_file_source,
+                    get_section_path=split_examples.get_section_path,
+                    format_doc=split_examples.format_doc,
+                    action_name="Modify retrieved JutulDarcy examples",
+                )
+            else:
+                # UI mode: use the original UI-based interaction
+                retrieved_docs = response_on_rag(
+                    retrieved_docs,
+                    get_file_source=get_file_source,
+                    get_section_path=split_docs.get_section_path,
+                    format_doc=split_docs.format_doc,
+                    action_name="Modify retrieved JutulDarcy documentation",
+                )
+                retrieved_examples = response_on_rag(
+                    retrieved_examples,
+                    get_file_source=get_file_source,
+                    get_section_path=split_examples.get_section_path,
+                    format_doc=split_examples.format_doc,
+                    action_name="Modify retrieved JutulDarcy examples",
+                )
 
-    {format_str(docs)}
+        docs = split_docs.format_docs(retrieved_docs)
+        examples = split_examples.format_examples(retrieved_examples)
 
-    # Retrieved from the Fimbul examples:
+        format_str = lambda s: s if s != "" else "(empty)"
+        out = f"""
+        # Retrieved from the JutulDarcy documentation:
 
-    {format_str(examples)}
-    """
+        {format_str(docs)}
 
-    return out
+        # Retrieved from the JutulDarcy examples:
+
+        {format_str(examples)}
+        """
+        return out
+
+
+class RetrieveFimbulToolInput(BaseModel):
+    query: str = Field(
+        "The query that will be used for document and example retrieval",
+    )
+
+
+class RetrieveFimbulTool(BaseTool):
+    name: str = "retrieve_fimbul"
+    description: str = "Use this tool to look up any information, usage, or examples from the Fimbul documentation. ALWAYS use this tool before answering any Julia code question about Fimbul."
+    args_schema = RetrieveFimbulToolInput
+
+    def _run(
+        self, query: str, config: Annotated[RunnableConfig, InjectedToolArg]
+    ) -> str:
+        configuration = BaseConfiguration.from_runnable_config(config)
+
+        # Modify the query if human interaction is enabled
+        if configuration.human_interaction:
+            if configuration.cli_mode:
+                # CLI mode: use interactive CLI query modification
+                from rich.console import Console
+
+                from jutulgpt.cli_utils import cli_modify_rag_query
+
+                console = Console()
+                query = cli_modify_rag_query(console, query, "Fimbul")
+            else:
+                # UI mode: use the original UI-based interaction
+                query = modify_rag_query(query, "Fimbul")
+
+        with retrieval.make_retriever(
+            config=config, spec=RETRIEVER_SPECS["fimbul"]["docs"]
+        ) as retriever:
+            retrieved_docs = retriever.invoke(query)
+        with retrieval.make_retriever(
+            config=config, spec=RETRIEVER_SPECS["fimbul"]["examples"]
+        ) as retriever:
+            retrieved_examples = retriever.invoke(query)
+
+        if configuration.human_interaction:
+            if configuration.cli_mode:
+                # CLI mode: use interactive CLI filtering
+                from rich.console import Console
+
+                from jutulgpt.cli_utils import cli_response_on_rag
+
+                console = Console()
+                console.print("\n[bold blue] Retrieved Fimbul Documents[/bold blue]")
+
+                retrieved_docs = cli_response_on_rag(
+                    console=console,
+                    docs=retrieved_docs,
+                    get_file_source=get_file_source,
+                    get_section_path=split_docs.get_section_path,
+                    format_doc=split_docs.format_doc,
+                    action_name="Modify retrieved Fimbul documentation",
+                )
+
+                console.print("\n[bold blue] Retrieved Fimbul Examples[/bold blue]")
+                retrieved_examples = cli_response_on_rag(
+                    console=console,
+                    docs=retrieved_examples,
+                    get_file_source=get_file_source,
+                    get_section_path=split_examples.get_section_path,
+                    format_doc=split_examples.format_doc,
+                    action_name="Modify retrieved Fimbul examples",
+                )
+            else:
+                # UI mode: use the original UI-based interaction
+                retrieved_docs = response_on_rag(
+                    retrieved_docs,
+                    get_file_source=get_file_source,
+                    get_section_path=split_docs.get_section_path,
+                    format_doc=split_docs.format_doc,
+                    action_name="Modify retrieved Fimbul documentation",
+                )
+                retrieved_examples = response_on_rag(
+                    retrieved_examples,
+                    get_file_source=get_file_source,
+                    get_section_path=split_examples.get_section_path,
+                    format_doc=split_examples.format_doc,
+                    action_name="Modify retrieved Fimbul examples",
+                )
+
+        docs = split_docs.format_docs(retrieved_docs)
+        examples = split_examples.format_examples(retrieved_examples)
+
+        format_str = lambda s: s if s != "" else "(empty)"
+        out = f"""
+        # Retrieved from the Fimbul documentation:
+
+        {format_str(docs)}
+
+        # Retrieved from the Fimbul examples:
+
+        {format_str(examples)}
+        """
+        return out

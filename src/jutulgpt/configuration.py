@@ -11,6 +11,7 @@ from typing import Annotated, Any, Literal, Optional, Type, TypeVar
 
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig, ensure_config
+from rich.console import Console
 
 from jutulgpt import prompts
 
@@ -26,6 +27,9 @@ load_dotenv()
 _set_env("OPENAI_API_KEY")
 logging.getLogger("httpx").setLevel(logging.WARNING)  # Less warnings in the output
 logging.getLogger("faiss").setLevel(logging.WARNING)
+
+# Initialize a console for rich output
+console = Console()
 
 
 @dataclass(kw_only=True)
@@ -79,6 +83,18 @@ class BaseConfiguration:
         default=True,
         metadata={
             "description": "Enable human-in-the-loop. Set to True when running the UI."
+        },
+    )
+
+    cli_mode: Annotated[
+        bool,
+        {
+            "description": "Enable CLI-specific interactions (e.g., interactive document filtering)."
+        },
+    ] = field(
+        default=True,
+        metadata={
+            "description": "Enable CLI-specific interactions (e.g., interactive document filtering)."
         },
     )
 

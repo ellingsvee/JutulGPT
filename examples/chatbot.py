@@ -1,11 +1,7 @@
-from langchain_core.messages import convert_to_messages
-from langchain_core.runnables.config import RunnableConfig
-
 # from jutulgpt.agents import agent_config
-from jutulgpt.graph import graph
+from jutulgpt import graph
 
 # from jutulgpt.state import InputState
-from jutulgpt.utils import get_tool_message
 
 
 def main():
@@ -36,7 +32,7 @@ def main():
                         if prev_message is None or msg.content != prev_message.content:
                             print(msg.content)
                         prev_message = msg
-                except Exception as e:
+                except Exception:
                     pass
 
 

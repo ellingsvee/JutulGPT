@@ -4,14 +4,15 @@ from typing import cast
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
+from rich.console import Console
 
+from jutulgpt.cli_utils import cli_response_on_check_code, print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import response_on_check_code
 from jutulgpt.julia_interface import get_error_message, run_string
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.utils import (
-    check_for_package_install,
     get_last_code_response,
     load_chat_model,
     remove_plotting,
@@ -20,16 +21,29 @@ from jutulgpt.utils import (
 )
 
 
-def check_code(state: State, config: RunnableConfig):
+def check_code(state: State, config: RunnableConfig, console: Console):
     configuration = BaseConfiguration.from_runnable_config(config)
 
     # Get the code block to check
     code_block = get_last_code_response(state)
 
     # Human interaction to potentially modify the code of not check it
-    code_block, check_code_bool, extra_messages = response_on_check_code(
-        code_block, human_interaction=configuration.human_interaction
-    )
+    check_code_bool = True
+    extra_messages = []
+
+    print("Human interactions: " + str(configuration.human_interaction))
+    if True:
+        # if configuration.human_interaction:
+        if configuration.cli_mode:
+            # CLI mode: use interactive CLI code review
+            code_block, check_code_bool, extra_messages = cli_response_on_check_code(
+                console, code_block
+            )
+        else:
+            # UI mode: use the original UI-based interaction
+            code_block, check_code_bool, extra_messages = response_on_check_code(
+                code_block,
+            )
 
     # Return early if the user chose to ignore the code check
     if not check_code_bool:
@@ -38,39 +52,35 @@ def check_code(state: State, config: RunnableConfig):
     imports = code_block.imports
     code = code_block.code
 
-    # Disallow package installation if not permitted
-    if not configuration.allow_package_installation and check_for_package_install(
-        code_block
-    ):
-        error_message = (
-            "The code you generated tries to install a package, which is not allowed. "
-            "If you are certain that the package is needed, ask the user to manually install it."
-        )
-        return {
-            "messages": extra_messages + [HumanMessage(content=error_message)],
-            "error": True,
-            "error_message": error_message,
-            "iterations": state.iterations + 1,
-        }
-
-    # Preprocess code to shorten simulations and remove plotting (naive implementation)
-    # imports = shorter_simulations(imports)
-    # code = shorter_simulations(code)
-
     # WARNING: If we try to use the Fimbul package, we for some reason need to activate the package environment. This should be fixed in the future.
     imports = fix_fimbul_imports(imports)
 
     # Test the full code
     full_code = imports + "\n" + code
-    print("BEFORE run_string")
+
+    print_to_console(
+        console=console, text="Running code", title="Code Runner", border_style="yellow"
+    )
+
     result = run_string(full_code)
-    print("AFTER run_string")
+
     if result["error"]:
         julia_error_message = get_error_message(result)
         error_message = gen_error_message_string(
-            full_code=full_code, julia_error_message=julia_error_message, config=config
+            full_code=full_code,
+            julia_error_message=julia_error_message,
+            config=config,
+            console=console,
         )
-        print(f"check_code: {error_message.content}")
+        # print(f"check_code: {error_message.content}")
+
+        print_to_console(
+            console=console,
+            text="Code failed!",
+            title="Code Runner",
+            border_style="red",
+        )
+
         return {
             "messages": extra_messages
             + [SystemMessage(content="Error occurred while running Julia code.")]
@@ -79,6 +89,13 @@ def check_code(state: State, config: RunnableConfig):
             "error_message": error_message.content,
             "iterations": state.iterations + 1,
         }
+
+    print_to_console(
+        console=console,
+        text="Code succeded!",
+        title="Code Runner",
+        border_style="green",
+    )
 
     # If everything succeeded, return success
     return {
@@ -124,10 +141,8 @@ def fix_fimbul_imports(imports: str) -> str:
 
 
 def gen_error_message_string(
-    full_code: str, julia_error_message: str, config: RunnableConfig
+    full_code: str, julia_error_message: str, config: RunnableConfig, console: Console
 ) -> AIMessage:
-    print("INVOKING AI TO FIX ERROR!")
-
     configuration = BaseConfiguration.from_runnable_config(config)
     # Initialize the model with tool binding. Change the model or add more tools here.
     model = load_chat_model(configuration.response_model).bind_tools(tools)
@@ -153,4 +168,10 @@ def gen_error_message_string(
             config,
         ),
     )
+
+    if response.content.strip():
+        print_to_console(
+            console, response.content, title="Error analyzer", border_style="yellow"
+        )
+
     return response

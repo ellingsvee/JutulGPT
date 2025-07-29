@@ -1,17 +1,21 @@
 """This module contains the `generate_response` function which is responsible for generating a response."""
 
+import json
+import os
 from typing import cast
 
-from langchain_core.messages import AIMessage, trim_messages
+from langchain_core.messages import AIMessage, HumanMessage, trim_messages
 from langchain_core.runnables import RunnableConfig
+from rich.console import Console
 
+from jutulgpt.cli_utils import print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
 
 
-def generate_response(state: State, config: RunnableConfig):
+def generate_response(state: State, config: RunnableConfig, console: Console):
     """Generate a response based on the given state and configuration.
 
     This function initializes a chat model with tool bindings, formats the system prompt,
@@ -45,31 +49,42 @@ def generate_response(state: State, config: RunnableConfig):
         allow_partial=True,
     )
 
-    print("GENERATING RESPONSE")
-    print(f"TRIMMED STATE MESSAGES: {trimmedStateMessages}", flush=True)
-
     # Get the model's response
     response = cast(
         AIMessage,
         model.invoke(
-            [{"role": "system", "content": system_message}, *trimmedStateMessages],
+            [
+                {"role": "system", "content": system_message},
+                HumanMessage(content=f"Working directory: {os.getcwd()}"),
+                *trimmedStateMessages,
+            ],
             config,
         ),
     )
 
-    print("RESPONSE GENERATED")
+    # CLI
+    if response.content.strip():
+        print_to_console(console, response.content, title="Assistant")
+
+    for tool_call in getattr(response, "tool_calls", []):
+        print_to_console(
+            console,
+            tool_call["name"] + ": " + json.dumps(tool_call["args"]),
+            title="Tool Call",
+        )
 
     # Handle the case when it's the last step and the model still wants to use a tool
     if state.is_last_step and response.tool_calls:
+        ai_message = "Sorry, I could not find an answer to your question in the specified number of steps."
+        print_to_console(console, ai_message, title="Assistant")
         return {
             "messages": [
                 AIMessage(
                     id=response.id,
-                    content="Sorry, I could not find an answer to your question in the specified number of steps.",
+                    content=ai_message,
                 )
             ],
         }
-    print("RETURNING RESPONSE")
     # Return the model's response as a list to be added to existing messages
     return {
         "messages": [response],

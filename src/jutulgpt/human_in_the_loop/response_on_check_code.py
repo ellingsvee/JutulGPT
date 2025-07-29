@@ -14,7 +14,7 @@ from jutulgpt.utils import get_code_from_response
 
 
 def response_on_check_code(
-    code_block: CodeBlock, human_interaction: bool
+    code_block: CodeBlock,
 ) -> tuple[CodeBlock, bool, List[AIMessage]]:
     """
     Human interaction to potentially modeify the code, or choose to not accept it.
@@ -30,9 +30,6 @@ def response_on_check_code(
     # If there is no code to edit, return immediately
     if not code_block.imports and not code_block.code:
         return code_block, False, []
-
-    if not human_interaction:
-        return code_block, True, []
 
     # Format the code for display in the UI
     full_code = code_block.get_full_code(within_julia_context=True)

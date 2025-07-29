@@ -8,13 +8,12 @@ State structures for the agent, including:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 from langgraph.managed import IsLastStep
 from pydantic import BaseModel, Field
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Sequence
 
 
 @dataclass
@@ -26,7 +25,9 @@ class InputState:
       The `add_messages` annotation ensures new messages are merged by ID, so the state is append-only unless a message is replaced.
     """
 
-    messages: Annotated[List[AnyMessage], add_messages] = field(default_factory=list)
+    messages: Annotated[Sequence[AnyMessage], add_messages] = field(
+        default_factory=list
+    )
 
 
 @dataclass
