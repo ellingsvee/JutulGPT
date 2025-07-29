@@ -152,10 +152,18 @@ def jl_eval_in_subprocess(code_string, timeout=30):
             return result
         else:
             if result["type"] == "JuliaError":
+                if p.is_alive():
+                    p.terminate()
+                p.join()  # Always wait for process to finish
+
                 raise JuliaSubprocessJuliaError(
                     result["message"], result.get("jl_stacktrace")
                 )
             else:
+                if p.is_alive():
+                    p.terminate()
+                p.join()  # Always wait for process to finish
+
                 raise JuliaSubprocessOtherError(result["message"], result["traceback"])
     finally:
         # Ensure subprocess is always cleaned up
