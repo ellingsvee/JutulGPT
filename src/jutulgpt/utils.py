@@ -84,16 +84,27 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
     provider, model = get_provider_and_model(fully_specified_name)
     match provider:
         case "openai":
-            return init_chat_model(model, model_provider=provider, temperature=0.1)
+            return init_chat_model(
+                model,
+                model_provider=provider,
+                temperature=0.1,
+            )
         case "ollama":
             print(f"Inside the Ollama provider. Loading {model}")
             # Resoning models need reasoning=True to hide the thinking, but this fails for non-reasoning models.
             if model == "qwen3:14b":  # WARNING: This is VERY bad practice!
                 return init_chat_model(
-                    model, model_provider=provider, temperature=0.1, reasoning=True
+                    model,
+                    model_provider=provider,
+                    temperature=0.1,
+                    reasoning=True,
                 )
             else:
-                return init_chat_model(model, model_provider=provider, temperature=0.1)
+                return init_chat_model(
+                    model,
+                    model_provider=provider,
+                    temperature=0.1,
+                )
 
         case _:
             raise ValueError(f"Unsupported chat model provider: {provider}")
@@ -264,6 +275,31 @@ def get_last_code_response(state: State) -> CodeBlock:
     return code_block
 
 
+def get_last_code_response_2(messages: List) -> CodeBlock:
+    """
+    Get the last AI-generated code response from the state as a CodeBlock.
+
+    Args:
+        state (State): The current State object containing messages.
+
+    Returns:
+        CodeBlock: The extracted code block from the last AI message, or empty if not found.
+    """
+    last_message = messages[-1]
+
+    # Include the human in case the human-in-the-loop updates the generated code.
+
+    print("Inside: get_last_code_response")
+    print(f"last_message.type: {last_message.type}")
+    if last_message.type == "ai" or last_message.type == "human":
+        last_message_content = last_message.content
+        print(f"last_message_content: {last_message_content}")
+    else:
+        last_message_content = ""
+    code_block = get_code_from_response(last_message_content)
+    return code_block
+
+
 def _get_relevant_part_of_file_source(source: str, relevant_doc_name: str = "rag"):
     """
     Remove the part of the soure up to and including the relevant_doc_name.
@@ -291,3 +327,115 @@ def get_provider_and_model(name: str) -> tuple[str, str]:
     """
     provider, model = name.split("/", maxsplit=1)
     return provider, model
+
+
+def check_for_package_install(code_block: CodeBlock) -> bool:
+    not_allowed = [
+        "using Pkg",  # Pkg is used to install packages, which is not allowed
+        "Pkg.add",  # Pkg.add is used to install packages, which is not allowed
+        "Pkg.update",  # Pkg.update is used to update packages, which is not allowed
+        "Pkg.instantiate",  # Pkg.instantiate is used to install dependencies, which is not allowed
+    ]
+    if any(item in code_block.imports for item in not_allowed):
+        return True
+    if any(item in code_block.code for item in not_allowed):
+        return True
+    return False
+
+
+def remove_plotting(code: str) -> str:
+    """
+    Remove GLMakie usage and plotting code from Julia code blocks.
+    F.ex:
+    - Removes 'using GLMakie' or 'using ... GLMakie ...' from using statements.
+    - Removes lines that define or use 'fig', 'ax', or call 'lines!'.
+    - Removes lines that are just 'fig' (returning the figure).
+    """
+    # TODO: This is a very naive implementation, it should be improved.
+    remove_functions = [
+        "fig",
+        "plt",
+        "ax",
+        "scatter",
+        "Colorbar",
+        "Axis",
+        "lines",
+        "plot_reservoir",
+        "plot_well_results",
+        "plot_reservoir_measurables",
+        "plot_reservoir_simulation_result",
+        "plot_well!",
+        "myplot",
+        "plot_cell_data",
+        "plot_mesh_edges",
+        "plot_mesh",
+        "plot_co2_inventory",
+        "println",  # To avoid printing to terminal
+    ]
+
+    # lines = code.splitlines()
+    lines = split_code_into_lines(code)
+    new_lines = []
+    for line in lines:
+        stripped = line.strip()
+        # Remove 'using GLMakie' or 'using ... GLMakie ...'
+        if stripped.startswith("using"):
+            # Remove 'GLMakie' from the using statement
+            # Handles cases like: using JutulDarcy, GLMakie, Jutul;
+            # and: using GLMakie
+            line = re.sub(r",?\s*GLMakie,?", "", line)
+            # Remove trailing/leading commas and extra spaces
+            line = re.sub(r"using\s*,", "using ", line)
+            line = re.sub(r",\s*;", ";", line)
+            # If nothing left after 'using', skip the line
+            if re.match(r"^\s*using\s*;?\s*$", line):
+                continue
+            # If the line is now empty, skip it
+            if not line.strip():
+                continue
+        # Remove lines that define or use fig, ax, or call lines!
+        if stripped == "fig":
+            continue
+
+        if any(func in stripped for func in remove_functions):
+            continue
+        new_lines.append(line)
+    return "\n".join(new_lines)
+
+
+def shorten_first_argument(code: str, simulation_functions: List[str]) -> str:
+    """
+    For each simulation function, append '[1:1]' to the first argument of the function call.
+    E.g., sim_func_1(foo, bar) -> sim_func_1(foo[1:1], bar)
+    """
+
+    for func in simulation_functions:
+        # Match the function call and capture the first argument
+        pattern = rf"({func}\s*\()\s*([^,)\s]+)(.*?\))"
+
+        def replacer(match):
+            before = match.group(1)
+            first_arg = match.group(2)
+            after = match.group(3)
+            return f"{before}{first_arg}[1:1]{after}"
+
+        code = re.sub(pattern, replacer, code, flags=re.DOTALL)
+
+    return code
+
+
+def replace_case(code: str, case_name: str, simulation_functions: List[str]) -> str:
+    """
+    Replacing the 'case' with 'case[1:1]'.
+    """
+    for func in simulation_functions:
+        # Match 'case' as a whole word in the argument list
+        pattern = rf"({func}\s*\(.*?)(\b{case_name}\b)(.*?\))"
+
+        def replacer(match):
+            before = match.group(1)
+            after = match.group(3)
+            return f"{before}{case_name}[1:1]{after}"
+
+        code = re.sub(pattern, replacer, code, flags=re.DOTALL)
+    return code

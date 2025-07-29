@@ -134,22 +134,42 @@ def jl_eval_in_subprocess(code_string, timeout=30):
     q = ctx.Queue()
     p = ctx.Process(target=_run_julia_code, args=(code_string, q))
     p.start()
-    p.join(timeout)
 
-    if p.is_alive():
-        p.terminate()
-        raise TimeoutError("Julia code timed out.")
+    try:
+        p.join(timeout)
 
-    success, result = q.get()
-    if success:
-        return result
-    else:
-        if result["type"] == "JuliaError":
-            raise JuliaSubprocessJuliaError(
-                result["message"], result.get("jl_stacktrace")
-            )
+        if p.is_alive():
+            p.terminate()
+            p.join()  # Wait for termination to complete
+            raise TimeoutError("Julia code timed out.")
+
+        # Check if the queue has a result (subprocess might have crashed)
+        if q.empty():
+            raise RuntimeError("Subprocess finished but did not return a result.")
+
+        success, result = q.get()
+        if success:
+            return result
         else:
-            raise JuliaSubprocessOtherError(result["message"], result["traceback"])
+            if result["type"] == "JuliaError":
+                if p.is_alive():
+                    p.terminate()
+                p.join()  # Always wait for process to finish
+
+                raise JuliaSubprocessJuliaError(
+                    result["message"], result.get("jl_stacktrace")
+                )
+            else:
+                if p.is_alive():
+                    p.terminate()
+                p.join()  # Always wait for process to finish
+
+                raise JuliaSubprocessOtherError(result["message"], result["traceback"])
+    finally:
+        # Ensure subprocess is always cleaned up
+        if p.is_alive():
+            p.terminate()
+        p.join()  # Always wait for process to finish
 
 
 def run_string(code: str):
@@ -164,48 +184,60 @@ def run_string(code: str):
     """
     try:
         jl_eval_in_subprocess(code)
-        return {
+        result = {
             "error": False,
             "error_message": None,
             "error_stacktrace": None,
         }
+        print(f"run_string: Returning success: {result}", flush=True)
+        return result
 
     # Handle Julia errors raised from within the subprocess
     except JuliaSubprocessJuliaError as e:
-        print("Inside JuliaSubprocessJuliaError in run_string")
+        print("Inside JuliaSubprocessJuliaError in run_string", flush=True)
         filtered_stack = (
             _filter_stacktrace(e.traceback_str) if e.traceback_str else None
         )
-        print(f"filtered_stack: {filtered_stack}")
-        return {
+        print("RETURNING ERROR:", flush=True)
+
+        error_message = str(e)
+        result = {
             "error": True,
-            "error_message": str(e),
+            "error_message": error_message,
             "error_stacktrace": filtered_stack,
         }
+        print(f"About to return: {result}", flush=True)
+        return result
 
     # Handle other Python-side errors from the subprocess
     except JuliaSubprocessOtherError as e:
-        return {
+        result = {
             "error": True,
             "error_message": str(e),
             "error_stacktrace": e.traceback_str,
         }
+        print(f"run_string: Returning JuliaSubprocessOtherError: {result}", flush=True)
+        return result
 
     # Handle timeout
     except TimeoutError as e:
-        return {
+        result = {
             "error": True,
             "error_message": str(e),
             "error_stacktrace": None,
         }
+        print(f"run_string: Returning TimeoutError: {result}", flush=True)
+        return result
 
     # Catch unexpected Python errors
     except Exception as e:
-        return {
+        result = {
             "error": True,
             "error_message": f"Unexpected error: {str(e)}",
             "error_stacktrace": traceback.format_exc(),
         }
+        print(f"run_string: Returning unexpected error: {result}", flush=True)
+        return result
 
 
 def get_error_message(result) -> str:

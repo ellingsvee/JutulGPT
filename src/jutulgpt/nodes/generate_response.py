@@ -45,6 +45,9 @@ def generate_response(state: State, config: RunnableConfig):
         allow_partial=True,
     )
 
+    print("GENERATING RESPONSE")
+    print(f"TRIMMED STATE MESSAGES: {trimmedStateMessages}", flush=True)
+
     # Get the model's response
     response = cast(
         AIMessage,
@@ -53,6 +56,8 @@ def generate_response(state: State, config: RunnableConfig):
             config,
         ),
     )
+
+    print("RESPONSE GENERATED")
 
     # Handle the case when it's the last step and the model still wants to use a tool
     if state.is_last_step and response.tool_calls:
@@ -64,7 +69,7 @@ def generate_response(state: State, config: RunnableConfig):
                 )
             ],
         }
-
+    print("RETURNING RESPONSE")
     # Return the model's response as a list to be added to existing messages
     return {
         "messages": [response],

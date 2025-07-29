@@ -158,6 +158,12 @@ class BaseConfiguration:
         default=prompts.DEFAULT_CODER_PROMPT,
         metadata={"description": "The default prompt used for generating Julia code."},
     )
+    error_analyzer_prompt: str = field(
+        default=prompts.ERROR_ANALYZER_PROMPT,
+        metadata={
+            "description": "The default prompt for analyzing the error messages and suggesting how to fix them."
+        },
+    )
 
     @classmethod
     def from_runnable_config(
