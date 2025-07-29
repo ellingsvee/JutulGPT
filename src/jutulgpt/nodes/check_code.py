@@ -6,6 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from rich.console import Console
 
+from jutulgpt.cli_colorscheme import colorscheme
 from jutulgpt.cli_utils import cli_response_on_check_code, print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import response_on_check_code
@@ -57,7 +58,10 @@ def check_code(state: State, config: RunnableConfig, console: Console):
     full_code = imports + "\n" + code
 
     print_to_console(
-        console=console, text="Running code", title="Code Runner", border_style="yellow"
+        console=console,
+        text="Running code...",
+        title="Code Runner",
+        border_style=colorscheme.warning,
     )
 
     result = run_string(full_code)
@@ -69,7 +73,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
             console=console,
             text="Code failed!",
             title="Code Runner",
-            border_style="red",
+            border_style=colorscheme.error,
         )
 
         error_message = gen_error_message_string(
@@ -93,7 +97,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         console=console,
         text="Code succeded!",
         title="Code Runner",
-        border_style="green",
+        border_style=colorscheme.success,
     )
 
     # If everything succeeded, return success
@@ -170,7 +174,10 @@ def gen_error_message_string(
 
     if response.content.strip():
         print_to_console(
-            console, response.content, title="Error analyzer", border_style="yellow"
+            console,
+            response.content,
+            title="Error analyzer",
+            border_style=colorscheme.tool,
         )
 
     return response

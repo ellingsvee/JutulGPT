@@ -104,14 +104,10 @@ class RetrieveJutulDarcyTool(BaseTool):
 
         format_str = lambda s: s if s != "" else "(empty)"
         out = f"""
-        # Retrieved from the JutulDarcy documentation:
+{format_str(docs)}
 
-        {format_str(docs)}
-
-        # Retrieved from the JutulDarcy examples:
-
-        {format_str(examples)}
-        """
+{format_str(examples)}
+"""
         return out
 
 
@@ -203,13 +199,9 @@ class RetrieveFimbulTool(BaseTool):
         examples = split_examples.format_examples(retrieved_examples)
 
         format_str = lambda s: s if s != "" else "(empty)"
-        out = f"""
-        # Retrieved from the Fimbul documentation:
+        out = f""" 
+{format_str(docs)}
 
-        {format_str(docs)}
-
-        # Retrieved from the Fimbul examples:
-
-        {format_str(examples)}
-        """
+{format_str(examples)}
+"""
         return out

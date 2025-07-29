@@ -22,6 +22,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 
 from jutulgpt.cli_utils import print_to_console
+from jutulgpt.cli_colorscheme import colorscheme
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.nodes import check_code, generate_response
 from jutulgpt.nodes._tools import tools
@@ -137,7 +138,10 @@ class JutulGPT:
                     )
                 )
                 print_to_console(
-                    console=self.console, text=tool_result, title="Tool Result"
+                    console=self.console,
+                    text=tool_result,
+                    title="Tool Result",
+                    border_style=colorscheme.normal,
                 )
             except Exception as e:
                 response.append(
@@ -151,7 +155,7 @@ class JutulGPT:
                     console=self.console,
                     text=str(e),
                     title="Tool Error",
-                    border_style="red",
+                    border_style=colorscheme.error,
                 )
 
         return {"messages": response}
@@ -162,8 +166,8 @@ class JutulGPT:
             # Create configuration with CLI mode enabled
             config = {
                 "cli_mode": True,
-                "embedding_model": "ollama/nomic-embed-text",
-                "response_model": "ollama/qwen3:14b",
+                # "embedding_model": "ollama/nomic-embed-text",
+                # "response_model": "ollama/qwen3:14b",
             }
             while True:
                 result = self.graph.invoke(

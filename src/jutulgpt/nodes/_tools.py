@@ -2,12 +2,14 @@
 
 from langgraph.prebuilt import ToolNode
 
-from jutulgpt.tools import RetrieveFimbulTool, RetrieveJutulDarcyTool
+from jutulgpt.tools import (
+    ReadFromFile,
+    RetrieveFimbulTool,
+    RetrieveJutulDarcyTool,
+    WriteToFile,
+)
 
-tools = [RetrieveFimbulTool(), RetrieveJutulDarcyTool()]
+tools = [RetrieveFimbulTool(), RetrieveJutulDarcyTool(), ReadFromFile(), WriteToFile()]
 
-# Add the RAG retrievers as tools
-# tools.append(retrieve_jutuldarcy)
-# tools.append(retrieve_fimbul)
 
 tools_node = ToolNode(tools)
