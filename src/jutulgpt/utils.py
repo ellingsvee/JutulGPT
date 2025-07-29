@@ -84,16 +84,27 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
     provider, model = get_provider_and_model(fully_specified_name)
     match provider:
         case "openai":
-            return init_chat_model(model, model_provider=provider, temperature=0.1)
+            return init_chat_model(
+                model,
+                model_provider=provider,
+                temperature=0.1,
+            )
         case "ollama":
             print(f"Inside the Ollama provider. Loading {model}")
             # Resoning models need reasoning=True to hide the thinking, but this fails for non-reasoning models.
             if model == "qwen3:14b":  # WARNING: This is VERY bad practice!
                 return init_chat_model(
-                    model, model_provider=provider, temperature=0.1, reasoning=True
+                    model,
+                    model_provider=provider,
+                    temperature=0.1,
+                    reasoning=True,
                 )
             else:
-                return init_chat_model(model, model_provider=provider, temperature=0.1)
+                return init_chat_model(
+                    model,
+                    model_provider=provider,
+                    temperature=0.1,
+                )
 
         case _:
             raise ValueError(f"Unsupported chat model provider: {provider}")
@@ -250,6 +261,31 @@ def get_last_code_response(state: State) -> CodeBlock:
         CodeBlock: The extracted code block from the last AI message, or empty if not found.
     """
     last_message = state.messages[-1]
+
+    # Include the human in case the human-in-the-loop updates the generated code.
+
+    print("Inside: get_last_code_response")
+    print(f"last_message.type: {last_message.type}")
+    if last_message.type == "ai" or last_message.type == "human":
+        last_message_content = last_message.content
+        print(f"last_message_content: {last_message_content}")
+    else:
+        last_message_content = ""
+    code_block = get_code_from_response(last_message_content)
+    return code_block
+
+
+def get_last_code_response_2(messages: List) -> CodeBlock:
+    """
+    Get the last AI-generated code response from the state as a CodeBlock.
+
+    Args:
+        state (State): The current State object containing messages.
+
+    Returns:
+        CodeBlock: The extracted code block from the last AI message, or empty if not found.
+    """
+    last_message = messages[-1]
 
     # Include the human in case the human-in-the-loop updates the generated code.
 

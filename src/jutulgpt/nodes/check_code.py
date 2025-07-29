@@ -33,7 +33,7 @@ def check_code(state: State, config: RunnableConfig):
 
     # Return early if the user chose to ignore the code check
     if not check_code_bool:
-        return {}
+        return {"error": False}
 
     imports = code_block.imports
     code = code_block.code
