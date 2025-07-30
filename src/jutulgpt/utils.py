@@ -208,17 +208,20 @@ def split_code_into_lines(code: str):
 
 def _get_code_string_from_response(response: str) -> str:
     """
-    Extract Julia code from a Markdown-style Julia code block in a response string.
+    Extract Julia code from one or more Markdown-style Julia code blocks in a response string.
+    If multiple code blocks are found, they are joined in chronological order.
 
     Args:
-        response (str): The response string containing a Markdown Julia code block.
+        response (str): The response string containing Markdown Julia code block(s).
 
     Returns:
-        str: The extracted Julia code, or an empty string if not found.
+        str: The extracted Julia code (joined if multiple blocks), or an empty string if not found.
     """
-    match = re.search(r"```julia\s*([\s\S]*?)```", response, re.IGNORECASE)
-    if match:
-        return match.group(1).strip()
+    matches = re.findall(r"```julia\s*([\s\S]*?)```", response, re.IGNORECASE)
+    if matches:
+        # Join multiple code blocks with double newlines to separate them
+        code_blocks = [match.strip() for match in matches if match.strip()]
+        return "\n\n".join(code_blocks)
     return ""
 
 
