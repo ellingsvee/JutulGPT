@@ -8,7 +8,7 @@ class ColorScheme:
     human_interaction: str = "blue"
     success: str = "green"
     warning: str = "yellow"
-    tool: str = "magenta"
+    message: str = "magenta"
 
 
 colorscheme = ColorScheme()

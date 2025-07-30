@@ -9,9 +9,10 @@ from rich.table import Table
 
 from jutulgpt.rag.utils import modify_doc_content
 
+console = Console()
+
 
 def print_to_console(
-    console: Console,
     text: str,
     title: str = "Assistant",
     border_style: str = "",
@@ -246,7 +247,7 @@ def cli_response_on_check_code(console: Console, code_block) -> tuple:
     console.print(
         Panel(
             Markdown(full_code),
-            title="Generated Code",
+            title="Human Interaction",
             border_style="blue",
         )
     )
