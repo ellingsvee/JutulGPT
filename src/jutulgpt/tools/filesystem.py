@@ -141,9 +141,9 @@ class WriteToFile(BaseTool):
         # Show what we're writing (truncated preview)
         print_content = content[:500] + "..." if len(content) > 500 else content
         print_to_console(
-            text=f"Writing to {file_path}\nContent:\n{print_content}",
+            text=f"Writing to {file_path}",
             title="File Writer",
-            border_style=colorscheme.normal,
+            border_style=colorscheme.warning,
         )
 
         try:
