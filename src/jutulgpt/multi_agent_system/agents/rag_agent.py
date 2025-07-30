@@ -132,7 +132,6 @@ class RAGAgent:
                     )
                 )
                 print_to_console(
-                    console=self.console,
                     text=str(e),
                     title="Tool Error",
                     border_style=colorscheme.error,

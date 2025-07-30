@@ -65,7 +65,6 @@ def generate_response(state: State, config: RunnableConfig, console: Console):
     # CLI
     if response.content.strip():
         print_to_console(
-            console,
             response.content,
             title="Assistant",
             border_style=colorscheme.normal,
@@ -73,18 +72,15 @@ def generate_response(state: State, config: RunnableConfig, console: Console):
 
     for tool_call in getattr(response, "tool_calls", []):
         print_to_console(
-            console,
             tool_call["name"] + ": " + json.dumps(tool_call["args"]),
             title="Tool Call",
-            border_style=colorscheme.tool,
+            border_style=colorscheme.message,
         )
 
     # Handle the case when it's the last step and the model still wants to use a tool
     if state.is_last_step and response.tool_calls:
         ai_message = "Sorry, I could not find an answer to your question in the specified number of steps."
-        print_to_console(
-            console, ai_message, title="Assistant", border_style=colorscheme.normal
-        )
+        print_to_console(ai_message, title="Assistant", border_style=colorscheme.normal)
         return {
             "messages": [
                 AIMessage(

@@ -101,8 +101,10 @@ class RetrieveJutulDarcyTool(BaseTool):
 
         format_str = lambda s: s if s != "" else "(empty)"
         out = f"""
+# Retrieved from JutulDarcy documentation 
 {format_str(docs)}
 
+# Retrieved from JutulDarcy examples
 {format_str(examples)}
 """
         return out
@@ -197,8 +199,10 @@ class RetrieveFimbulTool(BaseTool):
 
         format_str = lambda s: s if s != "" else "(empty)"
         out = f""" 
+# Retrieved from Fimbul documentation
 {format_str(docs)}
 
+# Retrieved from Fimbul examples
 {format_str(examples)}
 """
         return out

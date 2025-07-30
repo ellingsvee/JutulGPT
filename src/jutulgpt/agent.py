@@ -133,7 +133,6 @@ class JutulGPT:
                     )
                 )
                 print_to_console(
-                    console=self.console,
                     text=tool_result,
                     title="Tool Result",
                     border_style=colorscheme.normal,
@@ -147,7 +146,6 @@ class JutulGPT:
                     )
                 )
                 print_to_console(
-                    console=self.console,
                     text=str(e),
                     title="Tool Error",
                     border_style=colorscheme.error,
