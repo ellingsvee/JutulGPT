@@ -242,3 +242,6 @@ class MultiAgent:
 
 
 multi_agent = MultiAgent()
+multi_agent.graph.get_graph().draw_mermaid_png(
+    output_file_path="./multi_agent_graph.png"
+)
