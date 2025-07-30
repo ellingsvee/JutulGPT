@@ -39,12 +39,14 @@ class State(InputState):
     - error: True if the agent encountered an error in the last step.
     - error_message: Details of the last error, if any.
     - iterations: Number of steps/turns taken so far (useful for limiting recursion or debugging).
+    - retrieved_context: Context retrieved from RAG agent, available to subsequent agents.
     """
 
     is_last_step: IsLastStep = field(default=False)
     error: bool = field(default=False)
     error_message: str = field(default="")
     iterations: int = field(default=0)
+    retrieved_context: str = field(default="")
 
 
 class CodeBlock(BaseModel):
