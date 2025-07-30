@@ -4,6 +4,7 @@ from typing import cast
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
+from langgraph.prebuilt import create_react_agent
 from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
@@ -11,7 +12,7 @@ from jutulgpt.cli.cli_utils import cli_response_on_check_code
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import response_on_check_code
 from jutulgpt.julia_interface import get_error_message, run_string
-from jutulgpt.nodes._tools import tools
+from jutulgpt.nodes._tools import retrieve_tools
 from jutulgpt.state import State
 from jutulgpt.utils import (
     get_last_code_response,
@@ -85,9 +86,9 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         return {
             "messages": extra_messages
             + [SystemMessage(content="Error occurred while running Julia code.")]
-            + [error_message],
+            + [AIMessage(content=error_message)],
             "error": True,
-            "error_message": error_message.content,
+            "error_message": error_message,
             "iterations": state.iterations + 1,
         }
 
@@ -141,11 +142,19 @@ def fix_fimbul_imports(imports: str) -> str:
 
 def gen_error_message_string(
     full_code: str, julia_error_message: str, config: RunnableConfig, console: Console
-) -> AIMessage:
+) -> str:
     configuration = BaseConfiguration.from_runnable_config(config)
     # Initialize the model with tool binding. Change the model or add more tools here.
-    model = load_chat_model(configuration.response_model).bind_tools(tools)
-    system_message = configuration.error_analyzer_prompt
+    model = load_chat_model(configuration.response_model)
+
+    error_analyzer_agent = create_react_agent(
+        tools=retrieve_tools,
+        model=model,
+        prompt=configuration.error_analyzer_prompt,
+        config_schema=BaseConfiguration,
+    )
+
+    # system_message = configuration.error_analyzer_prompt
 
     message = f"""
     Failure in code execution. The code failed with the following Julia error message:
@@ -159,20 +168,17 @@ def gen_error_message_string(
     # Get the model's response
     response = cast(
         AIMessage,
-        model.invoke(
-            [
-                SystemMessage(content=system_message),
-                HumanMessage(content=message),
-            ],
-            config,
+        error_analyzer_agent.invoke(
+            {"messages": [{"role": "user", "content": message}]},
         ),
     )
 
-    if response.content.strip():
+    response_content = response["messages"][-1].content.strip()
+    if response_content:
         print_to_console(
-            response.content,
+            response_content,
             title="Error analyzer",
-            border_style=colorscheme.tool,
+            border_style=colorscheme.message,
         )
 
-    return response
+    return response_content

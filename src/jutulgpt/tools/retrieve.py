@@ -29,18 +29,18 @@ class RetrieveJutulDarcyTool(BaseTool):
         self, query: str, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> str:
         configuration = BaseConfiguration.from_runnable_config(config)
-        if configuration.human_interaction:
-            if configuration.cli_mode:
-                # CLI mode: use interactive CLI query modification
-                from rich.console import Console
+        # if configuration.human_interaction:
+        #     if configuration.cli_mode:
+        #         # CLI mode: use interactive CLI query modification
+        #         from rich.console import Console
 
-                from jutulgpt.cli.cli_utils import cli_modify_rag_query
+        #         from jutulgpt.cli.cli_utils import cli_modify_rag_query
 
-                console = Console()
-                query = cli_modify_rag_query(console, query, "JutulDarcy")
-            else:
-                # UI mode: use the original UI-based interaction
-                query = modify_rag_query(query, "JutulDarcy")
+        #         console = Console()
+        #         query = cli_modify_rag_query(console, query, "JutulDarcy")
+        #     else:
+        #         # UI mode: use the original UI-based interaction
+        #         query = modify_rag_query(query, "JutulDarcy")
 
         with retrieval.make_retriever(
             config=config, spec=RETRIEVER_SPECS["jutuldarcy"]["docs"]

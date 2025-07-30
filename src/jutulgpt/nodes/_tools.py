@@ -10,6 +10,7 @@ from jutulgpt.tools import (
 )
 
 tools = [RetrieveFimbulTool(), RetrieveJutulDarcyTool(), ReadFromFile(), WriteToFile()]
+retrieve_tools = [RetrieveFimbulTool(), RetrieveJutulDarcyTool()]
 
 
 tools_node = ToolNode(tools)
