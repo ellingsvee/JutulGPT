@@ -10,6 +10,7 @@ from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.human_in_the_loop import modify_rag_query
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
 from jutulgpt.state import State
 from jutulgpt.tools import ReadFromFile, WriteToFile
@@ -33,8 +34,29 @@ class RAGAgentTool(BaseTool):
     def _run(
         self, user_question: str, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> str:
-        response = rag_graph.invoke({"messages": [HumanMessage(content=user_question)]})
-        retrieved_content = response["messages"][-1].content
+        configuration = BaseConfiguration.from_runnable_config(config)
+        if configuration.human_interaction:
+            if configuration.cli_mode:
+                # CLI mode: use interactive CLI query modification
+                from rich.console import Console
+
+                from jutulgpt.cli.cli_utils import cli_modify_rag_query
+
+                console = Console()
+                user_question = cli_modify_rag_query(
+                    console, user_question, "JutulDarcy"
+                )
+            else:
+                # UI mode: use the original UI-based interaction
+                user_question = modify_rag_query(user_question, "JutulDarcy")
+
+        if user_question.strip():
+            response = rag_graph.invoke(
+                {"messages": [HumanMessage(content=user_question)]}
+            )
+            retrieved_content = response["messages"][-1].content
+        else:
+            retrieved_content = "The retrieval was skipped by the user. It is not relevant to the current question."
 
         return retrieved_content
 
