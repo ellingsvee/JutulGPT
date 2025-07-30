@@ -310,14 +310,15 @@ def cli_modify_rag_query(console: Console, query: str, retriever_name: str) -> s
     console.print("\nWhat would you like to do with this query?")
     console.print("1. Accept the query as-is")
     console.print("2. Edit the query")
+    console.print("3. Skip retrieval completely")
 
-    choice = Prompt.ask("Your choice", choices=["1", "2"], default="1")
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
 
     if choice == "1":
         console.print(f"[green]✓ Using original query for {retriever_name}[/green]")
         return query
 
-    else:  # choice == "2"
+    elif choice == "2":
         new_query = edit_document_content(console, query)
 
         if new_query.strip():
@@ -333,3 +334,6 @@ def cli_modify_rag_query(console: Console, query: str, retriever_name: str) -> s
         else:
             console.print("[yellow]⚠ Empty query, using original[/yellow]")
             return query
+    else:  # choice == "3"
+        console.print(f"[red]✗ Skipping {retriever_name} retrieval[/red]")
+        return ""  # Return empty string to indicate no query
