@@ -2,29 +2,6 @@
 
 Using LLMS to work with the JutulDarcy package.
 
-## Settings and configuration
-The agent is configured in the `src/jutulgpt/configuration.py` file. 
-
-The static settings are:
-- `USE_LOCAL_MODEL`: Set to `True` for using local models through Ollama.
-- `MAX_ITERATIONS`: If the generated code fails. How many times the model will try to fix the code.
-- `HUMAN_INTERACTION`: Set to `True` for enabling human-in-the-loop. This only works in the UI.
-- `RETRIEVE_FIMBUL`: Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
-- `ALLOW_PACKAGE_INSTALLATION`: Set to `True` to allow the agent to install packages. If `False` the `check_code` step will fail if it finds any installation in the generated code.
-- `N_RETRIEVED_DOCS`:  Number of documents to retrieve in RAG.
-- `N_RETRIEVED_EXAMPLES`:  Number of examples to retrieve in RAG.
-
-In addition to the static settings we also sett chat- and embedding models, rerankers, and RAG search types in the `BaseConfiguration` and `AgentConfiguration`. Note that all static settings should eventually be integrated into this configuration to allow the most flexible setup. You specify the following settings:
-- `embedding_model`: Name of the embedding model to use.
-- `retriever_provider`: The vector store provider to use for retrieval.
-- `search_type`: Defines the type of search that the retriever should perform.
-- `search_kwargs`: Additional keyword arguments to pass to the search function of the retriever. See Langgraph documentation for details about what kwargs works for the different search types. Note that the `k`keyword is set in the retriever specs by the `N_RETRIEVED_DOCS` and `N_RETRIEVED_EXAMPLES` variables.
-- `rerank_provider`: The provider user for reranking the retrieved documents.
-- `rerank_kwargs`: Keyword arguments provided to the reranker.
-- `response_model`: The language model used for generating responses. Should be in the form: provider/model-name. Currently I have only tested using `OpenAI` or `Ollama` models, but should be easy to extend to other providers.
-- `default_coder_prompt`: The default prompt used for generating Julia code.
-
-
 ## Installation
 It is recommended to install and run JutulGPT using `uv`. See the [uv documentation](https://github.com/astral-sh/uv). Once installed, create and initialize the project by
 ```bash
@@ -71,9 +48,20 @@ Pkg.instantiate()
 ```
 For the RAG to retrieve from the Fimbul documentation, set the `retrieve_fimbul = True` in `src/jutulgpt/configuration.py`.
 
+## CLI 
+
+My favorite way of interacting with the Agent is through the CLI tool. Test it in the examples by running. 
+```bash
+# Agent
+uv run examples/cli_agent.py
+
+# Multi-Agent (more powerful, but uses more LLM calls)
+uv run examples/cli_multi_agent.py
+```
+This gives you a nice interface for asking questions, retrieving info, generating and running code etc. Both agents can also read and write to files.
 
 ## UI
-The JutulGPT has an associated UI called [JutulGPT-UI](https://github.com/ellingsvee/JutulGPT-UI). Install it by following the instructions in the repository. Alternatively do
+The JutulGPT also has an associated UI called [JutulGPT-UI](https://github.com/ellingsvee/JutulGPT-UI). Install it by following the instructions in the repository. Alternatively do
 ```bash
 cd .. # Move to parent directory
 git clone https://github.com/ellingsvee/JutulGPT-UI.git # Clone JutulGPT-UI
@@ -95,6 +83,29 @@ The UI can now be accessed on `http://localhost:3000/` (or some other location d
 
 Note, if you plan on using the UI, you must also set `interactive_environment = True` in `src/jutulgpt/configuration.py`. If not, any human in the loop interaction is disabled.
 
+
+## Settings and configuration
+The agent is configured in the `src/jutulgpt/configuration.py` file.  Settings are set in the `BaseConfiguration`. You specify the following settings:
+- `use_local_model`: Set to `True` for using local models through Ollama.
+- `retrieve_fimbul`: Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
+- `max_iterations`: If the generated code fails. How many times the model will try to fix the code.
+- `human_interaction`: Enable human-in-the-loop.
+- `cli_mode`: Enable CLI-specific interactions.
+- `embedding_model`: Name of the embedding model to use.
+- `retriever_provider`: The vector store provider to use for retrieval.
+- `search_type`: Defines the type of search that the retriever should perform.
+- `search_kwargs`: Additional keyword arguments to pass to the search function of the retriever. See Langgraph documentation for details about what kwargs works for the different search types.
+- `rerank_provider`: The provider user for reranking the retrieved documents.
+- `rerank_kwargs`: Keyword arguments provided to the reranker.
+- `response_model`: The language model used for generating responses. Should be in the form: provider/model-name. Currently I have only tested using `OpenAI` or `Ollama` models, but should be easy to extend to other providers.
+- `default_coder_prompt`: The default prompt used for generating Julia code.
+- `supervisor_prompt`: The prompt used for the supervisor agent.
+- `rag_prompt`: The prompt used for the RAG agent.
+- `code_prompt`: The prompt used for the coding agent.
+- `error_analyzer_prompt`: The default prompt for analyzing the error messages and suggesting how to fix them.
+
+The settings can be specifiec by passing a configuration dictionary when invoking the models. See f.ex the `run()` function in `src/jutulgpt/agent.py`. Alternatively, the UI provides a custom interface where the settings can be selected.
+
 ## Testing
 Tests are implemented using [pytest](https://docs.pytest.org/en/stable/). Run tests by
 ```bash
@@ -102,7 +113,7 @@ uv run pytest
 ```
 
 ## Known issues
-- In the `check_code` function, the generated code is modified for reducing runtime and avoiding softlocks. However, the current code is not perfect, and should be improved.
+- In the `check_code` function, the generated code is modified by the `shorter_simulations` for reducing runtime and avoiding softlocks. However, the current code is not perfect, and should be improved.
 - Strange to separate the static settings from the runnable config. All should eventually be included in the runnable configuration.
 
 ## Potential improvements

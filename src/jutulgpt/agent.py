@@ -153,15 +153,10 @@ class JutulGPT:
 
         return {"messages": response}
 
-    def run(self) -> None:
+    def run(self, config: dict = {"cli_mode": True}) -> None:
         """Run the CLI in interactive mode."""
         try:
             # Create configuration with CLI mode enabled
-            config = {
-                "cli_mode": True,
-                # "embedding_model": "ollama/nomic-embed-text",
-                # "response_model": "ollama/qwen3:14b",
-            }
             while True:
                 result = self.graph.invoke(
                     {"messages": [AIMessage(content="What can I do for you?")]},

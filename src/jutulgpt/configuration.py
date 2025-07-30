@@ -88,28 +88,11 @@ class BaseConfiguration:
 
     cli_mode: Annotated[
         bool,
-        {
-            "description": "Enable CLI-specific interactions (e.g., interactive document filtering)."
-        },
+        {"description": "Enable CLI-specific interactions."},
     ] = field(
         default=True,
-        metadata={
-            "description": "Enable CLI-specific interactions (e.g., interactive document filtering)."
-        },
+        metadata={"description": "Enable CLI-specific interactions."},
     )
-
-    allow_package_installation: Annotated[
-        bool,
-        {
-            "description": "Allow the agent to install packages. Set to False to prevent this."
-        },
-    ] = field(
-        default=False,
-        metadata={
-            "description": "Allow the agent to install packages. Set to False to prevent this."
-        },
-    )
-
     embedding_model: Annotated[
         str,
         {"__template_metadata__": {"kind": "embeddings"}},
