@@ -337,3 +337,57 @@ def cli_modify_rag_query(console: Console, query: str, retriever_name: str) -> s
     else:  # choice == "3"
         console.print(f"[red]✗ Skipping {retriever_name} retrieval[/red]")
         return ""  # Return empty string to indicate no query
+
+
+def cli_response_on_error_analysis(console: Console, error_analysis: str) -> str:
+    """
+    CLI version of error analysis review that allows interactive acceptance, modification, or rejection.
+
+    Args:
+        console: Rich console for display
+        error_analysis: The AI-generated error analysis message
+
+    Returns:
+        str: The potentially modified error analysis, or empty string if rejected
+    """
+    console.print("\n[bold yellow]Error Analysis Generated[/bold yellow]")
+    console.print(
+        Panel(
+            Markdown(error_analysis),
+            title="AI Error Analysis",
+            border_style="magenta",
+        )
+    )
+
+    console.print("\nWhat would you like to do with this error analysis?")
+    console.print("1. Accept the analysis as-is")
+    console.print("2. Edit/modify the analysis")
+    console.print("3. Skip error analysis completely")
+
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
+
+    if choice == "1":
+        console.print("[green]✓ Error analysis accepted[/green]")
+        return error_analysis
+
+    elif choice == "2":
+        console.print("\n[bold]Edit Error Analysis[/bold]")
+        new_analysis = edit_document_content(console, error_analysis)
+
+        if new_analysis.strip():
+            console.print("[green]✓ Error analysis updated[/green]")
+            console.print(
+                Panel(
+                    Markdown(new_analysis.strip()),
+                    title="Updated Error Analysis",
+                    border_style="green",
+                )
+            )
+            return new_analysis.strip()
+        else:
+            console.print("[yellow]⚠ Empty analysis, using original[/yellow]")
+            return error_analysis
+
+    else:  # choice == "3"
+        console.print("[red]✗ Error analysis skipped[/red]")
+        return ""  # Return empty string to indicate no analysis
