@@ -2,7 +2,7 @@
 
 from typing import cast
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import create_react_agent
 from rich.console import Console
@@ -17,7 +17,6 @@ from jutulgpt.state import State
 from jutulgpt.utils import (
     get_last_code_response,
     load_chat_model,
-    remove_plotting,
     replace_case,
     shorten_first_argument,
 )
@@ -55,8 +54,8 @@ def check_code(state: State, config: RunnableConfig, console: Console):
     # WARNING: If we try to use the Fimbul package, we for some reason need to activate the package environment. This should be fixed in the future.
     imports = fix_fimbul_imports(imports)
 
-    # Test the full code
-    full_code = imports + "\n" + code
+    # Get the full code that has been shortened for faster simulations
+    full_code = shorter_simulations(imports + "\n" + code)
 
     print_to_console(
         text="Running code...",
@@ -70,7 +69,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         julia_error_message = get_error_message(result)
 
         print_to_console(
-            text="Code failed!",
+            text=f"Code failed!\n\n{julia_error_message}",
             title="Code Runner",
             border_style=colorscheme.error,
         )
@@ -128,7 +127,7 @@ def shorter_simulations(code: str) -> str:
             code=code, simulation_functions=simulation_functions
         )
 
-    code = remove_plotting(code)
+    # code = remove_plotting(code)
 
     return code
 
