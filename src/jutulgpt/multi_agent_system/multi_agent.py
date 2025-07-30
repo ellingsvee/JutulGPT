@@ -4,7 +4,6 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, InjectedToolArg
 from langgraph.graph import END, StateGraph
-from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel, Field
 from rich.console import Console
 
@@ -212,8 +211,7 @@ class MultiAgent:
         last_message = state.messages[-1]
         tool_calls = getattr(last_message, "tool_calls", [])
 
-        retrieved_context = ""
-
+        new_retrieved_context = ""
         for tool_call in tool_calls:
             tool_name = tool_call["name"]
             tool_args = tool_call["args"]
@@ -236,23 +234,8 @@ class MultiAgent:
                     )
                 )
                 if tool_name == "rag_agent":
-                    retrieved_context += tool_result + "\n"
+                    new_retrieved_context = tool_result + "\n"
 
-                title = ""
-                if tool_name == "rag_agent":
-                    title = "RAG Agent"
-                elif tool_name == "coding_agent":
-                    title = "Coding Agent"
-                else:
-                    title = "Agent"
-
-                # if tool_name != "coding_agent":
-                #     print_to_console(
-                #         console=self.console,
-                #         text=tool_result,
-                #         title=title,
-                #         border_style=colorscheme.normal,
-                #     )
             except Exception as e:
                 response.append(
                     ToolMessage(
@@ -267,8 +250,11 @@ class MultiAgent:
                     border_style=colorscheme.error,
                 )
 
-        if retrieved_context:
-            return {"messages": response, "retrieved_context": retrieved_context}
+        if new_retrieved_context:
+            return {
+                "messages": response,
+                "retrieved_context": state.retrieved_context + new_retrieved_context,
+            }
         return {"messages": response}
 
     def run(self) -> None:
@@ -281,7 +267,7 @@ class MultiAgent:
                 # "response_model": "ollama/qwen3:14b",
             }
             while True:
-                result = self.graph.invoke(
+                self.graph.invoke(
                     {"messages": [AIMessage(content="What can I do for you?")]},
                     config=config,
                 )

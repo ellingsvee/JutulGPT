@@ -80,7 +80,6 @@ def check_code(state: State, config: RunnableConfig, console: Console):
             config=config,
             console=console,
         )
-        # print(f"check_code: {error_message.content}")
 
         return {
             "messages": extra_messages
@@ -173,11 +172,20 @@ def gen_error_message_string(
     )
 
     response_content = response["messages"][-1].content.strip()
+
+    # Show the AI-generated error analysis
     if response_content:
         print_to_console(
             response_content,
             title="Error analyzer",
             border_style=colorscheme.message,
         )
+
+    # Allow user interaction if in CLI mode and human interaction is enabled
+    if configuration.human_interaction and configuration.cli_mode and response_content:
+        from jutulgpt.cli.cli_utils import cli_response_on_error_analysis
+
+        final_analysis = cli_response_on_error_analysis(console, response_content)
+        return final_analysis
 
     return response_content
