@@ -1,6 +1,5 @@
 from typing import Annotated
 
-from dotenv import find_dotenv, load_dotenv
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, InjectedToolArg
 from pydantic import BaseModel, Field
@@ -13,8 +12,6 @@ from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import modify_rag_query, response_on_rag
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
-
-_: bool = load_dotenv(find_dotenv())
 
 
 class RetrieveJutulDarcyToolInput(BaseModel):
@@ -37,7 +34,7 @@ class RetrieveJutulDarcyTool(BaseTool):
                 # CLI mode: use interactive CLI query modification
                 from rich.console import Console
 
-                from jutulgpt.cli_utils import cli_modify_rag_query
+                from jutulgpt.cli.cli_utils import cli_modify_rag_query
 
                 console = Console()
                 query = cli_modify_rag_query(console, query, "JutulDarcy")
@@ -59,7 +56,7 @@ class RetrieveJutulDarcyTool(BaseTool):
                 # CLI mode: use interactive CLI filtering
                 from rich.console import Console
 
-                from jutulgpt.cli_utils import cli_response_on_rag
+                from jutulgpt.cli.cli_utils import cli_response_on_rag
 
                 console = Console()
                 console.print("\n[bold blue]Retrieved JutulDarcy Documents[/bold blue]")
@@ -133,7 +130,7 @@ class RetrieveFimbulTool(BaseTool):
                 # CLI mode: use interactive CLI query modification
                 from rich.console import Console
 
-                from jutulgpt.cli_utils import cli_modify_rag_query
+                from jutulgpt.cli.cli_utils import cli_modify_rag_query
 
                 console = Console()
                 query = cli_modify_rag_query(console, query, "Fimbul")
@@ -155,7 +152,7 @@ class RetrieveFimbulTool(BaseTool):
                 # CLI mode: use interactive CLI filtering
                 from rich.console import Console
 
-                from jutulgpt.cli_utils import cli_response_on_rag
+                from jutulgpt.cli.cli_utils import cli_response_on_rag
 
                 console = Console()
                 console.print("\n[bold blue] Retrieved Fimbul Documents[/bold blue]")
