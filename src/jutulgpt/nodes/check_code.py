@@ -6,8 +6,8 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from rich.console import Console
 
-from jutulgpt.cli_colorscheme import colorscheme
-from jutulgpt.cli_utils import cli_response_on_check_code, print_to_console
+from jutulgpt.cli import colorscheme, print_to_console
+from jutulgpt.cli.cli_utils import cli_response_on_check_code
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import response_on_check_code
 from jutulgpt.julia_interface import get_error_message, run_string

@@ -8,8 +8,7 @@ from langchain_core.messages import AIMessage, HumanMessage, trim_messages
 from langchain_core.runnables import RunnableConfig
 from rich.console import Console
 
-from jutulgpt.cli_colorscheme import colorscheme
-from jutulgpt.cli_utils import print_to_console
+from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
