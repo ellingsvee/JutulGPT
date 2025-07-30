@@ -13,7 +13,7 @@ def split_docs(
     markdown_splitter = MarkdownHeaderTextSplitter(
         headers_to_split_on=[
             ("#", "Header 1"),
-            ("##", "Header 2"),
+            # ("##", "Header 2"),
             # ("###", "Header 3"),
         ],
         strip_headers=True,
