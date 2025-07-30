@@ -12,6 +12,7 @@ from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
 from jutulgpt.state import State
+from jutulgpt.tools import ReadFromFile, WriteToFile
 from jutulgpt.utils import load_chat_model
 
 rag_graph = RAGAgent().graph
@@ -76,13 +77,30 @@ Please generate appropriate Julia code using the context above."""
         response = coding_graph.invoke(
             {"messages": [HumanMessage(content=coding_prompt)]}
         )
+
+        last_ai_message = response["messages"][-1]
+        if last_ai_message.type == "ai":
+            # If the last message is an AI message, return its content
+            return last_ai_message.content
+
+        text = f"""
+No AI response generated. Please check the input or the model.
+
+Last message:
+{last_ai_message.content}
+"""
+        print_to_console(
+            text=text,
+            title="Error",
+            border_style=colorscheme.error,
+        )
         return response["messages"][-1].content
 
 
 class MultiAgent:
     def __init__(self):
         self.console = Console()
-        self.tools = [RAGAgentTool(), CodingAgentTool()]
+        self.tools = [RAGAgentTool(), CodingAgentTool(), ReadFromFile(), WriteToFile()]
         self.graph = self.build_graph()
 
     def build_graph(self):
@@ -148,7 +166,6 @@ class MultiAgent:
 
         if response.content:
             print_to_console(
-                console=self.console,
                 text=response.content,
                 title="Mutli-Agent",
                 border_style=colorscheme.normal,
@@ -198,12 +215,22 @@ class MultiAgent:
                 )
                 if tool_name == "rag_agent":
                     retrieved_context += tool_result + "\n"
-                print_to_console(
-                    console=self.console,
-                    text=tool_result,
-                    title="Result: " + tool_name,
-                    border_style=colorscheme.normal,
-                )
+
+                title = ""
+                if tool_name == "rag_agent":
+                    title = "RAG Agent"
+                elif tool_name == "coding_agent":
+                    title = "Coding Agent"
+                else:
+                    title = "Agent"
+
+                # if tool_name != "coding_agent":
+                #     print_to_console(
+                #         console=self.console,
+                #         text=tool_result,
+                #         title=title,
+                #         border_style=colorscheme.normal,
+                #     )
             except Exception as e:
                 response.append(
                     ToolMessage(
@@ -213,7 +240,6 @@ class MultiAgent:
                     )
                 )
                 print_to_console(
-                    console=self.console,
                     text=str(e),
                     title="Tool Error",
                     border_style=colorscheme.error,

@@ -1,32 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import cast
+from functools import partial
+from typing import Literal, cast
 
-from langchain_core.messages import AIMessage, AnyMessage, ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.graph import END, StateGraph, add_messages
+from langgraph.graph import END, StateGraph
 from rich.console import Console
-from typing_extensions import Annotated, Sequence
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
-
-
-@dataclass
-class CodingAgentState:
-    """
-    Base input state for the agent, representing the evolving conversation and tool interaction history.
-
-    - messages: List of all messages exchanged so far (user, AI, tool, etc.).
-      The `add_messages` annotation ensures new messages are merged by ID, so the state is append-only unless a message is replaced.
-    """
-
-    messages: Annotated[Sequence[AnyMessage], add_messages] = field(
-        default_factory=list
-    )
 
 
 class CodingAgent:
@@ -36,11 +22,12 @@ class CodingAgent:
         self.graph = self.build_graph()
 
     def build_graph(self):
-        workflow = StateGraph(CodingAgentState, config_schema=BaseConfiguration)
+        workflow = StateGraph(State, config_schema=BaseConfiguration)
 
         # Define the two nodes we will cycle between
         workflow.add_node("call_model", self.call_model)
         workflow.add_node("tools", self.tool_node)
+        workflow.add_node("check_code", partial(check_code, console=self.console))
 
         # Set the entrypoint as `agent`
         workflow.set_entry_point("call_model")
@@ -51,18 +38,27 @@ class CodingAgent:
             self.should_continue,
             {
                 "continue": "tools",
-                END: END,
+                END: "check_code",
             },
         )
 
         workflow.add_edge("tools", "call_model")
 
-        return workflow.compile(name="rag_agent")
+        workflow.add_conditional_edges(
+            "check_code",
+            self.decide_to_finish,
+            {
+                END: END,
+                "call_model": "call_model",
+            },
+        )
+
+        return workflow.compile(name="coding_agent")
 
     # Define the node that calls the model
     def call_model(
         self,
-        state: CodingAgentState,
+        state: State,
         config: RunnableConfig,
     ):
         configuration = BaseConfiguration.from_runnable_config(config)
@@ -81,11 +77,18 @@ class CodingAgent:
                 config,
             ),
         )
+
+        print_to_console(
+            text=response.content,
+            title="Coding Agent",
+            border_style=colorscheme.normal,
+        )
+
         # We return a list, because this will get added to the existing list
         return {"messages": [response]}
 
     # Define the conditional edge that determines whether to continue or not
-    def should_continue(self, state: CodingAgentState):
+    def should_continue(self, state: State):
         messages = state.messages
         last_message = messages[-1]
         # If there is no function call, then we finish
@@ -95,7 +98,7 @@ class CodingAgent:
         else:
             return "continue"
 
-    def tool_node(self, state: CodingAgentState, config: RunnableConfig) -> State:
+    def tool_node(self, state: State, config: RunnableConfig) -> State:
         tools_by_name = {tool.name: tool for tool in self.tools}
         response = []
         last_message = state.messages[-1]
@@ -116,7 +119,6 @@ class CodingAgent:
                     )
                 )
                 print_to_console(
-                    console=self.console,
                     text=tool_result,
                     title="Tool Result",
                     border_style=colorscheme.normal,
@@ -130,10 +132,31 @@ class CodingAgent:
                     )
                 )
                 print_to_console(
-                    console=self.console,
                     text=str(e),
                     title="Tool Error",
                     border_style=colorscheme.error,
                 )
 
         return {"messages": response}
+
+    def decide_to_finish(
+        self, state: State, config: RunnableConfig
+    ) -> Literal["call_model", END]:
+        """
+        Determines whether to finish.
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            str: Next node to call
+        """
+        error = state.error
+        iterations = state.iterations
+
+        configuration = BaseConfiguration.from_runnable_config(config)
+
+        if not error or iterations == configuration.max_iterations:
+            return END
+        else:
+            return "call_model"

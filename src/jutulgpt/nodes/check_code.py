@@ -58,7 +58,6 @@ def check_code(state: State, config: RunnableConfig, console: Console):
     full_code = imports + "\n" + code
 
     print_to_console(
-        console=console,
         text="Running code...",
         title="Code Runner",
         border_style=colorscheme.warning,
@@ -70,7 +69,6 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         julia_error_message = get_error_message(result)
 
         print_to_console(
-            console=console,
             text="Code failed!",
             title="Code Runner",
             border_style=colorscheme.error,
@@ -94,7 +92,6 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         }
 
     print_to_console(
-        console=console,
         text="Code succeded!",
         title="Code Runner",
         border_style=colorscheme.success,
@@ -102,8 +99,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
 
     # If everything succeeded, return success
     return {
-        "messages": extra_messages
-        + [SystemMessage(content="Code executed successfully.")],
+        "messages": extra_messages,
         "error": False,
         "iterations": 0,
     }
@@ -174,7 +170,6 @@ def gen_error_message_string(
 
     if response.content.strip():
         print_to_console(
-            console,
             response.content,
             title="Error analyzer",
             border_style=colorscheme.tool,
