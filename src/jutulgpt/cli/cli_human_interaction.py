@@ -208,7 +208,7 @@ def cli_modify_rag_query(query: str, retriever_name: str) -> str:
 
     utils.print_to_console(
         text=f"**Original Query:** `{query}`",
-        title="Retrieving from {retriever_name}",
+        title=f"Retrieving from {retriever_name}",
         border_style=colorscheme.warning,
     )
 
@@ -258,7 +258,7 @@ def cli_response_on_error_analysis(error_analysis: str) -> str:
     utils.print_to_console(
         text=error_analysis,
         title="AI Error Analysis",
-        border_style=colorscheme.warning,
+        border_style=colorscheme.human_interaction,
     )
 
     console.print("\nWhat would you like to do with this error analysis?")
@@ -318,11 +318,11 @@ def cli_handle_code_response(response_content: str) -> None:
     full_code = code_block.get_full_code(within_julia_context=True)
 
     console.print("\n[bold yellow]Code Detected in Response[/bold yellow]")
-    utils.print_to_console(
-        text=full_code,
-        title="Generated Julia Code",
-        border_style=colorscheme.human_interaction,
-    )
+    # utils.print_to_console(
+    #     text=full_code,
+    #     title="Generated Julia Code",
+    #     border_style=colorscheme.human_interaction,
+    # )
 
     console.print("\nWhat would you like to do with this code?")
     console.print("1. Run the code")

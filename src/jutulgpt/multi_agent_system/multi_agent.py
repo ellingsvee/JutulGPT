@@ -7,9 +7,8 @@ from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console
-from jutulgpt.human_in_the_loop import modify_rag_query
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
 from jutulgpt.state import State
 from jutulgpt.tools import ReadFromFile, WriteToFile
@@ -35,13 +34,14 @@ class RAGAgentTool(BaseTool):
     ) -> str:
         configuration = BaseConfiguration.from_runnable_config(config)
         if configuration.human_interaction:
-            if configuration.cli_mode:
+            if cli_mode:
                 # CLI mode: use interactive CLI query modification
-
                 from jutulgpt.cli.cli_human_interaction import cli_modify_rag_query
 
                 user_question = cli_modify_rag_query(user_question, "JutulDarcy")
             else:
+                from jutulgpt.human_in_the_loop import modify_rag_query
+
                 # UI mode: use the original UI-based interaction
                 user_question = modify_rag_query(user_question, "JutulDarcy")
 
@@ -116,20 +116,27 @@ Last message:
 
 class MultiAgent:
     def __init__(self):
-        self.tools = [RAGAgentTool(), CodingAgentTool(), ReadFromFile(), WriteToFile()]
+        self.tools = [
+            RAGAgentTool(),
+            CodingAgentTool(),
+            ReadFromFile(),
+            WriteToFile(),
+        ]
         self.graph = self.build_graph()
 
     def build_graph(self):
         workflow = StateGraph(State, config_schema=BaseConfiguration)
 
-        # Define the two nodes we will cycle between
-        workflow.add_node("user_input", self._get_user_input)
         workflow.add_node("call_model", self.call_model)
         workflow.add_node("tools", self.tool_node)
 
         # Set the entrypoint as `agent`
-        workflow.set_entry_point("user_input")
-        workflow.add_edge("user_input", "call_model")
+        if cli_mode:
+            workflow.set_entry_point("user_input")
+            workflow.add_node("user_input", self._get_user_input)
+            workflow.add_edge("user_input", "call_model")
+        else:
+            workflow.set_entry_point("call_model")
 
         # We now add a conditional edge
         workflow.add_conditional_edges(
@@ -137,13 +144,13 @@ class MultiAgent:
             self.should_continue,
             {
                 "continue": "tools",
-                END: "user_input",
+                END: "user_input" if cli_mode else END,
             },
         )
 
         workflow.add_edge("tools", "call_model")
 
-        return workflow.compile(name="supervisor_agent")
+        return workflow.compile(name="agent")
 
     def _get_user_input(self, state: State, config: RunnableConfig) -> State:
         console.print("[bold blue]User Input:[/bold blue] ")
@@ -188,11 +195,7 @@ class MultiAgent:
             )
 
         # If the response.content contains code, and we use a CLI, ask the user if they want to run it and/or save it to a file
-        if (
-            configuration.cli_mode
-            and configuration.human_interaction
-            and response.content
-        ):
+        if cli_mode and configuration.human_interaction and response.content:
             from jutulgpt.cli.cli_human_interaction import cli_handle_code_response
 
             # Ensure we pass a string (response.content could be str or list)
@@ -272,11 +275,7 @@ class MultiAgent:
         """Run the CLI in interactive mode."""
         try:
             # Create configuration with CLI mode enabled
-            config = {
-                "cli_mode": True,
-                # "embedding_model": "ollama/nomic-embed-text",
-                # "response_model": "ollama/qwen3:14b",
-            }
+            config = {}
             while True:
                 self.graph.invoke(
                     {"messages": [AIMessage(content="What can I do for you?")]},
@@ -287,6 +286,7 @@ class MultiAgent:
 
 
 multi_agent = MultiAgent()
+graph = multi_agent.graph
 multi_agent.graph.get_graph().draw_mermaid_png(
     output_file_path="./multi_agent_graph.png"
 )

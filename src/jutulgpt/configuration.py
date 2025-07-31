@@ -11,9 +11,11 @@ from typing import Annotated, Any, Literal, Optional, Type, TypeVar
 
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig, ensure_config
-from rich.console import Console
 
 from jutulgpt import prompts
+
+# Static settings
+cli_mode: bool = True
 
 
 # Setup of the environment and some logging. Not neccessary to touch this.
@@ -27,9 +29,6 @@ load_dotenv()
 _set_env("OPENAI_API_KEY")
 logging.getLogger("httpx").setLevel(logging.WARNING)  # Less warnings in the output
 logging.getLogger("faiss").setLevel(logging.WARNING)
-
-# Initialize a console for rich output
-console = Console()
 
 
 @dataclass(kw_only=True)
@@ -90,7 +89,7 @@ class BaseConfiguration:
         bool,
         {"description": "Enable CLI-specific interactions."},
     ] = field(
-        default=True,
+        default=False,
         metadata={"description": "Enable CLI-specific interactions."},
     )
     embedding_model: Annotated[

@@ -78,11 +78,11 @@ class CodingAgent:
             ),
         )
 
-        print_to_console(
-            text=response.content,
-            title="Coding Agent",
-            border_style=colorscheme.normal,
-        )
+        # print_to_console(
+        #     text=response.content,
+        #     title="Coding Agent",
+        #     border_style=colorscheme.normal,
+        # )
 
         # We return a list, because this will get added to the existing list
         return {"messages": [response]}
@@ -119,11 +119,6 @@ class CodingAgent:
                         name=tool_name,
                         tool_call_id=tool_call["id"],
                     )
-                )
-                print_to_console(
-                    text=tool_result,
-                    title="Tool Result",
-                    border_style=colorscheme.normal,
                 )
             except Exception as e:
                 response.append(

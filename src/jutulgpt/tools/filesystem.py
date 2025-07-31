@@ -9,7 +9,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console
 
 
@@ -89,7 +89,7 @@ class WriteToFile(BaseTool):
                 with open(file_path, "r", encoding="utf-8") as f:
                     existing_content = f.read()
 
-                if configuration.cli_mode:
+                if cli_mode:
                     # Create preview of existing content (first 300 chars)
                     existing_preview = existing_content[:300]
                     if len(existing_content) > 300:
