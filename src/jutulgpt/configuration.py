@@ -15,7 +15,7 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 from jutulgpt import prompts
 
 # Static settings
-cli_mode: bool = True
+cli_mode: bool = False
 
 
 # Setup of the environment and some logging. Not neccessary to touch this.
@@ -85,13 +85,6 @@ class BaseConfiguration:
         },
     )
 
-    cli_mode: Annotated[
-        bool,
-        {"description": "Enable CLI-specific interactions."},
-    ] = field(
-        default=False,
-        metadata={"description": "Enable CLI-specific interactions."},
-    )
     embedding_model: Annotated[
         str,
         {"__template_metadata__": {"kind": "embeddings"}},
