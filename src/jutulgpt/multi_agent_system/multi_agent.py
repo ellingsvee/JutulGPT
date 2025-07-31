@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration, cli_mode
-from jutulgpt.globals import console
+from jutulgpt.globals import console, store_retrieved_context
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
 from jutulgpt.state import State
 from jutulgpt.tools import read_from_file_tool, write_to_file_tool
@@ -33,12 +33,9 @@ def rag_agent_tool(user_question: str) -> str:
     response = rag_graph.invoke({"messages": [HumanMessage(content=user_question)]})
     retrieved_content = response["messages"][-1].content
 
-    store = get_store()
-    store.put(
-        ("retrieved_context",),
-        "retrieved_context_id",
-        retrieved_content,  # TODO: Should consider updating the context instead of overwriting
-    )
+    # WARNING: Bad practice to use global variables, but this is a quick fix for now
+    global store_retrieved_context
+    store_retrieved_context = retrieved_content
 
     return retrieved_content
 
@@ -59,10 +56,12 @@ def coding_agent_tool(
     use_retrieved_context: bool = True,
 ) -> str:
     """Call a coding agent for generating Julia code. Use this after retrieving relevant context with the RAG agent."""
-    # Prepare the coding request with context
-    store = get_store()
-    # retrieved_context = store.get(("retrieved_context",), "retrieved_context_id").value["retrieved_content"]
-    retrieved_context = store.get(("retrieved_context",), "retrieved_context_id").value
+
+    retrieved_context = (
+        store_retrieved_context  # Load the retrieved context from the global store
+    )
+
+    print(f"retrieved_context given to coding agent: {retrieved_context}")
 
     if retrieved_context and use_retrieved_context:
         coding_prompt = f"""Based on the following retrieved context, please generate Julia code for the user's request.
@@ -105,15 +104,6 @@ class MultiAgent:
             read_from_file_tool,
             write_to_file_tool,
         ]
-        self.store = InMemoryStore()
-        self.store.put(
-            ("retrieved_context",),
-            "retrieved_context_id",
-            {
-                "retrieved_context": "",
-            },
-        )
-
         self.graph = self.build_graph()
 
     def build_graph(self):
@@ -142,7 +132,7 @@ class MultiAgent:
 
         workflow.add_edge("tools", "call_model")
 
-        return workflow.compile(name="agent", store=self.store)
+        return workflow.compile(name="agent")
 
     def _get_user_input(self, state: State, config: RunnableConfig) -> State:
         console.print("[bold blue]User Input:[/bold blue] ")

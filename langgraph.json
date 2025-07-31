@@ -3,7 +3,7 @@
     "."
   ],
   "graphs": {
-    "agent": "./src/jutulgpt/agent.py:graph"
+    "agent": "./src/jutulgpt/multi_agent_system/multi_agent.py:graph"
   },
   "image_distro": "wolfi",
   "env": ".env"

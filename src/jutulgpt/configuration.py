@@ -168,6 +168,13 @@ class BaseConfiguration:
         },
     )
 
+    # configurable: dict[str, Any] = field(
+    #     default_factory=dict,
+    #     metadata={
+    #         "description": "A dictionary of configurable parameters that can be set by the user. This is used to store any additional parameters that are not part of the base configuration."
+    #     },
+    # )
+
     @classmethod
     def from_runnable_config(
         cls: Type[T], config: Optional[RunnableConfig] = None
