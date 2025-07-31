@@ -6,10 +6,10 @@ from typing import Literal, cast
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
-from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.globals import console
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
@@ -17,7 +17,6 @@ from jutulgpt.utils import load_chat_model
 
 class CodingAgent:
     def __init__(self):
-        self.console = Console()
         self.tools = []
         self.graph = self.build_graph()
 
@@ -27,7 +26,7 @@ class CodingAgent:
         # Define the two nodes we will cycle between
         workflow.add_node("call_model", self.call_model)
         workflow.add_node("tools", self.tool_node)
-        workflow.add_node("check_code", partial(check_code, console=self.console))
+        workflow.add_node("check_code", partial(check_code, console=console))
 
         # Set the entrypoint as `agent`
         workflow.set_entry_point("call_model")

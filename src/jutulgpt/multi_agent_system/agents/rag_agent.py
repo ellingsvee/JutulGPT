@@ -6,7 +6,6 @@ from typing import cast
 from langchain_core.messages import AIMessage, AnyMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph, add_messages
-from rich.console import Console
 from typing_extensions import Annotated, Sequence
 
 from jutulgpt.cli import colorscheme, print_to_console
@@ -32,7 +31,6 @@ class RAGAgentState:
 
 class RAGAgent:
     def __init__(self):
-        self.console = Console()
         self.tools = [RetrieveJutulDarcyTool(), RetrieveFimbulTool()]
         self.graph = self.build_graph()
 
@@ -117,12 +115,6 @@ class RAGAgent:
                         tool_call_id=tool_call["id"],
                     )
                 )
-                # print_to_console(
-                #     console=self.console,
-                #     text=tool_result,
-                #     title="Tool Result",
-                #     border_style=colorscheme.normal,
-                # )
             except Exception as e:
                 response.append(
                     ToolMessage(

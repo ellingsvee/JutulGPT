@@ -1,12 +1,10 @@
-# from jutulgpt import agent
-from jutulgpt import agent
-from jutulgpt.cli_utils import print_to_console
+from jutulgpt import multi_agent
+from jutulgpt.cli.cli_utils import print_to_console
 
 if __name__ == "__main__":
     print_to_console(
-        console=agent.console,
         text="[bold green]Welcome to JutulGPT. (Type 'q' to quit)[/bold green]",
         title="",
         with_markdown=False,
     )
-    agent.run()
+    multi_agent.run()

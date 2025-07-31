@@ -5,10 +5,10 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, InjectedToolArg
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
-from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.globals import console
 from jutulgpt.human_in_the_loop import modify_rag_query
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
 from jutulgpt.state import State
@@ -37,14 +37,10 @@ class RAGAgentTool(BaseTool):
         if configuration.human_interaction:
             if configuration.cli_mode:
                 # CLI mode: use interactive CLI query modification
-                from rich.console import Console
 
-                from jutulgpt.cli.cli_utils import cli_modify_rag_query
+                from jutulgpt.cli.cli_human_interaction import cli_modify_rag_query
 
-                console = Console()
-                user_question = cli_modify_rag_query(
-                    console, user_question, "JutulDarcy"
-                )
+                user_question = cli_modify_rag_query(user_question, "JutulDarcy")
             else:
                 # UI mode: use the original UI-based interaction
                 user_question = modify_rag_query(user_question, "JutulDarcy")
@@ -120,7 +116,6 @@ Last message:
 
 class MultiAgent:
     def __init__(self):
-        self.console = Console()
         self.tools = [RAGAgentTool(), CodingAgentTool(), ReadFromFile(), WriteToFile()]
         self.graph = self.build_graph()
 
@@ -151,12 +146,12 @@ class MultiAgent:
         return workflow.compile(name="supervisor_agent")
 
     def _get_user_input(self, state: State, config: RunnableConfig) -> State:
-        self.console.print("[bold blue]User Input:[/bold blue] ")
-        user_input = self.console.input("> ")
+        console.print("[bold blue]User Input:[/bold blue] ")
+        user_input = console.input("> ")
 
         # Check for quit command
         if user_input.strip().lower() in ["q"]:
-            self.console.print("[bold red]Goodbye![/bold red]")
+            console.print("[bold red]Goodbye![/bold red]")
             exit(0)
 
         return {"messages": [HumanMessage(content=user_input)]}
@@ -191,6 +186,22 @@ class MultiAgent:
                 title="Mutli-Agent",
                 border_style=colorscheme.normal,
             )
+
+        # If the response.content contains code, and we use a CLI, ask the user if they want to run it and/or save it to a file
+        if (
+            configuration.cli_mode
+            and configuration.human_interaction
+            and response.content
+        ):
+            from jutulgpt.cli.cli_human_interaction import cli_handle_code_response
+
+            # Ensure we pass a string (response.content could be str or list)
+            content_str = (
+                response.content
+                if isinstance(response.content, str)
+                else str(response.content)
+            )
+            cli_handle_code_response(content_str)
 
         # We return a list, because this will get added to the existing list
         return {"messages": [response]}
@@ -272,7 +283,7 @@ class MultiAgent:
                     config=config,
                 )
         except KeyboardInterrupt:
-            self.console.print("\n[bold red]Goodbye![/bold red]")
+            console.print("\n[bold red]Goodbye![/bold red]")
 
 
 multi_agent = MultiAgent()

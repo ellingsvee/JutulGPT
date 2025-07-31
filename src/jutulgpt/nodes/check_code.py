@@ -8,7 +8,7 @@ from langgraph.prebuilt import create_react_agent
 from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.cli.cli_utils import cli_response_on_check_code
+from jutulgpt.cli.cli_human_interaction import cli_response_on_check_code
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.human_in_the_loop import response_on_check_code
 from jutulgpt.julia_interface import get_error_message, run_string
@@ -36,7 +36,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         if configuration.cli_mode:
             # CLI mode: use interactive CLI code review
             code_block, check_code_bool, extra_messages = cli_response_on_check_code(
-                console, code_block
+                code_block
             )
         else:
             # UI mode: use the original UI-based interaction
@@ -65,7 +65,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
 
     result = run_string(full_code)
 
-    if result["error"]:
+    if result.get("error", False):
         julia_error_message = get_error_message(result)
 
         print_to_console(
@@ -183,9 +183,9 @@ def gen_error_message_string(
 
     # Allow user interaction if in CLI mode and human interaction is enabled
     if configuration.human_interaction and configuration.cli_mode and response_content:
-        from jutulgpt.cli.cli_utils import cli_response_on_error_analysis
+        from jutulgpt.cli.cli_human_interaction import cli_response_on_error_analysis
 
-        final_analysis = cli_response_on_error_analysis(console, response_content)
+        final_analysis = cli_response_on_error_analysis(response_content)
         return final_analysis
 
     return response_content

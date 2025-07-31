@@ -9,6 +9,7 @@ import jutulgpt.rag.retrieval as retrieval
 import jutulgpt.rag.split_docs as split_docs
 import jutulgpt.rag.split_examples as split_examples
 from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.globals import console
 from jutulgpt.human_in_the_loop import modify_rag_query, response_on_rag
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
@@ -54,15 +55,12 @@ class RetrieveJutulDarcyTool(BaseTool):
         if configuration.human_interaction:
             if configuration.cli_mode:
                 # CLI mode: use interactive CLI filtering
-                from rich.console import Console
 
-                from jutulgpt.cli.cli_utils import cli_response_on_rag
+                from jutulgpt.cli.cli_human_interaction import cli_response_on_rag
 
-                console = Console()
                 console.print("\n[bold blue]Retrieved JutulDarcy Documents[/bold blue]")
 
                 retrieved_docs = cli_response_on_rag(
-                    console=console,
                     docs=retrieved_docs,
                     get_file_source=get_file_source,
                     get_section_path=split_docs.get_section_path,
@@ -72,7 +70,6 @@ class RetrieveJutulDarcyTool(BaseTool):
 
                 console.print("\n[bold blue]Retrieved JutulDarcy Examples[/bold blue]")
                 retrieved_examples = cli_response_on_rag(
-                    console=console,
                     docs=retrieved_examples,
                     get_file_source=get_file_source,
                     get_section_path=split_examples.get_section_path,
@@ -130,12 +127,10 @@ class RetrieveFimbulTool(BaseTool):
         if configuration.human_interaction:
             if configuration.cli_mode:
                 # CLI mode: use interactive CLI query modification
-                from rich.console import Console
 
-                from jutulgpt.cli.cli_utils import cli_modify_rag_query
+                from jutulgpt.cli.cli_human_interaction import cli_modify_rag_query
 
-                console = Console()
-                query = cli_modify_rag_query(console, query, "Fimbul")
+                query = cli_modify_rag_query(query, "Fimbul")
             else:
                 # UI mode: use the original UI-based interaction
                 query = modify_rag_query(query, "Fimbul")
@@ -152,15 +147,12 @@ class RetrieveFimbulTool(BaseTool):
         if configuration.human_interaction:
             if configuration.cli_mode:
                 # CLI mode: use interactive CLI filtering
-                from rich.console import Console
 
-                from jutulgpt.cli.cli_utils import cli_response_on_rag
+                from jutulgpt.cli.cli_human_interaction import cli_response_on_rag
 
-                console = Console()
                 console.print("\n[bold blue] Retrieved Fimbul Documents[/bold blue]")
 
                 retrieved_docs = cli_response_on_rag(
-                    console=console,
                     docs=retrieved_docs,
                     get_file_source=get_file_source,
                     get_section_path=split_docs.get_section_path,
@@ -170,7 +162,6 @@ class RetrieveFimbulTool(BaseTool):
 
                 console.print("\n[bold blue] Retrieved Fimbul Examples[/bold blue]")
                 retrieved_examples = cli_response_on_rag(
-                    console=console,
                     docs=retrieved_examples,
                     get_file_source=get_file_source,
                     get_section_path=split_examples.get_section_path,

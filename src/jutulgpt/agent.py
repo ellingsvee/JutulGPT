@@ -13,7 +13,6 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
-from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
@@ -23,6 +22,7 @@ from jutulgpt.nodes import check_code, generate_response
 from jutulgpt.nodes._tools import tools
 from jutulgpt.state import State
 from jutulgpt.tools.retrieve import RetrieveJutulDarcyTool
+from jutulgpt.globals import console
 
 
 def decide_to_finish(
@@ -50,12 +50,6 @@ def decide_to_finish(
 
 class JutulGPT:
     def __init__(self):
-        self.console = Console()
-        # self.console.print(
-        #     Panel.fit(
-        #         "[bold green]Welcome to JutulGPT. (Type 'q' to quit)[/bold green]"
-        #     )
-        # )
         self.tools = tools
         self.graph = self.build_graph()
 
@@ -63,9 +57,9 @@ class JutulGPT:
         workflow = StateGraph(State, config_schema=BaseConfiguration)
         workflow.add_node("user_input", self._get_user_input)
         workflow.add_node(
-            "generate_response", partial(generate_response, console=self.console)
+            "generate_response", partial(generate_response, console=console)
         )
-        workflow.add_node("check_code", partial(check_code, console=self.console))
+        workflow.add_node("check_code", partial(check_code, console=console))
 
         # workflow.add_node("model_response", self._get_model_response)
         workflow.add_node("tool_use", self._get_tool_use)
@@ -94,12 +88,12 @@ class JutulGPT:
         return workflow.compile(name="agent")
 
     def _get_user_input(self, state: State, config: RunnableConfig) -> State:
-        self.console.print("[bold blue]User Input:[/bold blue] ")
-        user_input = self.console.input("> ")
+        console.print("[bold blue]User Input:[/bold blue] ")
+        user_input = console.input("> ")
 
         # Check for quit command
         if user_input.strip().lower() in ["q"]:
-            self.console.print("[bold red]Goodbye![/bold red]")
+            console.print("[bold red]Goodbye![/bold red]")
             exit(0)
 
         return {"messages": [HumanMessage(content=user_input)]}
@@ -163,7 +157,7 @@ class JutulGPT:
                     config=config,
                 )
         except KeyboardInterrupt:
-            self.console.print("\n[bold red]Goodbye![/bold red]")
+            console.print("\n[bold red]Goodbye![/bold red]")
 
 
 agent = JutulGPT()

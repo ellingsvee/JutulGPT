@@ -10,6 +10,7 @@ from rich.panel import Panel
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.globals import console
 
 
 class ReadFromFileInput(BaseModel):
@@ -79,7 +80,6 @@ class WriteToFile(BaseTool):
         content: str,
         config: Annotated[RunnableConfig, InjectedToolArg],
     ) -> str:
-        console = Console()
         configuration = BaseConfiguration.from_runnable_config(config)
 
         # Check if file already exists
