@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from typing import Generator, Union
+from typing import Generator, List, Union
 
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import FlashrankRerank
@@ -62,7 +62,11 @@ def _load_and_split_docs(spec: RetrieverSpec) -> list:
 
 @contextmanager
 def make_faiss_retriever(
-    configuration: BaseConfiguration, spec: RetrieverSpec, embedding_model: Embeddings
+    configuration: BaseConfiguration,
+    spec: RetrieverSpec,
+    embedding_model: Embeddings,
+    search_type: str,
+    search_kwargs: dict,
 ) -> Generator[VectorStoreRetriever, None, None]:
     """
     Create or load a FAISS retriever, saving the index locally to avoid re-indexing.
@@ -94,14 +98,18 @@ def make_faiss_retriever(
         vectorstore.save_local(persist_path)
 
     yield vectorstore.as_retriever(
-        search_type=configuration.search_type,
-        search_kwargs={**configuration.search_kwargs},
+        search_type=search_type,
+        search_kwargs={**search_kwargs},
     )
 
 
 @contextmanager
 def make_chroma_retriever(
-    configuration: BaseConfiguration, spec: RetrieverSpec, embedding_model: Embeddings
+    configuration: BaseConfiguration,
+    spec: RetrieverSpec,
+    embedding_model: Embeddings,
+    search_type: str,
+    search_kwargs: dict,
 ) -> Generator[VectorStoreRetriever, None, None]:
     """
     Create or load a FAISS retriever, saving the index locally to avoid re-indexing.
@@ -136,8 +144,8 @@ def make_chroma_retriever(
         )
 
     yield vectorstore.as_retriever(
-        search_type=configuration.search_type,
-        search_kwargs={**configuration.search_kwargs},
+        search_type=search_type,
+        search_kwargs={**search_kwargs},
     )
 
 
@@ -153,10 +161,27 @@ def apply_flash_reranker(
 
 @contextmanager
 def make_retriever(
-    config: RunnableConfig, spec: RetrieverSpec
+    config: RunnableConfig,
+    spec: RetrieverSpec,
+    **retrieval_overrides,
 ) -> Generator[Union[VectorStoreRetriever, ContextualCompressionRetriever], None, None]:
-    """Create a retriever for the agent, based on the current configuration."""
+    """
+    Create a retriever for the agent, based on the current configuration.
+
+    Args:
+        config: The runnable configuration
+        spec: The retriever specification
+        **retrieval_overrides: Override any retrieval parameters (search_type, search_kwargs, etc.)
+    """
     configuration = BaseConfiguration.from_runnable_config(config)
+
+    # Merge configuration defaults with any overrides
+    retrieval_params = {
+        "search_type": configuration.search_type,
+        "search_kwargs": configuration.search_kwargs,
+        **retrieval_overrides,
+    }
+
     embedding_model = make_text_encoder(configuration.embedding_model)
 
     # Get the retriever
@@ -164,12 +189,20 @@ def make_retriever(
     match configuration.retriever_provider:
         case "faiss":
             with make_faiss_retriever(
-                configuration, spec, embedding_model
+                configuration,
+                spec,
+                embedding_model,
+                retrieval_params["search_type"],
+                retrieval_params["search_kwargs"],
             ) as retriever:
                 selected_retriever = retriever
         case "chroma":
             with make_chroma_retriever(
-                configuration, spec, embedding_model
+                configuration,
+                spec,
+                embedding_model,
+                retrieval_params["search_type"],
+                retrieval_params["search_kwargs"],
             ) as retriever:
                 selected_retriever = retriever
 
@@ -192,3 +225,44 @@ def make_retriever(
                 f"Expected one of: {', '.join(BaseConfiguration.__annotations__['rerank_provider'].__args__)}\n"
                 f"Got: {configuration.rerank_provider}"
             )
+
+
+def function_signature_retriever(
+    function_names: List[str],
+    spec: RetrieverSpec,
+) -> str:
+    """
+    Retrieve function signatures for specified function names.
+
+    Args:
+        function_names: List of function names to retrieve signatures for
+        spec: RetrieverSpec for function signatures
+
+    Returns:
+        Formatted string containing the function signatures
+    """
+    # Load and split documents
+    docs = _load_and_split_docs(spec)
+
+    # Find matching documents using the helper function
+    from jutulgpt.rag.split_function_signatures import (
+        find_function_docs_by_names,
+        format_docs,
+    )
+
+    found_docs, missing_functions = find_function_docs_by_names(docs, function_names)
+
+    # Format the results
+    result_parts = []
+
+    if found_docs:
+        formatted_signatures = format_docs(found_docs, remove_duplicates=False)
+        result_parts.append(formatted_signatures)
+
+    if missing_functions:
+        missing_msg = f"---\n\n# Functions not found: {', '.join(missing_functions)}"
+        result_parts.append(missing_msg)
+
+    return (
+        "\n\n".join(result_parts) if result_parts else "No function signatures found."
+    )

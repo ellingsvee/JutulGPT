@@ -1,7 +1,11 @@
 """This package contains the nodes for the react agent."""
 
 from jutulgpt.tools.filesystem import ReadFromFile, WriteToFile
-from jutulgpt.tools.retrieve import RetrieveFimbulTool, RetrieveJutulDarcyTool
+from jutulgpt.tools.retrieve import (
+    RetrieveFimbulTool,
+    RetrieveJutulDarcyTool,
+    RetrieveFunctionSignatureTool,
+)
 
 __all__ = [
     "RetrieveJutulDarcyTool",

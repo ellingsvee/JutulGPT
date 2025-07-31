@@ -9,13 +9,12 @@ from jutulgpt.utils import deduplicate_document_chunks, get_file_source
 
 def split_docs(
     document: Document,
+    headers_to_split_on=[
+        ("#", "Header 1"),
+    ],
 ) -> List[Document]:
     markdown_splitter = MarkdownHeaderTextSplitter(
-        headers_to_split_on=[
-            ("#", "Header 1"),
-            # ("##", "Header 2"),
-            # ("###", "Header 3"),
-        ],
+        headers_to_split_on=headers_to_split_on,
         strip_headers=True,
     )
     content = document.page_content

@@ -12,12 +12,13 @@ from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.globals import console
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
+from jutulgpt.tools import RetrieveFunctionSignatureTool
 from jutulgpt.utils import load_chat_model
 
 
 class CodingAgent:
     def __init__(self):
-        self.tools = []
+        self.tools = [RetrieveFunctionSignatureTool()]
         self.graph = self.build_graph()
 
     def build_graph(self):
@@ -107,6 +108,8 @@ class CodingAgent:
             tool_name = tool_call["name"]
             tool_args = tool_call["args"]
             tool = tools_by_name[tool_name]
+
+            print(f"CODING AGENT CALLS TOOL!!!: {tool_name}")
 
             try:
                 tool_result = tool._run(**tool_args, config=config)

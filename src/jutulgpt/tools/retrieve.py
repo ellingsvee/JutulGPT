@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, List
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, InjectedToolArg
@@ -197,3 +197,26 @@ class RetrieveFimbulTool(BaseTool):
 {format_str(examples)}
 """
         return out
+
+
+class RetrieveFunctionSignatureToolInput(BaseModel):
+    function_names: List[str] = Field(
+        description="A list of function names to retrieve the function signature for.",
+    )
+
+
+class RetrieveFunctionSignatureTool(BaseTool):
+    name: str = "retrieve_function_signature"
+    description: str = "Use this tool to retrieve the function signature of a specific function from the JutulDarcy documentation. This is useful for understanding how to use a function, its parameters, and return types."
+    args_schema = RetrieveFunctionSignatureToolInput
+
+    def _run(
+        self,
+        function_names: List[str],
+        config: Annotated[RunnableConfig, InjectedToolArg],
+    ) -> str:
+        retrieved_signatures = retrieval.function_signature_retriever(
+            function_names=function_names,
+            spec=RETRIEVER_SPECS["jutuldarcy"]["function_signatures"],
+        )
+        return retrieved_signatures
