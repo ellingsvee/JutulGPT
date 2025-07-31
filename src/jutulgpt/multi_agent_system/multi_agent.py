@@ -11,7 +11,7 @@ from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
 from jutulgpt.state import State
-from jutulgpt.tools import ReadFromFile, WriteToFile
+from jutulgpt.tools import read_from_file_tool, write_to_file_tool
 from jutulgpt.utils import load_chat_model
 
 rag_graph = RAGAgent().graph
@@ -32,26 +32,8 @@ class RAGAgentTool(BaseTool):
     def _run(
         self, user_question: str, config: Annotated[RunnableConfig, InjectedToolArg]
     ) -> str:
-        configuration = BaseConfiguration.from_runnable_config(config)
-        if configuration.human_interaction:
-            if cli_mode:
-                # CLI mode: use interactive CLI query modification
-                from jutulgpt.cli.cli_human_interaction import cli_modify_rag_query
-
-                user_question = cli_modify_rag_query(user_question, "JutulDarcy")
-            else:
-                from jutulgpt.human_in_the_loop import modify_rag_query
-
-                # UI mode: use the original UI-based interaction
-                user_question = modify_rag_query(user_question, "JutulDarcy")
-
-        if user_question.strip():
-            response = rag_graph.invoke(
-                {"messages": [HumanMessage(content=user_question)]}
-            )
-            retrieved_content = response["messages"][-1].content
-        else:
-            retrieved_content = "The retrieval was skipped by the user. It is not relevant to the current question."
+        response = rag_graph.invoke({"messages": [HumanMessage(content=user_question)]})
+        retrieved_content = response["messages"][-1].content
 
         return retrieved_content
 
@@ -119,8 +101,8 @@ class MultiAgent:
         self.tools = [
             RAGAgentTool(),
             CodingAgentTool(),
-            ReadFromFile(),
-            WriteToFile(),
+            read_from_file_tool,
+            write_to_file_tool,
         ]
         self.graph = self.build_graph()
 

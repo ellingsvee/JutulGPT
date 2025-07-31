@@ -3,15 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import cast
 
-from langchain_core.messages import AIMessage, AnyMessage, ToolMessage
+from langchain_core.messages import AIMessage, AnyMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph, add_messages
+from langgraph.prebuilt import ToolNode
 from typing_extensions import Annotated, Sequence
 
-from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
-from jutulgpt.state import State
-from jutulgpt.tools.retrieve import RetrieveFimbulTool, RetrieveJutulDarcyTool
+from jutulgpt.tools.retrieve import retrieve_fimbul_tool, retrieve_jutuldarcy_tool
 from jutulgpt.utils import load_chat_model
 
 
@@ -31,7 +30,7 @@ class RAGAgentState:
 
 class RAGAgent:
     def __init__(self):
-        self.tools = [RetrieveJutulDarcyTool(), RetrieveFimbulTool()]
+        self.tools = [retrieve_jutuldarcy_tool, retrieve_fimbul_tool]
         self.graph = self.build_graph()
 
     def build_graph(self):
@@ -39,7 +38,7 @@ class RAGAgent:
 
         # Define the two nodes we will cycle between
         workflow.add_node("call_model", self.call_model)
-        workflow.add_node("tools", self.tool_node)
+        workflow.add_node("tools", ToolNode(self.tools))
 
         # Set the entrypoint as `agent`
         workflow.set_entry_point("call_model")
@@ -94,39 +93,3 @@ class RAGAgent:
         # Otherwise if there is, we continue
         else:
             return "continue"
-
-    def tool_node(self, state: RAGAgentState, config: RunnableConfig) -> State:
-        tools_by_name = {tool.name: tool for tool in self.tools}
-        response = []
-        last_message = state.messages[-1]
-        tool_calls = getattr(last_message, "tool_calls", [])
-
-        for tool_call in tool_calls:
-            tool_name = tool_call["name"]
-            tool_args = tool_call["args"]
-            tool = tools_by_name[tool_name]
-
-            try:
-                tool_result = tool._run(**tool_args, config=config)
-                response.append(
-                    ToolMessage(
-                        content=tool_result,
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-            except Exception as e:
-                response.append(
-                    ToolMessage(
-                        content="Error: " + str(e),
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-                print_to_console(
-                    text=str(e),
-                    title="Tool Error",
-                    border_style=colorscheme.error,
-                )
-
-        return {"messages": response}

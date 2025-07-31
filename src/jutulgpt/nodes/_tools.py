@@ -1,27 +1,23 @@
 """This module defines the react_tools for agent."""
 
-from langgraph.prebuilt import ToolNode
-
 from jutulgpt.tools import (
-    ReadFromFile,
-    RetrieveFimbulTool,
-    RetrieveFunctionSignatureTool,
-    RetrieveJutulDarcyTool,
-    WriteToFile,
+    read_from_file_tool,
+    retrieve_fimbul_tool,
+    retrieve_function_signature_tool,
+    retrieve_jutuldarcy_tool,
+    write_to_file_tool,
 )
 
-tools = [
-    RetrieveFimbulTool(),
-    RetrieveJutulDarcyTool(),
-    RetrieveFunctionSignatureTool(),
-    ReadFromFile(),
-    WriteToFile(),
+agent_tools = [
+    retrieve_fimbul_tool,
+    retrieve_jutuldarcy_tool,
+    retrieve_function_signature_tool,
+    read_from_file_tool,
+    write_to_file_tool,
 ]
+
 retrieve_tools = [
-    RetrieveFimbulTool(),
-    RetrieveJutulDarcyTool(),
-    RetrieveFunctionSignatureTool(),
+    retrieve_fimbul_tool,
+    retrieve_jutuldarcy_tool,
+    retrieve_function_signature_tool,
 ]
-
-
-tools_node = ToolNode(tools)

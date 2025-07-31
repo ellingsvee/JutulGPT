@@ -15,57 +15,38 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
 from rich.markdown import Markdown
 from rich.panel import Panel
+from langgraph.prebuilt import ToolNode
+
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.nodes import check_code, generate_response
-from jutulgpt.nodes._tools import tools
+from jutulgpt.nodes._tools import agent_tools
 from jutulgpt.state import State
-from jutulgpt.tools.retrieve import RetrieveJutulDarcyTool
 from jutulgpt.globals import console
 
 
-def decide_to_finish(
-    state: State, config: RunnableConfig
-) -> Literal["generate_response", "user_input"]:
-    """
-    Determines whether to finish.
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        str: Next node to call
-    """
-    error = state.error
-    iterations = state.iterations
-
-    configuration = BaseConfiguration.from_runnable_config(config)
-
-    if not error or iterations == configuration.max_iterations:
-        return "user_input"
-    else:
-        return "generate_response"
-
-
-class JutulGPT:
+class Agent:
     def __init__(self):
-        self.tools = tools
+        self.tools = agent_tools
         self.graph = self.build_graph()
 
     def build_graph(self):
         workflow = StateGraph(State, config_schema=BaseConfiguration)
-        workflow.add_node("user_input", self._get_user_input)
+
         workflow.add_node(
             "generate_response", partial(generate_response, console=console)
         )
         workflow.add_node("check_code", partial(check_code, console=console))
+        workflow.add_node("tool_use", ToolNode(agent_tools))
 
-        # workflow.add_node("model_response", self._get_model_response)
-        workflow.add_node("tool_use", self._get_tool_use)
+        if cli_mode:
+            workflow.set_entry_point("user_input")
+            workflow.add_node("user_input", self._get_user_input)
+            workflow.add_edge("user_input", "generate_response")
+        else:
+            workflow.set_entry_point("generate_response")
 
-        workflow.set_entry_point("user_input")
-        workflow.add_edge("user_input", "generate_response")
         workflow.add_conditional_edges(
             "generate_response",
             self._check_tool_use,
@@ -78,9 +59,9 @@ class JutulGPT:
 
         workflow.add_conditional_edges(
             "check_code",
-            decide_to_finish,
+            self.decide_to_finish,
             {
-                "user_input": "user_input",
+                END: "user_input" if cli_mode else END,
                 "generate_response": "generate_response",
             },
         )
@@ -106,46 +87,27 @@ class JutulGPT:
             return "tool_use"
         return "check_code"
 
-    def _get_tool_use(self, state: State, config: RunnableConfig) -> State:
-        tools_by_name = {tool.name: tool for tool in self.tools}
-        response = []
-        last_message = state.messages[-1]
-        tool_calls = getattr(last_message, "tool_calls", [])
+    def decide_to_finish(
+        self, state: State, config: RunnableConfig
+    ) -> Literal["generate_response", END]:
+        """
+        Determines whether to finish.
 
-        for tool_call in tool_calls:
-            tool_name = tool_call["name"]
-            tool_args = tool_call["args"]
-            tool = tools_by_name[tool_name]
+        Args:
+            state (dict): The current graph state
 
-            try:
-                tool_result = tool._run(**tool_args, config=config)
-                response.append(
-                    ToolMessage(
-                        content=tool_result,
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-                print_to_console(
-                    text=tool_result,
-                    title="Tool Result",
-                    border_style=colorscheme.normal,
-                )
-            except Exception as e:
-                response.append(
-                    ToolMessage(
-                        content="Error: " + str(e),
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-                print_to_console(
-                    text=str(e),
-                    title="Tool Error",
-                    border_style=colorscheme.error,
-                )
+        Returns:
+            str: Next node to call
+        """
+        error = state.error
+        iterations = state.iterations
 
-        return {"messages": response}
+        configuration = BaseConfiguration.from_runnable_config(config)
+
+        if not error or iterations == configuration.max_iterations:
+            return END
+        else:
+            return "generate_response"
 
     def run(self, config: dict = {"cli_mode": True}) -> None:
         """Run the CLI in interactive mode."""
@@ -160,6 +122,6 @@ class JutulGPT:
             console.print("\n[bold red]Goodbye![/bold red]")
 
 
-agent = JutulGPT()
+agent = Agent()
 graph = agent.graph
 graph.get_graph().draw_mermaid_png(output_file_path="./graph.png")

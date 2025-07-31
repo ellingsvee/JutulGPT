@@ -3,22 +3,22 @@ from __future__ import annotations
 from functools import partial
 from typing import Literal, cast
 
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
+from langgraph.prebuilt import ToolNode
 
-from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.globals import console
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
-from jutulgpt.tools import RetrieveFunctionSignatureTool
+from jutulgpt.tools import retrieve_function_signature_tool
 from jutulgpt.utils import load_chat_model
 
 
 class CodingAgent:
     def __init__(self):
-        self.tools = [RetrieveFunctionSignatureTool()]
+        self.tools = [retrieve_function_signature_tool]
         self.graph = self.build_graph()
 
     def build_graph(self):
@@ -26,7 +26,7 @@ class CodingAgent:
 
         # Define the two nodes we will cycle between
         workflow.add_node("call_model", self.call_model)
-        workflow.add_node("tools", self.tool_node)
+        workflow.add_node("tools", ToolNode(self.tools))
         workflow.add_node("check_code", partial(check_code, console=console))
 
         # Set the entrypoint as `agent`
@@ -78,13 +78,6 @@ class CodingAgent:
             ),
         )
 
-        # print_to_console(
-        #     text=response.content,
-        #     title="Coding Agent",
-        #     border_style=colorscheme.normal,
-        # )
-
-        # We return a list, because this will get added to the existing list
         return {"messages": [response]}
 
     # Define the conditional edge that determines whether to continue or not
@@ -97,44 +90,6 @@ class CodingAgent:
         # Otherwise if there is, we continue
         else:
             return "continue"
-
-    def tool_node(self, state: State, config: RunnableConfig) -> State:
-        tools_by_name = {tool.name: tool for tool in self.tools}
-        response = []
-        last_message = state.messages[-1]
-        tool_calls = getattr(last_message, "tool_calls", [])
-
-        for tool_call in tool_calls:
-            tool_name = tool_call["name"]
-            tool_args = tool_call["args"]
-            tool = tools_by_name[tool_name]
-
-            print(f"CODING AGENT CALLS TOOL!!!: {tool_name}")
-
-            try:
-                tool_result = tool._run(**tool_args, config=config)
-                response.append(
-                    ToolMessage(
-                        content=tool_result,
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-            except Exception as e:
-                response.append(
-                    ToolMessage(
-                        content="Error: " + str(e),
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-                print_to_console(
-                    text=str(e),
-                    title="Tool Error",
-                    border_style=colorscheme.error,
-                )
-
-        return {"messages": response}
 
     def decide_to_finish(
         self, state: State, config: RunnableConfig

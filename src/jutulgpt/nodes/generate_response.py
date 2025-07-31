@@ -10,7 +10,7 @@ from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
-from jutulgpt.nodes._tools import tools
+from jutulgpt.nodes._tools import agent_tools
 from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
 
@@ -35,7 +35,7 @@ def generate_response(state: State, config: RunnableConfig, console: Console):
     configuration = BaseConfiguration.from_runnable_config(config)
 
     # Initialize the model with tool binding. Change the model or add more tools here.
-    model = load_chat_model(configuration.response_model).bind_tools(tools)
+    model = load_chat_model(configuration.response_model).bind_tools(agent_tools)
 
     # Format the system prompt. Customize this to change the agent's behavior.
     system_message = configuration.default_coder_prompt
