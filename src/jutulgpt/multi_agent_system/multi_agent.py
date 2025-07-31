@@ -1,9 +1,12 @@
-from typing import Annotated, cast
+from typing import Annotated, NotRequired, cast
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool, InjectedToolArg
+from langchain_core.tools import InjectedToolArg, tool
+from langgraph.config import get_store
 from langgraph.graph import END, StateGraph
+from langgraph.prebuilt import InjectedState, ToolNode
+from langgraph.store.memory import InMemoryStore
 from pydantic import BaseModel, Field
 
 from jutulgpt.cli import colorscheme, print_to_console
@@ -24,18 +27,20 @@ class RAGAgentToolInput(BaseModel):
     )
 
 
-class RAGAgentTool(BaseTool):
-    name: str = "rag_agent"
-    description: str = "Call a RAG agent to retrieve relevant information related to the user question. This should be used first to gather context before code generation."
-    args_schema = RAGAgentToolInput
+@tool("rag_agent", args_schema=RAGAgentToolInput)
+def rag_agent_tool(user_question: str) -> str:
+    """Call a RAG agent to retrieve relevant information related to the user question. This should be used first to gather context before code generation."""
+    response = rag_graph.invoke({"messages": [HumanMessage(content=user_question)]})
+    retrieved_content = response["messages"][-1].content
 
-    def _run(
-        self, user_question: str, config: Annotated[RunnableConfig, InjectedToolArg]
-    ) -> str:
-        response = rag_graph.invoke({"messages": [HumanMessage(content=user_question)]})
-        retrieved_content = response["messages"][-1].content
+    store = get_store()
+    store.put(
+        ("retrieved_context",),
+        "retrieved_context_id",
+        retrieved_content,  # TODO: Should consider updating the context instead of overwriting
+    )
 
-        return retrieved_content
+    return retrieved_content
 
 
 class CodingAgentToolInput(BaseModel):
@@ -48,21 +53,19 @@ class CodingAgentToolInput(BaseModel):
     )
 
 
-class CodingAgentTool(BaseTool):
-    name: str = "coding_agent"
-    description: str = "Call a coding agent for generating Julia code. Use this after retrieving relevant context with the RAG agent."
-    args_schema = CodingAgentToolInput
+@tool("coding_agent", args_schema=CodingAgentToolInput)
+def coding_agent_tool(
+    user_question: str,
+    use_retrieved_context: bool = True,
+) -> str:
+    """Call a coding agent for generating Julia code. Use this after retrieving relevant context with the RAG agent."""
+    # Prepare the coding request with context
+    store = get_store()
+    # retrieved_context = store.get(("retrieved_context",), "retrieved_context_id").value["retrieved_content"]
+    retrieved_context = store.get(("retrieved_context",), "retrieved_context_id").value
 
-    def _run(
-        self,
-        user_question: str,
-        use_retrieved_context: bool = True,
-        config: Annotated[RunnableConfig, InjectedToolArg] | None = None,
-        retrieved_context: str = "",
-    ) -> str:
-        # Prepare the coding request with context
-        if retrieved_context and use_retrieved_context:
-            coding_prompt = f"""Based on the following retrieved context, please generate Julia code for the user's request.
+    if retrieved_context and use_retrieved_context:
+        coding_prompt = f"""Based on the following retrieved context, please generate Julia code for the user's request.
 
 Retrieved Context:
 {retrieved_context}
@@ -70,47 +73,54 @@ Retrieved Context:
 User Request: {user_question}
 
 Please generate appropriate Julia code using the context above."""
-        else:
-            coding_prompt = user_question
+    else:
+        coding_prompt = user_question
 
-        response = coding_graph.invoke(
-            {"messages": [HumanMessage(content=coding_prompt)]}
-        )
+    response = coding_graph.invoke({"messages": [HumanMessage(content=coding_prompt)]})
 
-        last_ai_message = response["messages"][-1]
-        if last_ai_message.type == "ai":
-            # If the last message is an AI message, return its content
-            return last_ai_message.content
+    last_ai_message = response["messages"][-1]
+    if last_ai_message.type == "ai":
+        # If the last message is an AI message, return its content
+        return last_ai_message.content
 
-        text = f"""
+    text = f"""
 No AI response generated. Please check the input or the model.
 
 Last message:
 {last_ai_message.content}
 """
-        print_to_console(
-            text=text,
-            title="Error",
-            border_style=colorscheme.error,
-        )
-        return response["messages"][-1].content
+    print_to_console(
+        text=text,
+        title="Error",
+        border_style=colorscheme.error,
+    )
+    return response["messages"][-1].content
 
 
 class MultiAgent:
     def __init__(self):
         self.tools = [
-            RAGAgentTool(),
-            CodingAgentTool(),
+            rag_agent_tool,
+            coding_agent_tool,
             read_from_file_tool,
             write_to_file_tool,
         ]
+        self.store = InMemoryStore()
+        self.store.put(
+            ("retrieved_context",),
+            "retrieved_context_id",
+            {
+                "retrieved_context": "",
+            },
+        )
+
         self.graph = self.build_graph()
 
     def build_graph(self):
         workflow = StateGraph(State, config_schema=BaseConfiguration)
 
         workflow.add_node("call_model", self.call_model)
-        workflow.add_node("tools", self.tool_node)
+        workflow.add_node("tools", ToolNode(self.tools))
 
         # Set the entrypoint as `agent`
         if cli_mode:
@@ -132,7 +142,7 @@ class MultiAgent:
 
         workflow.add_edge("tools", "call_model")
 
-        return workflow.compile(name="agent")
+        return workflow.compile(name="agent", store=self.store)
 
     def _get_user_input(self, state: State, config: RunnableConfig) -> State:
         console.print("[bold blue]User Input:[/bold blue] ")
@@ -151,6 +161,14 @@ class MultiAgent:
         state: State,
         config: RunnableConfig,
     ):
+        # If the previous message was a tool call with the rag_agent, we need to update the retrieved context to the state
+        # retrieved_context = ""
+        # if len(state.messages) > 0:
+        #     prev_message = state.messages[-1]
+        #     if isinstance(prev_message, ToolMessage):
+        #         if prev_message.name == "rag_agent":
+        #             retrieved_context = prev_message.content.strip()
+
         configuration = BaseConfiguration.from_runnable_config(config)
         model = load_chat_model(configuration.response_model).bind_tools(self.tools)
 
@@ -201,57 +219,57 @@ class MultiAgent:
         else:
             return END
 
-    def tool_node(self, state: State, config: RunnableConfig) -> State:
-        tools_by_name = {tool.name: tool for tool in self.tools}
-        response = []
-        last_message = state.messages[-1]
-        tool_calls = getattr(last_message, "tool_calls", [])
-
-        new_retrieved_context = ""
-        for tool_call in tool_calls:
-            tool_name = tool_call["name"]
-            tool_args = tool_call["args"]
-            tool = tools_by_name[tool_name]
-
-            try:
-                if tool_name == "coding_agent":
-                    tool_result = tool._run(
-                        **tool_args,
-                        config=config,
-                        retrieved_context=state.retrieved_context,
-                    )
-                else:
-                    tool_result = tool._run(**tool_args, config=config)
-                response.append(
-                    ToolMessage(
-                        content=tool_result,
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-                if tool_name == "rag_agent":
-                    new_retrieved_context = tool_result + "\n"
-
-            except Exception as e:
-                response.append(
-                    ToolMessage(
-                        content="Error: " + str(e),
-                        name=tool_name,
-                        tool_call_id=tool_call["id"],
-                    )
-                )
-                print_to_console(
-                    text=str(e),
-                    title="Tool Error",
-                    border_style=colorscheme.error,
-                )
-
-        if new_retrieved_context:
-            return {
-                "messages": response,
-                "retrieved_context": state.retrieved_context + new_retrieved_context,
-            }
-        return {"messages": response}
+    # def tool_node(self, state: State, config: RunnableConfig) -> State:
+    #     tools_by_name = {tool.name: tool for tool in self.tools}
+    #     response = []
+    #     last_message = state.messages[-1]
+    #     tool_calls = getattr(last_message, "tool_calls", [])
+    #
+    #     new_retrieved_context = ""
+    #     for tool_call in tool_calls:
+    #         tool_name = tool_call["name"]
+    #         tool_args = tool_call["args"]
+    #         tool = tools_by_name[tool_name]
+    #
+    #         try:
+    #             if tool_name == "coding_agent":
+    #                 tool_result = tool._run(
+    #                     **tool_args,
+    #                     config=config,
+    #                     retrieved_context=state.retrieved_context,
+    #                 )
+    #             else:
+    #                 tool_result = tool._run(**tool_args, config=config)
+    #             response.append(
+    #                 ToolMessage(
+    #                     content=tool_result,
+    #                     name=tool_name,
+    #                     tool_call_id=tool_call["id"],
+    #                 )
+    #             )
+    #             if tool_name == "rag_agent":
+    #                 new_retrieved_context = tool_result + "\n"
+    #
+    #         except Exception as e:
+    #             response.append(
+    #                 ToolMessage(
+    #                     content="Error: " + str(e),
+    #                     name=tool_name,
+    #                     tool_call_id=tool_call["id"],
+    #                 )
+    #             )
+    #             print_to_console(
+    #                 text=str(e),
+    #                 title="Tool Error",
+    #                 border_style=colorscheme.error,
+    #             )
+    #
+    #     if new_retrieved_context:
+    #         return {
+    #             "messages": response,
+    #             "retrieved_context": state.retrieved_context + new_retrieved_context,
+    #         }
+    #     return {"messages": response}
 
     def run(self) -> None:
         """Run the CLI in interactive mode."""
