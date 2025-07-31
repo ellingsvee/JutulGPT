@@ -36,7 +36,7 @@ def modify_rag_query(query: str, retriever_name: str) -> str:
         if new_query.strip() != "":
             query = new_query
     elif human_response.get("type") == "ignore":
-        pass
+        query = ""
     elif human_response.get("type") == "accept":
         pass
     else:
