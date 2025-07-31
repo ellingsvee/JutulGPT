@@ -50,7 +50,14 @@ For the RAG to retrieve from the Fimbul documentation, set the `retrieve_fimbul 
 
 ## CLI 
 
-My favorite way of interacting with the Agent is through the CLI tool. Test it in the examples by running. 
+My favorite way of interacting with the Agent is through the CLI tool. 
+
+Enable the CLI-mode by in `src/jutulgpt/configuration.py` setting
+```python
+cli_mode = True
+```
+
+Test it in the examples by running. 
 ```bash
 # Agent
 uv run examples/cli_agent.py
@@ -61,7 +68,9 @@ uv run examples/cli_multi_agent.py
 This gives you a nice interface for asking questions, retrieving info, generating and running code etc. Both agents can also read and write to files.
 
 ## UI
-The JutulGPT also has an associated UI called [JutulGPT-UI](https://github.com/ellingsvee/JutulGPT-UI). Install it by following the instructions in the repository. Alternatively do
+The JutulGPT also has an associated UI called [JutulGPT-UI](https://github.com/ellingsvee/JutulGPT-UI).  For using the UI, you must disable the CLI-mode. To this by setting `cli_mode = False` in `src/jutulgpt/configuration.py`.
+
+Install it by following the instructions in the repository. Alternatively do
 ```bash
 cd .. # Move to parent directory
 git clone https://github.com/ellingsvee/JutulGPT-UI.git # Clone JutulGPT-UI
@@ -90,7 +99,6 @@ The agent is configured in the `src/jutulgpt/configuration.py` file.  Settings a
 - `retrieve_fimbul`: Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
 - `max_iterations`: If the generated code fails. How many times the model will try to fix the code.
 - `human_interaction`: Enable human-in-the-loop.
-- `cli_mode`: Enable CLI-specific interactions.
 - `embedding_model`: Name of the embedding model to use.
 - `retriever_provider`: The vector store provider to use for retrieval.
 - `search_type`: Defines the type of search that the retriever should perform.
