@@ -15,7 +15,7 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 from jutulgpt import prompts
 
 # Static settings
-cli_mode: bool = False
+cli_mode: bool = True
 
 
 # Setup of the environment and some logging. Not neccessary to touch this.
@@ -137,11 +137,35 @@ class BaseConfiguration:
 
     # Models
     response_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        # default="ollama/qwen3:14b" if USE_LOCAL_MODEL else "openai/gpt-4.1-mini",
         default_factory=lambda: "openai/gpt-4.1-mini",
         metadata={
             "description": "The language model used for generating responses. Should be in the form: provider/model-name."
         },
+    )
+
+    supervisor_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = (
+        field(
+            default_factory=lambda: "openai/gpt-4.1-mini",
+            metadata={
+                "description": "The language model used as the supervisor in the multi-agent model."
+            },
+        )
+    )
+    coding_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
+        default_factory=lambda: "openai/gpt-4.1-mini",
+        metadata={"description": "The language model used for coding tasks."},
+    )
+    rag_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
+        default_factory=lambda: "openai/gpt-4.1-mini",
+        metadata={
+            "description": "The language model used for retrieval-augmented generation."
+        },
+    )
+    error_analyzer_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = (
+        field(
+            default_factory=lambda: "openai/gpt-4.1-mini",
+            metadata={"description": "The language model used for error analysis."},
+        )
     )
 
     # Prompts
@@ -167,13 +191,6 @@ class BaseConfiguration:
             "description": "The default prompt for analyzing the error messages and suggesting how to fix them."
         },
     )
-
-    # configurable: dict[str, Any] = field(
-    #     default_factory=dict,
-    #     metadata={
-    #         "description": "A dictionary of configurable parameters that can be set by the user. This is used to store any additional parameters that are not part of the base configuration."
-    #     },
-    # )
 
     @classmethod
     def from_runnable_config(

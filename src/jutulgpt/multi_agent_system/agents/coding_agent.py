@@ -63,7 +63,7 @@ class CodingAgent:
         config: RunnableConfig,
     ):
         configuration = BaseConfiguration.from_runnable_config(config)
-        model = load_chat_model(configuration.response_model).bind_tools(self.tools)
+        model = load_chat_model(configuration.coding_model).bind_tools(self.tools)
 
         system_message = configuration.code_prompt
         messages_list = [

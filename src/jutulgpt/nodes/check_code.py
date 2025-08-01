@@ -144,7 +144,7 @@ def gen_error_message_string(
 ) -> str:
     configuration = BaseConfiguration.from_runnable_config(config)
     # Initialize the model with tool binding. Change the model or add more tools here.
-    model = load_chat_model(configuration.response_model)
+    model = load_chat_model(configuration.error_analyzer_model)
 
     error_analyzer_agent = create_react_agent(
         tools=retrieve_tools,

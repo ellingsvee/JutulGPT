@@ -64,7 +64,7 @@ class RAGAgent:
         config: RunnableConfig,
     ):
         configuration = BaseConfiguration.from_runnable_config(config)
-        model = load_chat_model(configuration.response_model).bind_tools(self.tools)
+        model = load_chat_model(configuration.rag_model).bind_tools(self.tools)
 
         # this is similar to customizing the create_react_agent with 'prompt' parameter, but is more flexible
         system_message = configuration.rag_prompt
