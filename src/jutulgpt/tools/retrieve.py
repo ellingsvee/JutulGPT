@@ -13,6 +13,7 @@ from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.human_in_the_loop import modify_rag_query, response_on_rag
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
+from jutulgpt.julia import get_function_documentation_from_function_names
 
 
 class RetrieveJutulDarcyToolInput(BaseModel):
@@ -202,15 +203,17 @@ def retrieve_function_signature_tool(
     config: Annotated[RunnableConfig, InjectedToolArg],
 ) -> str:
     """Use this tool to retrieve the function signature of a specific function from the JutulDarcy documentation. This is useful for understanding how to use a function, its parameters, and return types."""
-    retrieved_signatures = retrieval.function_signature_retriever(
-        function_names=function_names,
-        spec=RETRIEVER_SPECS["jutuldarcy"]["function_signatures"],
+
+    retrieved_signatures = get_function_documentation_from_function_names(
+        function_names=function_names
     )
 
-    print_to_console(
-        text=retrieved_signatures,
-        title="Retrieved Function Signatures",
-        border_style=colorscheme.message,
-    )
+    if retrieved_signatures:
+        print_to_console(
+            text=retrieved_signatures,
+            title="Retrieved Function Documentation",
+            border_style=colorscheme.message,
+        )
+        return retrieved_signatures
 
-    return retrieved_signatures
+    return "No function signatures found for the provided function names."

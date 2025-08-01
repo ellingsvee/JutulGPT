@@ -1,12 +1,10 @@
-from typing import Annotated, NotRequired, cast
+from typing import cast
 
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import InjectedToolArg, tool
-from langgraph.config import get_store
+from langchain_core.tools import tool
 from langgraph.graph import END, StateGraph
-from langgraph.prebuilt import InjectedState, ToolNode
-from langgraph.store.memory import InMemoryStore
+from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel, Field
 
 from jutulgpt.cli import colorscheme, print_to_console
@@ -61,7 +59,7 @@ def coding_agent_tool(
         store_retrieved_context  # Load the retrieved context from the global store
     )
 
-    print(f"retrieved_context given to coding agent: {retrieved_context}")
+    # print(f"retrieved_context given to coding agent: {retrieved_context}")
 
     if retrieved_context and use_retrieved_context:
         coding_prompt = f"""Based on the following retrieved context, please generate Julia code for the user's request.
@@ -75,7 +73,9 @@ Please generate appropriate Julia code using the context above."""
     else:
         coding_prompt = user_question
 
-    response = coding_graph.invoke({"messages": [HumanMessage(content=coding_prompt)]})
+    response = coding_graph.invoke(
+        {"messages": [HumanMessage(content=coding_prompt)]}
+    )  # NOTE: Another alternative is to pass the retrieved context as a part of the state.
 
     last_ai_message = response["messages"][-1]
     if last_ai_message.type == "ai":

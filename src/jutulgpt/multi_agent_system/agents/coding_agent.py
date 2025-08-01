@@ -3,22 +3,23 @@ from __future__ import annotations
 from functools import partial
 from typing import Literal, cast
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
+from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.globals import console
+from jutulgpt.julia import get_function_documentation_from_code
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
-from jutulgpt.tools import retrieve_function_signature_tool
-from jutulgpt.utils import load_chat_model
+from jutulgpt.utils import get_code_from_response, load_chat_model
 
 
 class CodingAgent:
     def __init__(self):
-        self.tools = [retrieve_function_signature_tool]
+        self.tools = []
         self.graph = self.build_graph()
 
     def build_graph(self):
@@ -65,18 +66,49 @@ class CodingAgent:
         model = load_chat_model(configuration.response_model).bind_tools(self.tools)
 
         system_message = configuration.code_prompt
+        messages_list = [
+            {"role": "system", "content": system_message},
+            *state.messages,
+        ]
 
         # Get the model's response
         response = cast(
             AIMessage,
             model.invoke(
-                [
-                    {"role": "system", "content": system_message},
-                    *state.messages,
-                ],
+                messages_list,
                 config,
             ),
         )
+
+        # After the code is generated the first time, we try to retrieve the function documentations
+        generated_code_block = get_code_from_response(response.content)
+        generated_full_code = generated_code_block.get_full_code()
+        retrieved_function_documentation = get_function_documentation_from_code(
+            generated_full_code
+        )
+
+        if retrieved_function_documentation:
+            print_to_console(
+                text=retrieved_function_documentation,
+                title="Function Documentation Retrieved",
+                border_style=colorscheme.message,
+            )
+
+            retrieved_function_documentation_message = f"""
+Based on the code you generated, I retrieved the following documentation for the functions you used. Go through it and use it to improve and fix your code:
+{retrieved_function_documentation}
+"""
+            messages_list.append(response)
+            messages_list.append(
+                HumanMessage(content=retrieved_function_documentation_message)
+            )
+            response = cast(
+                AIMessage,
+                model.invoke(
+                    messages_list,
+                    config,
+                ),
+            )
 
         return {"messages": [response]}
 
