@@ -94,7 +94,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         }
 
     print_to_console(
-        text="Code succeded!",
+        text=f"Code succeded in {round(result['runtime'], 2)} seconds!",
         title="Code Runner",
         border_style=colorscheme.success,
     )

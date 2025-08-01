@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 from typing import Union
 
 
@@ -120,7 +121,9 @@ def get_error_message(result) -> str:
 
 
 def run_code(code: str) -> dict:
+    start_time = time.time()
     stdout, stderr = run_code_string_direct(code=code)
+    end_time = time.time()
 
     if stderr:
         error_message, error_stacktrace = _split_stacktrace(stderr)
@@ -130,6 +133,7 @@ def run_code(code: str) -> dict:
             "error": True,
             "error_message": error_message,
             "error_stacktrace": error_stacktrace,
+            "runtime": end_time - start_time,
         }
         return result
 
@@ -138,5 +142,6 @@ def run_code(code: str) -> dict:
         "error": False,
         "error_message": "",
         "error_stacktrace": "",
+        "runtime": end_time - start_time,
     }
     return result
