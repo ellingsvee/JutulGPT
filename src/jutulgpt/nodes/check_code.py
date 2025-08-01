@@ -11,7 +11,9 @@ from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.cli.cli_human_interaction import cli_response_on_check_code
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.human_in_the_loop import response_on_check_code
-from jutulgpt.julia_interface import get_error_message, run_string
+
+# from jutulgpt.julia_interface import get_error_message, run_string
+from jutulgpt.julia import get_error_message, run_code
 from jutulgpt.nodes._tools import retrieve_tools
 from jutulgpt.state import State
 from jutulgpt.utils import (
@@ -63,7 +65,8 @@ def check_code(state: State, config: RunnableConfig, console: Console):
         border_style=colorscheme.warning,
     )
 
-    result = run_string(full_code)
+    # result = run_string(full_code)
+    result = run_code(full_code)
 
     if result.get("error", False):
         julia_error_message = get_error_message(result)
@@ -125,8 +128,6 @@ def shorter_simulations(code: str) -> str:
         code = shorten_first_argument(
             code=code, simulation_functions=simulation_functions
         )
-
-    # code = remove_plotting(code)
 
     return code
 
