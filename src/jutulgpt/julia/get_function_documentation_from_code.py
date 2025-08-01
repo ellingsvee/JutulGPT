@@ -1,5 +1,6 @@
 from typing import List
 
+from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.julia.julia_code_runner import run_code
 
 
@@ -231,11 +232,27 @@ end;
 
 
 def get_function_documentation_from_code(code: str) -> str:
+    print_to_console(
+        text="Retrieving function documentation from the generated code...",
+        title="Function Documentation Retriever",
+        border_style=colorscheme.warning,
+    )
+
     full_code = _get_full_julia_code_string(code)
     try:
         res = run_code(code=full_code)
+        print_to_console(
+            text="Function documentation retrieved successfully!",
+            title="Function Documentation Retriever",
+            border_style=colorscheme.success,
+        )
         return res.get("output")
     except Exception as _:
+        print_to_console(
+            text="Function documentation retrieval failed.",
+            title="Function Documentation Retriever",
+            border_style=colorscheme.error,
+        )
         return ""
 
 

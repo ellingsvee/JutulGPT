@@ -40,6 +40,54 @@ def run_code_tempfile(code: str, project_dir: str | None = None):
             pass  # File might already be deleted
 
 
+def run_lint_code(code: str, project_dir: str | None = None):
+    if project_dir is None:
+        project_dir = os.getcwd()
+
+    # Create a temporary file with Julia code in the project directory
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".jl", delete=False, encoding="utf-8", dir=project_dir
+    ) as temp_file:
+        temp_file.write(code)
+        temp_file.flush()  # Ensure content is written to disk
+        temp_file_path = temp_file.name
+
+    try:
+        # Run the Julia file with the project activated
+        # result = subprocess.run(
+        #     ["julia", f"--project={project_dir}", temp_file_path],
+        #     stdout=subprocess.PIPE,
+        #     stderr=subprocess.PIPE,
+        #     text=True,
+        #     cwd=project_dir,  # Set working directory to project directory
+        # )
+        julia_script = os.path.join(
+            project_dir, "src", "jutulgpt", "julia", "julia_lint_script.jl"
+        )
+        # print(f"Running lint script: {julia_script}")
+        result = subprocess.run(
+            [
+                "julia",
+                f"--project={project_dir}",
+                julia_script,
+                project_dir,
+                temp_file_path,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=project_dir,
+        )
+        # print(f"Julia exit code: {result.returncode}")
+        return result.stdout, result.stderr
+    finally:
+        # Clean up the temporary file
+        try:
+            os.unlink(temp_file_path)
+        except OSError:
+            pass  # File might already be deleted
+
+
 def run_code_string_direct(code: str, project_dir: str | None = None):
     """
     Alternative approach: Run Julia code directly using -e flag instead of temporary file.

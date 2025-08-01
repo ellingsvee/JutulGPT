@@ -63,11 +63,17 @@ class CodeBlock(BaseModel):
         default="", description="Code block not including import statements"
     )
 
-    def get_full_code(self, within_julia_context: bool = False) -> str:
+    def get_full_code(
+        self, within_julia_context: bool = False, return_empty_if_no_code: bool = False
+    ) -> str:
         """
         Returns the full code block, optionally wrapped as a Julia markdown code block.
         If within_julia_context is True, wraps the code in triple backticks and 'julia' for syntax highlighting.
         """
+
+        if return_empty_if_no_code and not self.imports and not self.code:
+            return ""
+
         full_code = "```julia" if within_julia_context else ""
         if self.imports:
             full_code += "\n" if within_julia_context else ""

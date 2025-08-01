@@ -11,7 +11,7 @@ from langgraph.prebuilt import ToolNode
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.globals import console
-from jutulgpt.julia import get_function_documentation_from_code
+from jutulgpt.julia import get_function_documentation_from_code, get_linting_result
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.utils import get_code_from_response, load_chat_model
@@ -72,6 +72,11 @@ class CodingAgent:
         ]
 
         # Get the model's response
+        print_to_console(
+            text="Generating code...",
+            title="Coding agent",
+            border_style=colorscheme.warning,
+        )
         response = cast(
             AIMessage,
             model.invoke(
@@ -79,36 +84,61 @@ class CodingAgent:
                 config,
             ),
         )
-
-        # After the code is generated the first time, we try to retrieve the function documentations
-        generated_code_block = get_code_from_response(response.content)
-        generated_full_code = generated_code_block.get_full_code()
-        retrieved_function_documentation = get_function_documentation_from_code(
-            generated_full_code
+        print_to_console(
+            text="Code generated!",
+            title="Coding agent",
+            border_style=colorscheme.success,
         )
 
-        if retrieved_function_documentation:
-            print_to_console(
-                text=retrieved_function_documentation,
-                title="Function Documentation Retrieved",
-                border_style=colorscheme.message,
+        generated_code_block = get_code_from_response(response.content)
+        generated_full_code = generated_code_block.get_full_code(
+            return_empty_if_no_code=True
+        )
+
+        if generated_full_code:
+            messages_list.append(response)
+
+            # Run a linter on the generated code
+            linting_result = get_linting_result(generated_full_code)
+            if linting_result:
+                linting_message = f"""
+I ran a linter on the code you generated, and it returned the following issues. Please go through them and fix the code accordingly:
+{linting_result}
+"""
+                messages_list.append(HumanMessage(content=linting_message))
+
+            # After the code is generated the first time, we try to retrieve the function documentations
+            # NOTE: If the linting is fine, maybe we can skip this step? This way we void regenerating code
+            retrieved_function_documentation = get_function_documentation_from_code(
+                generated_full_code
             )
 
-            retrieved_function_documentation_message = f"""
+            if retrieved_function_documentation:
+                retrieved_function_documentation_message = f"""
 Based on the code you generated, I retrieved the following documentation for the functions you used. Go through it and use it to improve and fix your code:
 {retrieved_function_documentation}
 """
-            messages_list.append(response)
-            messages_list.append(
-                HumanMessage(content=retrieved_function_documentation_message)
-            )
-            response = cast(
-                AIMessage,
-                model.invoke(
-                    messages_list,
-                    config,
-                ),
-            )
+                messages_list.append(
+                    HumanMessage(content=retrieved_function_documentation_message)
+                )
+
+                print_to_console(
+                    text="Regenerating code...",
+                    title="Coding agent",
+                    border_style=colorscheme.warning,
+                )
+                response = cast(
+                    AIMessage,
+                    model.invoke(
+                        messages_list,
+                        config,
+                    ),
+                )
+                print_to_console(
+                    text="Updated code regenerated!",
+                    title="Coding agent",
+                    border_style=colorscheme.success,
+                )
 
         return {"messages": [response]}
 
