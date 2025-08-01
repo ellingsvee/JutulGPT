@@ -59,10 +59,7 @@ cli_mode = True
 
 Test it in the examples by running. 
 ```bash
-# Agent
-uv run examples/cli_agent.py
-
-# Multi-Agent (more powerful, but uses more LLM calls)
+# Run the Mutli Agent in CLI mode. I suggest the Multi Agent for most advanced tasks!
 uv run examples/cli_multi_agent.py
 ```
 This gives you a nice interface for asking questions, retrieving info, generating and running code etc. Both agents can also read and write to files.
