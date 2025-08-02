@@ -3,6 +3,8 @@ from typing import Callable, List
 from langchain_core.documents import Document
 from rich.prompt import Prompt
 from rich.table import Table
+from langchain_core.messages import HumanMessage
+
 
 import jutulgpt.cli.cli_utils as utils
 from jutulgpt.cli.cli_colorscheme import colorscheme
@@ -144,6 +146,7 @@ def cli_response_on_check_code(code_block) -> tuple:
             - code_block: The potentially modified code block
             - check_code_bool: Whether to check the code (True) or ignore it (False)
             - extra_messages: List of AI messages to add to state
+            - regenerate_code: If the user wants to regenerate the code
     """
 
     from jutulgpt.utils import get_code_from_response
@@ -166,13 +169,14 @@ def cli_response_on_check_code(code_block) -> tuple:
     console.print("\nWhat would you like to do with this code?")
     console.print("1. Accept and run the code")
     console.print("2. Edit the code before running")
-    console.print("3. Skip code execution")
+    console.print("3. Give feedback to agent and regenerate code")
+    console.print("4. Skip code execution")
 
-    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3", "4"], default="1")
 
     if choice == "1":
         console.print("[green]✓ Code accepted for execution[/green]")
-        return code_block, True, []
+        return code_block, True, [], False
 
     elif choice == "2":
         console.print("\n[bold]Edit Code[/bold]")
@@ -182,14 +186,24 @@ def cli_response_on_check_code(code_block) -> tuple:
             # Update the code block with the new code
             updated_code_block = get_code_from_response(new_code)
             console.print("[green]✓ Code updated and will be executed[/green]")
-            return updated_code_block, True, []
+            return updated_code_block, True, [], False
         else:
             console.print("[red]✗ Empty code provided, skipping execution[/red]")
             return code_block, False, []
+    elif choice == "3":
+        console.print("\n[bold]Prompting agent to regenerate code[/bold]")
+        console.print("[bold blue]Give feedback:[/bold blue] ")
+        user_input = console.input("> ")
+        if (
+            not user_input.strip()
+        ):  # If the user input is empty, we skip the code execution.
+            console.print("[red]✗ User feedback empty[/red]")
+            return code_block, False, []
+        return code_block, False, [HumanMessage(content=user_input)], True
 
-    else:  # choice == "3"
+    else:  # choice == "4"
         console.print("[red]✗ Code execution skipped[/red]")
-        return code_block, False, []
+        return code_block, False, [], False
 
 
 def cli_modify_rag_query(query: str, retriever_name: str) -> str:

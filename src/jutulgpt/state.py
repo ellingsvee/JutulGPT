@@ -39,6 +39,7 @@ class State(InputState):
     - error: True if the agent encountered an error in the last step.
     - error_message: Details of the last error, if any.
     - iterations: Number of steps/turns taken so far (useful for limiting recursion or debugging).
+    - regenerate_code: True if the human has asked the agent to regenerate code before executing it.
     - retrieved_context: Context retrieved from RAG agent, available to subsequent agents.
     """
 
@@ -46,6 +47,7 @@ class State(InputState):
     error: bool = field(default=False)
     error_message: str = field(default="")
     iterations: int = field(default=0)
+    regenerate_code: bool = field(default=False)
     retrieved_context: str = field(default="")
 
 

@@ -138,7 +138,8 @@ Based on the code you generated, I retrieved the following documentation for the
                     border_style=colorscheme.success,
                 )
 
-        return {"messages": [response]}
+        # NOTE: Return the regenerate_code to "reset" the state
+        return {"messages": [response], "regenerate_code": False}
 
     # Define the conditional edge that determines whether to continue or not
     def should_continue(self, state: State):
@@ -165,10 +166,13 @@ Based on the code you generated, I retrieved the following documentation for the
         """
         error = state.error
         iterations = state.iterations
+        regenerate_code = state.regenerate_code
 
         configuration = BaseConfiguration.from_runnable_config(config)
 
-        if not error or iterations == configuration.max_iterations:
+        if regenerate_code:
+            return "call_model"
+        elif not error or iterations == configuration.max_iterations:
             return END
         else:
             return "call_model"

@@ -32,18 +32,23 @@ def check_code(state: State, config: RunnableConfig):
     # Human interaction to potentially modify the code of not check it
     check_code_bool = True
     extra_messages = []
+    regenerate_code = False
 
     if configuration.human_interaction.code_check:
         if cli_mode:
             # CLI mode: use interactive CLI code review
-            code_block, check_code_bool, extra_messages = cli_response_on_check_code(
-                code_block
+            code_block, check_code_bool, extra_messages, regenerate_code = (
+                cli_response_on_check_code(code_block)
             )
         else:
             # UI mode: use the original UI-based interaction
             code_block, check_code_bool, extra_messages = response_on_check_code(
                 code_block,
             )
+
+    # If the human gave feedback, and we want to re-generate the code
+    if regenerate_code:
+        return {"messages": extra_messages, "error": False, "regenerate_code": True}
 
     # Return early if the user chose to ignore the code check
     if not check_code_bool:
