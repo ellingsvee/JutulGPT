@@ -29,7 +29,7 @@ def retrieve_jutuldarcy_tool(
     """Use this tool to look up any information, usage, or examples from the JutulDarcy documentation. ALWAYS use this tool before answering any Julia code question about JutulDarcy."""
     configuration = BaseConfiguration.from_runnable_config(config)
 
-    if configuration.human_interaction:
+    if configuration.human_interaction.rag_query:
         if cli_mode:
             # CLI mode: use interactive CLI query modification
             from jutulgpt.cli.cli_human_interaction import cli_modify_rag_query
@@ -53,7 +53,7 @@ def retrieve_jutuldarcy_tool(
     ) as retriever:
         retrieved_examples = retriever.invoke(query)
 
-    if configuration.human_interaction:
+    if configuration.human_interaction.retrieved_documents:
         if cli_mode:
             from jutulgpt.cli.cli_human_interaction import cli_response_on_rag
 
@@ -120,7 +120,7 @@ def retrieve_fimbul_tool(
     configuration = BaseConfiguration.from_runnable_config(config)
 
     # Modify the query if human interaction is enabled
-    if configuration.human_interaction:
+    if configuration.human_interaction.rag_query:
         if cli_mode:
             # CLI mode: use interactive CLI query modification
 
@@ -140,7 +140,7 @@ def retrieve_fimbul_tool(
     ) as retriever:
         retrieved_examples = retriever.invoke(query)
 
-    if configuration.human_interaction:
+    if configuration.human_interaction.retrieved_documents:
         if cli_mode:
             from jutulgpt.cli.cli_human_interaction import cli_response_on_rag
 

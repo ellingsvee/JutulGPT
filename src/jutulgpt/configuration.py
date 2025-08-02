@@ -11,6 +11,7 @@ from typing import Annotated, Any, Literal, Optional, Type, TypeVar
 
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig, ensure_config
+from pydantic import BaseModel, ConfigDict
 
 from jutulgpt import prompts
 
@@ -29,6 +30,15 @@ load_dotenv()
 _set_env("OPENAI_API_KEY")
 logging.getLogger("httpx").setLevel(logging.WARNING)  # Less warnings in the output
 logging.getLogger("faiss").setLevel(logging.WARNING)
+
+
+class HumanInteraction(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # optional strictness
+    rag_query: bool = True
+    retrieved_documents: bool = True
+    code_check: bool = True
+    error_analysis: bool = False
+    multi_agent: bool = True
 
 
 @dataclass(kw_only=True)
@@ -75,13 +85,11 @@ class BaseConfiguration:
         },
     )
 
-    human_interaction: Annotated[
-        bool,
-        {"description": "Enable human-in-the-loop. Set to True when running the UI."},
-    ] = field(
-        default=True,
+    human_interaction: HumanInteraction = field(
+        default_factory=HumanInteraction,
         metadata={
-            "description": "Enable human-in-the-loop. Set to True when running the UI."
+            "description": "Configuration for human interaction during the process. "
+            "This includes options for RAG queries, retrieved documents, code checks, and multi-agent saving."
         },
     )
 

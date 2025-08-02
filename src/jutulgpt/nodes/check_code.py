@@ -34,7 +34,7 @@ def check_code(state: State, config: RunnableConfig, console: Console):
     check_code_bool = True
     extra_messages = []
 
-    if configuration.human_interaction:
+    if configuration.human_interaction.code_check:
         if cli_mode:
             # CLI mode: use interactive CLI code review
             code_block, check_code_bool, extra_messages = cli_response_on_check_code(
@@ -175,7 +175,7 @@ def gen_error_message_string(
     response_content = response["messages"][-1].content.strip()
 
     # Allow user interaction if in CLI mode and human interaction is enabled
-    if configuration.human_interaction and cli_mode and response_content:
+    if configuration.human_interaction.error_analysis and cli_mode and response_content:
         from jutulgpt.cli.cli_human_interaction import cli_response_on_error_analysis
 
         final_analysis = cli_response_on_error_analysis(response_content)
