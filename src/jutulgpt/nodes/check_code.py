@@ -5,7 +5,6 @@ from typing import cast
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import create_react_agent
-from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.cli.cli_human_interaction import cli_response_on_check_code
@@ -24,7 +23,7 @@ from jutulgpt.utils import (
 )
 
 
-def check_code(state: State, config: RunnableConfig, console: Console):
+def check_code(state: State, config: RunnableConfig):
     configuration = BaseConfiguration.from_runnable_config(config)
 
     # Get the code block to check
@@ -81,7 +80,6 @@ def check_code(state: State, config: RunnableConfig, console: Console):
             full_code=full_code,
             julia_error_message=julia_error_message,
             config=config,
-            console=console,
         )
 
         return {
@@ -140,7 +138,7 @@ def fix_fimbul_imports(imports: str) -> str:
 
 
 def gen_error_message_string(
-    full_code: str, julia_error_message: str, config: RunnableConfig, console: Console
+    full_code: str, julia_error_message: str, config: RunnableConfig
 ) -> str:
     configuration = BaseConfiguration.from_runnable_config(config)
     # Initialize the model with tool binding. Change the model or add more tools here.

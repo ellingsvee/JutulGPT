@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import partial
 from typing import Literal, cast
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -10,7 +9,6 @@ from langgraph.prebuilt import ToolNode
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
-from jutulgpt.globals import console
 from jutulgpt.julia import get_function_documentation_from_code, get_linting_result
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
@@ -28,7 +26,7 @@ class CodingAgent:
         # Define the two nodes we will cycle between
         workflow.add_node("call_model", self.call_model)
         workflow.add_node("tools", ToolNode(self.tools))
-        workflow.add_node("check_code", partial(check_code, console=console))
+        workflow.add_node("check_code", check_code)
 
         # Set the entrypoint as `agent`
         workflow.set_entry_point("call_model")
@@ -107,20 +105,20 @@ I ran a linter on the code you generated, and it returned the following issues. 
 """
                 messages_list.append(HumanMessage(content=linting_message))
 
-            # After the code is generated the first time, we try to retrieve the function documentations
-            # NOTE: If the linting is fine, maybe we can skip this step? This way we void regenerating code
-            retrieved_function_documentation = get_function_documentation_from_code(
-                generated_full_code
-            )
+                # After the code is generated the first time, we try to retrieve the function documentations
+                # WARNING: Now choose to only to the document retrieval if the linter returned issues
+                retrieved_function_documentation = get_function_documentation_from_code(
+                    generated_full_code
+                )
 
-            if retrieved_function_documentation:
-                retrieved_function_documentation_message = f"""
+                if retrieved_function_documentation:
+                    retrieved_function_documentation_message = f"""
 Based on the code you generated, I retrieved the following documentation for the functions you used. Go through it and use it to improve and fix your code:
 {retrieved_function_documentation}
 """
-                messages_list.append(
-                    HumanMessage(content=retrieved_function_documentation_message)
-                )
+                    messages_list.append(
+                        HumanMessage(content=retrieved_function_documentation_message)
+                    )
 
                 print_to_console(
                     text="Regenerating code...",

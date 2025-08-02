@@ -6,7 +6,6 @@ from typing import cast
 
 from langchain_core.messages import AIMessage, HumanMessage, trim_messages
 from langchain_core.runnables import RunnableConfig
-from rich.console import Console
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration
@@ -15,7 +14,7 @@ from jutulgpt.state import State
 from jutulgpt.utils import load_chat_model
 
 
-def generate_response(state: State, config: RunnableConfig, console: Console):
+def generate_response(state: State, config: RunnableConfig):
     """Generate a response based on the given state and configuration.
 
     This function initializes a chat model with tool bindings, formats the system prompt,

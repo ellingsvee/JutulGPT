@@ -1,24 +1,13 @@
 from __future__ import annotations
 
-import getpass
-import os
-from functools import partial
-from pathlib import Path
 from typing import Literal
 
-from dotenv import load_dotenv
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool
-from langgraph.graph import END, START, StateGraph
-from pydantic import BaseModel, Field
-from rich.markdown import Markdown
-from rich.panel import Panel
+from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
 
-from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.nodes import check_code, generate_response
 from jutulgpt.nodes._tools import agent_tools
@@ -34,10 +23,8 @@ class Agent:
     def build_graph(self):
         workflow = StateGraph(State, config_schema=BaseConfiguration)
 
-        workflow.add_node(
-            "generate_response", partial(generate_response, console=console)
-        )
-        workflow.add_node("check_code", partial(check_code, console=console))
+        workflow.add_node("generate_response", generate_response)
+        workflow.add_node("check_code", check_code)
         workflow.add_node("tool_use", ToolNode(agent_tools))
 
         if cli_mode:
