@@ -1,6 +1,5 @@
 """This module initializes the nodes for the react agent."""
 
-from jutulgpt.nodes.check_code import check_code
-from jutulgpt.nodes.generate_response import generate_response
+from jutulgpt.nodes.check_code import fix_fimbul_imports, shorter_simulations
 
-__all__ = ["generate_response", "check_code"]
+__all__ = ["fix_fimbul_imports", "shorter_simulations"]
