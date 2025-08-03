@@ -11,6 +11,7 @@ import jutulgpt.state as state
 from jutulgpt.cli.cli_colorscheme import colorscheme
 from jutulgpt.globals import console
 from jutulgpt.rag.utils import modify_doc_content
+from jutulgpt.utils import add_julia_context
 
 
 def cli_response_on_rag(
@@ -165,6 +166,23 @@ def cli_response_on_check_code() -> bool:
         return False
 
 
+def cli_response_on_error() -> bool:
+    console.print("\n[bold red]Code check failed[/bold red]")
+
+    console.print("What do you want to do?")
+    console.print("1. Try to fix the code")
+    console.print("2. Accept code as is")
+
+    choice = Prompt.ask("Your choice", choices=["1", "2"], default="1")
+
+    if choice == "1":
+        console.print("[green]✓ Trying to fix code[/green]")
+        return True
+    else:  # choice == "2"
+        console.print("[red]✗ Finishing[/red]")
+        return False
+
+
 def cli_modify_rag_query(query: str, retriever_name: str) -> str:
     """
     CLI version of modify_rag_query that allows interactive query modification.
@@ -214,57 +232,6 @@ def cli_modify_rag_query(query: str, retriever_name: str) -> str:
     else:  # choice == "3"
         console.print(f"[red]✗ Skipping {retriever_name} retrieval[/red]")
         return ""  # Return empty string to indicate no query
-
-
-def cli_response_on_error_analysis(error_analysis: str) -> str:
-    """
-    CLI version of error analysis review that allows interactive acceptance, modification, or rejection.
-
-    Args:
-        console: Rich console for display
-        error_analysis: The AI-generated error analysis message
-
-    Returns:
-        str: The potentially modified error analysis, or empty string if rejected
-    """
-    console.print("\n[bold yellow]Error Analysis Generated[/bold yellow]")
-    utils.print_to_console(
-        text=error_analysis,
-        title="AI Error Analysis",
-        border_style=colorscheme.human_interaction,
-    )
-
-    console.print("\nWhat would you like to do with this error analysis?")
-    console.print("1. Accept the analysis as-is")
-    console.print("2. Edit/modify the analysis")
-    console.print("3. Skip error analysis completely")
-
-    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
-
-    if choice == "1":
-        console.print("[green]✓ Error analysis accepted[/green]")
-        return error_analysis
-
-    elif choice == "2":
-        console.print("\n[bold]Edit Error Analysis[/bold]")
-        new_analysis = utils.edit_document_content(error_analysis)
-
-        if new_analysis.strip():
-            console.print("[green]✓ Error analysis updated[/green]")
-
-            utils.print_to_console(
-                text=new_analysis.strip(),
-                title="Updated error analysis",
-                border_style=colorscheme.success,
-            )
-            return new_analysis.strip()
-        else:
-            console.print("[yellow]⚠ Empty analysis, using original[/yellow]")
-            return error_analysis
-
-    else:  # choice == "3"
-        console.print("[red]✗ Error analysis skipped[/red]")
-        return ""  # Return empty string to indicate no analysis
 
 
 def cli_handle_code_response(response_content: str) -> None:
@@ -405,9 +372,13 @@ def cli_response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, s
         new_code = utils.edit_document_content(
             code_block.get_full_code(within_julia_context=False), edit_julia_file=True
         )
-        console.print("[green]✓ Edit accepted[/green]")
 
         if new_code.strip():
+            utils.print_to_console(
+                text=add_julia_context(new_code),
+                title="Code update",
+                border_style=colorscheme.message,
+            )
             # Update the code block with the new code
             updated_code_block = get_code_from_response(
                 new_code, within_julia_context=False
