@@ -36,6 +36,7 @@ class HumanInteraction(BaseModel):
     model_config = ConfigDict(extra="forbid")  # optional strictness
     rag_query: bool = True
     retrieved_documents: bool = True
+    generated_code: bool = True
     code_check: bool = True
     error_analysis: bool = False
     multi_agent: bool = True
