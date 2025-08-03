@@ -6,6 +6,7 @@ from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import create_react_agent
 
+import jutulgpt.state as state
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.cli.cli_human_interaction import cli_response_on_check_code
 from jutulgpt.configuration import BaseConfiguration, cli_mode
@@ -135,11 +136,11 @@ def shorter_simulations(code: str) -> str:
     return code
 
 
-def fix_fimbul_imports(imports: str) -> str:
-    if "Fimbul" not in imports:
-        return imports  # No need to fix if Fimbul is not imported
-    imports = 'using Pkg; Pkg.activate(".");\n' + imports
-    return imports
+def fix_fimbul_imports(code_block: state.CodeBlock) -> state.CodeBlock:
+    if "Fimbul" not in code_block.imports:
+        return code_block  # No need to fix if Fimbul is not imported
+    imports = 'using Pkg; Pkg.activate(".");\n' + code_block.imports
+    return state.CodeBlock(imports=imports, code=code_block.code)
 
 
 def gen_error_message_string(
