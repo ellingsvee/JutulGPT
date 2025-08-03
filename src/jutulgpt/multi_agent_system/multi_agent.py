@@ -61,21 +61,29 @@ def coding_agent_tool(
 
     # print(f"retrieved_context given to coding agent: {retrieved_context}")
 
-    if retrieved_context and use_retrieved_context:
-        coding_prompt = f"""Based on the following retrieved context, please generate Julia code for the user's request.
+    #     if retrieved_context and use_retrieved_context:
+    #         coding_prompt = f"""Based on the following retrieved context, please generate Julia code for the user's request.
+    #
+    # Retrieved Context:
+    # {retrieved_context}
+    #
+    # User Request: {user_question}
+    #
+    # Please generate appropriate Julia code using the context above."""
+    #     else:
+    #         coding_prompt = user_question
 
-Retrieved Context:
-{retrieved_context}
-
-User Request: {user_question}
-
-Please generate appropriate Julia code using the context above."""
+    if use_retrieved_context:
+        response = coding_graph.invoke(
+            {
+                "messages": [HumanMessage(content=user_question)],
+                "retrieved_context": retrieved_context,
+            }
+        )
     else:
-        coding_prompt = user_question
-
-    response = coding_graph.invoke(
-        {"messages": [HumanMessage(content=coding_prompt)]}
-    )  # NOTE: Another alternative is to pass the retrieved context as a part of the state.
+        response = coding_graph.invoke(
+            {"messages": [HumanMessage(content=user_question)]}
+        )
 
     last_ai_message = response["messages"][-1]
     if last_ai_message.type == "ai":
