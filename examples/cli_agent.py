@@ -1,5 +1,5 @@
 from jutulgpt import agent
-from jutulgpt.cli.cli_utils import print_to_console
+from jutulgpt.cli import print_to_console
 
 if __name__ == "__main__":
     print_to_console(
