@@ -38,6 +38,7 @@ class HumanInteraction(BaseModel):
     retrieved_documents: bool = True
     generated_code: bool = True
     code_check: bool = True
+    decide_to_try_to_fix_error: bool = True
     error_analysis: bool = False
     multi_agent: bool = True
 
