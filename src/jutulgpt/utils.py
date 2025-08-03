@@ -8,9 +8,7 @@ from typing import List, Sequence, Union
 from langchain.chat_models import init_chat_model
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseChatModel
-from langchain_core.language_models.base import (
-    LanguageModelInput,
-)
+from langchain_core.language_models.base import LanguageModelInput
 from langchain_core.messages import BaseMessage, trim_messages
 from langchain_core.runnables import Runnable
 
@@ -340,6 +338,10 @@ def check_for_package_install(code_block: CodeBlock) -> bool:
     if any(item in code_block.code for item in not_allowed):
         return True
     return False
+
+
+def add_julia_context(code: str) -> str:
+    return f"```julia\n{code}\n```"
 
 
 def remove_plotting(code: str) -> str:
