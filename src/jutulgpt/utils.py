@@ -3,14 +3,33 @@
 import os
 import re
 from dataclasses import asdict
-from typing import List
+from typing import List, Sequence, Union
 
 from langchain.chat_models import init_chat_model
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.language_models.base import (
+    LanguageModelInput,
+)
+from langchain_core.messages import BaseMessage, trim_messages
+from langchain_core.runnables import Runnable
 
 from jutulgpt.state import CodeBlock, State
+
+
+def trim_state_messages(
+    messages: Sequence[BaseMessage],
+    model: Union[BaseChatModel, Runnable[LanguageModelInput, BaseMessage]],
+) -> Sequence[BaseMessage]:
+    trimmed_state_messages = trim_messages(
+        messages,
+        max_tokens=40000,  # adjust for model's context window minus system & files message
+        strategy="last",
+        token_counter=model,
+        include_system=False,  # Not needed since systemMessage is added separately
+        allow_partial=True,
+    )
+    return trimmed_state_messages
 
 
 def load_lines_from_txt(file_path: str) -> List[str]:
@@ -225,17 +244,23 @@ def _get_code_string_from_response(response: str) -> str:
     return ""
 
 
-def get_code_from_response(response: str) -> CodeBlock:
+def get_code_from_response(
+    response: str, within_julia_context: bool = True
+) -> CodeBlock:
     """
     Extract Julia code and import statements from a Markdown code block in a response string.
 
     Args:
         response (str): The response string containing a Markdown Julia code block.
+        within_julia_context (bool): If True, assumes the response is within a Julia context. If False, assumes the entire response is code.
 
     Returns:
         CodeBlock: An object containing separated imports and code.
     """
-    code_str = _get_code_string_from_response(response)
+    code_str = (
+        _get_code_string_from_response(response) if within_julia_context else response
+    )
+
     if not code_str:
         return CodeBlock(imports="", code="")
 
@@ -268,31 +293,6 @@ def get_last_code_response(state: State) -> CodeBlock:
 
     if last_message.type == "ai" or last_message.type == "human":
         last_message_content = last_message.content
-    else:
-        last_message_content = ""
-    code_block = get_code_from_response(last_message_content)
-    return code_block
-
-
-def get_last_code_response_2(messages: List) -> CodeBlock:
-    """
-    Get the last AI-generated code response from the state as a CodeBlock.
-
-    Args:
-        state (State): The current State object containing messages.
-
-    Returns:
-        CodeBlock: The extracted code block from the last AI message, or empty if not found.
-    """
-    last_message = messages[-1]
-
-    # Include the human in case the human-in-the-loop updates the generated code.
-
-    # print("Inside: get_last_code_response")
-    # print(f"last_message.type: {last_message.type}")
-    if last_message.type == "ai" or last_message.type == "human":
-        last_message_content = last_message.content
-        # print(f"last_message_content: {last_message_content}")
     else:
         last_message_content = ""
     code_block = get_code_from_response(last_message_content)
