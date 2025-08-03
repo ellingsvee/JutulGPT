@@ -10,6 +10,7 @@ from langgraph.prebuilt import ToolNode
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.cli.cli_human_interaction import (
     cli_response_on_check_code,
+    cli_response_on_error,
     cli_response_on_generated_code,
 )
 from jutulgpt.configuration import BaseConfiguration, cli_mode
@@ -24,7 +25,12 @@ from jutulgpt.julia import (
 )
 from jutulgpt.nodes.check_code import fix_fimbul_imports, shorter_simulations
 from jutulgpt.state import State
-from jutulgpt.utils import get_code_from_response, load_chat_model, trim_state_messages
+from jutulgpt.utils import (
+    _get_code_string_from_response,
+    get_code_from_response,
+    load_chat_model,
+    trim_state_messages,
+)
 
 
 class CodingAgent:
@@ -55,20 +61,19 @@ class CodingAgent:
             "get_relevant_function_documentation",
             self.get_relevant_function_documentation,
         )
-
-        if self.part_of_multi_agent:
-            workflow.add_node("finalize", self.finalize)
-        else:
+        workflow.add_node("finalize", self.finalize)
+        if not self.part_of_multi_agent:
             workflow.add_node("get_user_input", self.get_user_input)
 
         # Set the entrypoint
         if self.part_of_multi_agent:
-            workflow.set_entry_point("call_coding_agent")
+            workflow.set_entry_point("get_relevant_function_documentation")
         else:
             workflow.set_entry_point("get_user_input")
-            workflow.add_edge("get_user_input", "call_coding_agent")
+            workflow.add_edge("get_user_input", "get_relevant_function_documentation")
 
         # Edges
+        workflow.add_edge("get_relevant_function_documentation", "call_coding_agent")
         workflow.add_edge("tools", "call_coding_agent")
         workflow.add_conditional_edges(
             "call_coding_agent",
@@ -91,15 +96,14 @@ class CodingAgent:
             self.direct_after_check_code,
             {
                 "get_relevant_function_documentation": "get_relevant_function_documentation",
-                "finalize": "finalize"
-                if self.part_of_multi_agent
-                else "get_user_input",
+                "finalize": "finalize",
             },
         )
-        workflow.add_edge("get_relevant_function_documentation", "call_coding_agent")
 
         if self.part_of_multi_agent:
             workflow.add_edge("finalize", END)
+        else:
+            workflow.add_edge("finalize", "get_user_input")
 
         return workflow.compile(name="agent")
 
@@ -134,7 +138,7 @@ class CodingAgent:
         # Add the retrieved context if it exists
         if state.retrieved_context:
             retrieved_context_message = (
-                "The following context was retrieved from the RAG agent. It can be relevant to the code you are about to generate:\n\n"
+                "The following context was retrieved and summarized by a RAG agent. It can be relevant to the code you are about to generate:\n\n"
                 + state.retrieved_context
             )
             messages_list.append(HumanMessage(content=retrieved_context_message))
@@ -152,11 +156,6 @@ class CodingAgent:
         messages_list.extend(trimmed_state_messages)
 
         # Invoke the model
-        print_to_console(
-            text="Generating response...",
-            title="Coding agent" if self.part_of_multi_agent else "Agent",
-            border_style=colorscheme.warning,
-        )
         response = cast(
             AIMessage,
             model.invoke(
@@ -166,11 +165,14 @@ class CodingAgent:
         )
         code_block = get_code_from_response(response=response.content)
 
-        print_to_console(
-            text="Response generated!",
-            title="Coding agent" if self.part_of_multi_agent else "Agent",
-            border_style=colorscheme.success,
-        )
+        # Print response if not part of multi-agent
+        if response.content.strip() and not self.part_of_multi_agent:
+            print_to_console(
+                text=response.content.strip(),
+                title="Agent",
+                border_style=colorscheme.normal,
+            )
+
         return {"messages": [response], "code_block": code_block, "error": False}
 
     def user_feedback_on_generated_code(
@@ -214,13 +216,46 @@ class CodingAgent:
         state: State,
         config: RunnableConfig,
     ):
+        if not state.code_block.is_empty():
+            return self.get_relevant_function_documentation_from_code(state, config)
+
+        if state.retrieved_context:
+            return self.get_relevant_function_documentation_from_retrieved_context(
+                state, config
+            )
+
+        return {}
+
+    def get_relevant_function_documentation_from_retrieved_context(
+        self,
+        state: State,
+        config: RunnableConfig,
+    ):
+        retrieved_context = state.retrieved_context
+
+        # Get the code from the retrieved context
+        full_code = _get_code_string_from_response(retrieved_context)
+
+        retrieved_function_documentation = get_function_documentation_from_code(
+            full_code
+        )
+
+        # If any documentation was retrieved, add it ot the state
+        if retrieved_function_documentation:
+            return {
+                "retrieved_function_documentation": retrieved_function_documentation
+            }
+        return {}
+
+    def get_relevant_function_documentation_from_code(
+        self,
+        state: State,
+        config: RunnableConfig,
+    ):
         # TODO: Here we have two more alternatives: Either use a LLM to find relevant functions from the retrieved examples, or use some kind of regex.
         # This can then be passed to the retriever before the first code generation step.
 
         code_block = state.code_block
-
-        if code_block.is_empty():
-            return {}
 
         # Try to retrieve the function documentation from the code
         retrieved_function_documentation = get_function_documentation_from_code(
@@ -338,8 +373,10 @@ class CodingAgent:
         return "", False
 
     def finalize(self, state: State, config: RunnableConfig):
-        final_message = state.code_block.get_full_code(within_julia_context=True)
-        return {"messages": [AIMessage(content=final_message)]}
+        if self.part_of_multi_agent:
+            final_message = state.code_block.get_full_code(within_julia_context=True)
+            return {"messages": [AIMessage(content=final_message)]}
+        return {}
 
     def check_tool_use(self, state: State) -> Literal["tool_used", "end"]:
         messages = state.messages
@@ -358,10 +395,15 @@ class CodingAgent:
         return "check_code"
 
     def direct_after_check_code(
-        self, state: State
+        self, state: State, config: RunnableConfig
     ) -> Literal["get_relevant_function_documentation", "finalize"]:
         if state.error:
-            return "get_relevant_function_documentation"
+            configuration = BaseConfiguration.from_runnable_config(config)
+            try_to_fix_code_bool = True
+            if configuration.human_interaction.decide_to_try_to_fix_error and cli_mode:
+                try_to_fix_code_bool = cli_response_on_error()
+            if try_to_fix_code_bool:
+                return "get_relevant_function_documentation"
         return "finalize"
 
     def decide_to_finish(

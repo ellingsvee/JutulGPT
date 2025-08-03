@@ -59,20 +59,6 @@ def coding_agent_tool(
         store_retrieved_context  # Load the retrieved context from the global store
     )
 
-    # print(f"retrieved_context given to coding agent: {retrieved_context}")
-
-    #     if retrieved_context and use_retrieved_context:
-    #         coding_prompt = f"""Based on the following retrieved context, please generate Julia code for the user's request.
-    #
-    # Retrieved Context:
-    # {retrieved_context}
-    #
-    # User Request: {user_question}
-    #
-    # Please generate appropriate Julia code using the context above."""
-    #     else:
-    #         coding_prompt = user_question
-
     if use_retrieved_context:
         response = coding_graph.invoke(
             {
