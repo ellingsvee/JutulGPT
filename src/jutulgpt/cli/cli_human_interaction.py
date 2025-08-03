@@ -1,12 +1,13 @@
-from typing import Callable, List
+from typing import Callable, List, Literal
 
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage
+from rich.markdown import CodeBlock
 from rich.prompt import Prompt
 from rich.table import Table
-from langchain_core.messages import HumanMessage
-
 
 import jutulgpt.cli.cli_utils as utils
+import jutulgpt.state as state
 from jutulgpt.cli.cli_colorscheme import colorscheme
 from jutulgpt.globals import console
 from jutulgpt.rag.utils import modify_doc_content
@@ -18,6 +19,7 @@ def cli_response_on_rag(
     get_section_path: Callable,
     format_doc: Callable,
     action_name: str = "Modify retrieved documents",
+    edit_julia_file: bool = False,
 ) -> List[Document]:
     """
     CLI version of response_on_rag that allows interactive document filtering/editing.
@@ -60,6 +62,9 @@ def cli_response_on_rag(
         section_path = get_section_path(doc)
         file_source = get_file_source(doc)
         content = format_doc(doc)
+        content_within_julia = (
+            content if not edit_julia_file else f"```julia\n{content.strip()}\n```"
+        )
 
         # Create a table to show document info
         table = Table(show_header=True, header_style="bold magenta")
@@ -71,7 +76,9 @@ def cli_response_on_rag(
 
         console.print(f"\n{table}")
         utils.print_to_console(
-            text=content[:500] + "..." if len(content) > 500 else content,
+            text=content_within_julia[:500] + "..."
+            if len(content_within_julia) > 500
+            else content_within_julia,
             title="Content",
             border_style=colorscheme.human_interaction,
         )
@@ -92,7 +99,7 @@ def cli_response_on_rag(
 
         elif doc_choice == "v":
             utils.print_to_console(
-                text=content,
+                text=content_within_julia,
                 title="Full Document Content",
                 border_style=colorscheme.success,
             )
@@ -110,8 +117,12 @@ def cli_response_on_rag(
                 filtered_docs.append(doc)
                 console.print("[green]✓ Document kept[/green]")
             elif doc_choice == "e":
-                new_content = utils.edit_document_content(content)
+                new_content = utils.edit_document_content(
+                    content, edit_julia_file=edit_julia_file
+                )
                 if new_content.strip():
+                    if edit_julia_file:
+                        new_content = f"```julia\n{new_content.strip()}\n```"
                     filtered_docs.append(modify_doc_content(doc, new_content))
                     console.print("[green]✓ Document edited and kept[/green]")
                 else:
@@ -120,8 +131,12 @@ def cli_response_on_rag(
                 console.print("[red]✗ Document skipped[/red]")
 
         elif doc_choice == "e":
-            new_content = utils.edit_document_content(content)
+            new_content = utils.edit_document_content(
+                content, edit_julia_file=edit_julia_file
+            )
             if new_content.strip():
+                if edit_julia_file:
+                    new_content = f"```julia\n{new_content.strip()}\n```"
                 filtered_docs.append(modify_doc_content(doc, new_content))
                 console.print("[green]✓ Document edited and kept[/green]")
             else:
@@ -133,77 +148,21 @@ def cli_response_on_rag(
     return filtered_docs
 
 
-def cli_response_on_check_code(code_block) -> tuple:
-    """
-    CLI version of response_on_check_code that allows interactive code review and editing.
+def cli_response_on_check_code() -> bool:
+    console.print("\n[bold yellow]Code check[/bold yellow]")
 
-    Args:
-        console: Rich console for display
-        code_block: The CodeBlock object to potentially modify or accept
+    console.print("Do you want to check the code for any potential errors?")
+    console.print("1. Check the code")
+    console.print("2. Skip code check")
 
-    Returns:
-        tuple: (code_block, check_code_bool, extra_messages)
-            - code_block: The potentially modified code block
-            - check_code_bool: Whether to check the code (True) or ignore it (False)
-            - extra_messages: List of AI messages to add to state
-            - regenerate_code: If the user wants to regenerate the code
-    """
-
-    from jutulgpt.utils import get_code_from_response
-
-    # If there is no code to edit, return immediately
-    if not code_block.imports and not code_block.code:
-        return code_block, False, []
-
-    # Format the code for display
-    full_code = code_block.get_full_code(within_julia_context=True)
-
-    console.print("\n[bold yellow]Generated Code Review[/bold yellow]")
-
-    utils.print_to_console(
-        text=full_code,
-        title="Human Interaction",
-        border_style=colorscheme.human_interaction,
-    )
-
-    console.print("\nWhat would you like to do with this code?")
-    console.print("1. Accept and run the code")
-    console.print("2. Edit the code before running")
-    console.print("3. Give feedback to agent and regenerate code")
-    console.print("4. Skip code execution")
-
-    choice = Prompt.ask("Your choice", choices=["1", "2", "3", "4"], default="1")
+    choice = Prompt.ask("Your choice", choices=["1", "2"], default="1")
 
     if choice == "1":
-        console.print("[green]✓ Code accepted for execution[/green]")
-        return code_block, True, [], False
-
-    elif choice == "2":
-        console.print("\n[bold]Edit Code[/bold]")
-        new_code = utils.edit_document_content(full_code)
-
-        if new_code.strip():
-            # Update the code block with the new code
-            updated_code_block = get_code_from_response(new_code)
-            console.print("[green]✓ Code updated and will be executed[/green]")
-            return updated_code_block, True, [], False
-        else:
-            console.print("[red]✗ Empty code provided, skipping execution[/red]")
-            return code_block, False, []
-    elif choice == "3":
-        console.print("\n[bold]Prompting agent to regenerate code[/bold]")
-        console.print("[bold blue]Give feedback:[/bold blue] ")
-        user_input = console.input("> ")
-        if (
-            not user_input.strip()
-        ):  # If the user input is empty, we skip the code execution.
-            console.print("[red]✗ User feedback empty[/red]")
-            return code_block, False, []
-        return code_block, False, [HumanMessage(content=user_input)], True
-
-    else:  # choice == "4"
-        console.print("[red]✗ Code execution skipped[/red]")
-        return code_block, False, [], False
+        console.print("[green]✓ Running code checks[/green]")
+        return True
+    else:  # choice == "2"
+        console.print("[red]✗ Skipping code checks[/red]")
+        return False
 
 
 def cli_modify_rag_query(query: str, retriever_name: str) -> str:
@@ -396,3 +355,65 @@ def cli_handle_code_response(response_content: str) -> None:
 
     else:  # choice == "3"
         console.print("[blue]ℹ Code response noted but no action taken[/blue]")
+
+
+def cli_response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, str]:
+    """
+
+    Returns:
+        CodeBlock: The potentially modified code block
+        bool: Whether the code block was updated (True) or not (False)
+        str: Any user feedback to send back to the agent
+    """
+    from jutulgpt.utils import get_code_from_response
+
+    # If there is no code to edit, return immediately
+    if code_block.is_empty():
+        return code_block, False, ""
+
+    # Format the code for display
+    full_code = code_block.get_full_code(within_julia_context=True)
+
+    console.print("\n[bold yellow]Generated Code Review[/bold yellow]")
+
+    utils.print_to_console(
+        text=full_code,
+        title="Generated Code",
+        border_style=colorscheme.human_interaction,
+    )
+
+    console.print("\nWhat would you like to do with this code?")
+    console.print("1. Accept code")
+    console.print("2. Give feedback to agent and regenerate code")
+    console.print("3. Edit the code manually")
+
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
+
+    if choice == "1":
+        console.print("[green]✓ Code accepted[/green]")
+        return code_block, False, ""
+    elif choice == "2":
+        console.print("[bold blue]Give feedback:[/bold blue] ")
+        user_input = console.input("> ")
+        if not user_input.strip():  # If the user input is empty
+            console.print("[red]✗ User feedback empty[/red]")
+            return code_block, False, ""
+        return code_block, False, user_input
+
+    else:  # choice == "3":
+        console.print("\n[bold]Edit Code[/bold]")
+        new_code = utils.edit_document_content(
+            code_block.get_full_code(within_julia_context=False), edit_julia_file=True
+        )
+        console.print("[green]✓ Edit accepted[/green]")
+
+        if new_code.strip():
+            # Update the code block with the new code
+            updated_code_block = get_code_from_response(
+                new_code, within_julia_context=False
+            )
+            console.print("[green]✓ Code updated[/green]")
+            return updated_code_block, True, ""
+        else:
+            console.print("[red]✗ Empty code provided[/red]")
+            return code_block, False, ""

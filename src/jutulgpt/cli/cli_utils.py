@@ -30,7 +30,7 @@ def print_to_console(
     console.print(Panel.fit(Markdown(text) if with_markdown else text, **panel_kwargs))
 
 
-def edit_document_content(original_content: str) -> str:
+def edit_document_content(original_content: str, edit_julia_file: bool = False) -> str:
     """
     Allow user to edit document content interactively.
 
@@ -41,19 +41,16 @@ def edit_document_content(original_content: str) -> str:
     Returns:
         The edited content
     """
-    console.print("\n[bold]Edit Document Content[/bold]")
-    console.print("Choose editing method:")
-    console.print("1. Edit in external editor (recommended)")
-    console.print("2. Replace with new text (paste mode)")
-    console.print("3. Keep original")
-
     # External editor option
+    file_suffix = ".jl" if edit_julia_file else ".md"
     try:
         import os
         import subprocess
         import tempfile
 
-        with tempfile.NamedTemporaryFile(mode="w+", suffix=".md", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w+", suffix=file_suffix, delete=False
+        ) as f:
             f.write(original_content)
             f.flush()
 

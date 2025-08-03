@@ -64,8 +64,10 @@ def get_section_path(doc: Document, for_ui_printing: bool = False) -> str:
     return section_path
 
 
-def format_doc(doc: Document) -> str:
-    return f"```julia\n{doc.page_content.strip()}\n```"
+def format_doc(doc: Document, within_julia_context: bool = True) -> str:
+    if within_julia_context:
+        return f"```julia\n{doc.page_content.strip()}\n```"
+    return doc.page_content.strip()
 
 
 # TODO: This is currently the exact same code as the format-docs. Should be generalized.

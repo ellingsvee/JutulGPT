@@ -1,8 +1,10 @@
 from typing import Annotated, List
+from functools import partial
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolArg, tool
 from pydantic import BaseModel, Field
+from rich.repr import T
 
 # from jutulgpt import configuration
 import jutulgpt.rag.retrieval as retrieval
@@ -72,8 +74,11 @@ def retrieve_jutuldarcy_tool(
                 docs=retrieved_examples,
                 get_file_source=get_file_source,
                 get_section_path=split_examples.get_section_path,
-                format_doc=split_examples.format_doc,
+                format_doc=partial(
+                    split_examples.format_doc, within_julia_context=False
+                ),
                 action_name="Modify retrieved JutulDarcy examples",
+                edit_julia_file=True,
             )
         else:
             # UI mode: use the original UI-based interaction
@@ -157,8 +162,11 @@ def retrieve_fimbul_tool(
                 docs=retrieved_examples,
                 get_file_source=get_file_source,
                 get_section_path=split_examples.get_section_path,
-                format_doc=split_examples.format_doc,
+                format_doc=partial(
+                    split_examples.format_doc, within_julia_context=False
+                ),
                 action_name="Modify retrieved Fimbul examples",
+                edit_julia_file=True,
             )
         else:
             # UI mode: use the original UI-based interaction
