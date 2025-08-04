@@ -179,7 +179,7 @@ def cli_response_on_error() -> tuple[bool, str]:
     console.print("2. Give extra feedback to the model on what might be wrong")
     console.print("3. Skip code fixing")
 
-    choice = Prompt.ask("Your choice", choices=["1", "2"], default="1")
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
 
     if choice == "1":
         console.print("[green]✓ Trying to fix code[/green]")
