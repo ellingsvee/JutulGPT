@@ -7,7 +7,7 @@ from functools import partial
 from typing import Callable
 
 from jutulgpt.configuration import PROJECT_ROOT
-from jutulgpt.rag import split_docs, split_examples, split_function_signatures
+from jutulgpt.rag import split_docs, split_examples
 
 
 @dataclass
@@ -41,24 +41,6 @@ RETRIEVER_SPECS = {
                     ("#", "Header 1"),
                 ],
             ),
-        ),
-        "function_signatures": RetrieverSpec(
-            dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "function_signatures"),
-            persist_path=lambda retriever_dir_name: str(
-                PROJECT_ROOT
-                / "rag"
-                / "retriever_store"
-                / f"retriever_jutuldarcy_function_signatures_{retriever_dir_name}"
-            ),
-            cache_path=str(
-                PROJECT_ROOT
-                / "rag"
-                / "loaded_store"
-                / "loaded_jutuldarcy_function_signatures.pkl"
-            ),
-            collection_name="jutuldarcy_function_signatures",
-            filetype="md",
-            split_func=split_function_signatures.split_function_signatures,
         ),
         "examples": RetrieverSpec(
             dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "examples"),
