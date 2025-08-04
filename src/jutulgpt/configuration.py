@@ -18,7 +18,7 @@ from jutulgpt import prompts
 # Static settings
 cli_mode: bool = True
 
-# WARNING: For ease of use, delete later
+# Select whether to use local models through Ollama or use OpenAI
 LOCAL_MODELS = False
 LLM_MODEL_NAME = "ollama/qwen3:14b" if LOCAL_MODELS else "openai/gpt-4.1-mini"
 EMBEDDING_MODEL_NAME = (
@@ -65,7 +65,7 @@ class BaseConfiguration:
             "description": "If True, use local models (Ollama). If False, use OpenAI API."
         },
     ] = field(
-        default=False,
+        default=LOCAL_MODELS,
         metadata={
             "description": "If True, use local models (Ollama). If False, use OpenAI API."
         },
