@@ -2,7 +2,10 @@ import re
 from typing import List
 
 from langchain_core.documents import Document
-from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_text_splitters import (
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+)
 
 from jutulgpt.utils import deduplicate_document_chunks, get_file_source
 
@@ -11,16 +14,26 @@ def split_docs(
     document: Document,
     headers_to_split_on=[
         ("#", "Header 1"),
+        ("##", "Header 2"),
+        ("###", "Header 3"),
     ],
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
 ) -> List[Document]:
+    content = document.page_content
+    document_metadata = document.metadata.copy()
+
+    # Some processing
+    content = preprocess_content(content)
+
+    # Split documents
     markdown_splitter = MarkdownHeaderTextSplitter(
         headers_to_split_on=headers_to_split_on,
         strip_headers=True,
     )
-    content = document.page_content
-    document_metadata = document.metadata.copy()
-
     splits = markdown_splitter.split_text(content)
+
+    processed_docs = []
     for split in splits:
         split.metadata = {**split.metadata, **document_metadata}
 
@@ -32,12 +45,28 @@ def split_docs(
                     r"\s*\{#[^}]*\}", "", split.metadata[key]
                 ).strip()
 
-        # Remove ```ansi blocks from each split's page_content
-        split.page_content = re.sub(
-            r"```ansi[\s\S]*?```", "", split.page_content, flags=re.MULTILINE
-        ).strip()
+        processed_docs.append(split)
 
-    return splits
+    # Merge small splits for minimum context size
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
+    final_docs = []
+    for doc in text_splitter.split_documents(processed_docs):
+        doc.metadata.update(document_metadata)  # reapply original metadata
+        final_docs.append(doc)
+
+    return final_docs
+
+
+def preprocess_content(content: str) -> str:
+    # Remove blockquotes
+    content = re.sub(r"^\s*>+", "", content, flags=re.MULTILINE).strip()
+    # Remove images
+    content = re.sub(r"!\[.*?\]\(.*?\)", "", content).strip()
+    # Remove ```ansi blocks
+    content = re.sub(r"```ansi[\s\S]*?```", "", content, flags=re.MULTILINE).strip()
+    return content
 
 
 def remove_markdown_links(text: str) -> str:

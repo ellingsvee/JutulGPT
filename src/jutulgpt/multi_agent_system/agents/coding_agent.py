@@ -15,6 +15,7 @@ from jutulgpt.cli.cli_human_interaction import (
 )
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console
+from jutulgpt.human_in_the_loop import response_on_error, response_on_generated_code
 
 # from jutulgpt.nodes import check_code
 from jutulgpt.julia import (
@@ -112,7 +113,7 @@ class CodingAgent:
         user_input = console.input("> ")
 
         # Check for quit command
-        if user_input.strip().lower() in ["q"]:
+        if user_input.strip().lower() in ["q", "exit", "quit", "quit()", "exit()"]:
             console.print("[bold red]Goodbye![/bold red]")
             exit(0)
 
@@ -194,6 +195,10 @@ class CodingAgent:
         if cli_mode:
             new_code_block, code_updated, user_feedback = (
                 cli_response_on_generated_code(code_block)
+            )
+        else:  # UI mode
+            new_code_block, code_updated, user_feedback = response_on_generated_code(
+                code_block
             )
 
         if user_feedback:
@@ -318,8 +323,11 @@ class CodingAgent:
         # If the code fails, the user has the option of trying to fix the code or not.
         # The user also gets the option to give some additional feedback that might help the agent
         try_to_fix_code_bool, additional_feedback = True, ""
-        if configuration.human_interaction.decide_to_try_to_fix_error and cli_mode:
-            try_to_fix_code_bool, additional_feedback = cli_response_on_error()
+        if configuration.human_interaction.decide_to_try_to_fix_error:
+            if cli_mode:
+                try_to_fix_code_bool, additional_feedback = cli_response_on_error()
+            else:  # UI mode
+                try_to_fix_code_bool, additional_feedback = response_on_error()
 
         # If the user does not want to try to fix the code
         if not try_to_fix_code_bool:

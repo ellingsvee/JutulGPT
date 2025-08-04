@@ -35,12 +35,7 @@ RETRIEVER_SPECS = {
             ),
             collection_name="jutuldarcy_docs",
             filetype="md",
-            split_func=partial(
-                split_docs.split_docs,
-                headers_to_split_on=[
-                    ("#", "Header 1"),
-                ],
-            ),
+            split_func=split_docs.split_docs,
         ),
         "examples": RetrieverSpec(
             dir_path=str(PROJECT_ROOT / "rag" / "jutuldarcy" / "examples"),
@@ -75,12 +70,7 @@ RETRIEVER_SPECS = {
             ),
             collection_name="fimbul_docs",
             filetype="md",
-            split_func=partial(
-                split_docs.split_docs,
-                headers_to_split_on=[
-                    ("#", "Header 1"),
-                ],
-            ),
+            split_func=split_docs.split_docs,
         ),
         "examples": RetrieverSpec(
             dir_path=str(PROJECT_ROOT / "rag" / "fimbul" / "examples"),

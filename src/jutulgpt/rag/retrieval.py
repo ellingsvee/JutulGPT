@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from typing import Generator, List, Union
+from typing import Generator, TypedDict, Union
 
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import FlashrankRerank
@@ -12,6 +12,11 @@ from langchain_core.vectorstores import VectorStoreRetriever
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.rag.retriever_specs import RetrieverSpec
 from jutulgpt.utils import get_provider_and_model
+
+
+class RetrievalParams(TypedDict):
+    search_type: str
+    search_kwargs: dict
 
 
 def make_text_encoder(model: str) -> Embeddings:
@@ -163,7 +168,11 @@ def apply_flash_reranker(
 def make_retriever(
     config: RunnableConfig,
     spec: RetrieverSpec,
-    **retrieval_overrides,
+    # **retrieval_overrides,
+    retrieval_params: RetrievalParams = RetrievalParams(
+        search_type="mmr",
+        search_kwargs={"k": 3, "fetch_k": 15, "lambda_mult": 0.5},
+    ),
 ) -> Generator[Union[VectorStoreRetriever, ContextualCompressionRetriever], None, None]:
     """
     Create a retriever for the agent, based on the current configuration.
@@ -175,12 +184,12 @@ def make_retriever(
     """
     configuration = BaseConfiguration.from_runnable_config(config)
 
-    # Merge configuration defaults with any overrides
-    retrieval_params = {
-        "search_type": configuration.search_type,
-        "search_kwargs": configuration.search_kwargs,
-        **retrieval_overrides,
-    }
+    # # Merge configuration defaults with any overrides
+    # retrieval_params = {
+    #     "search_type": configuration.search_type,
+    #     "search_kwargs": configuration.search_kwargs,
+    #     **retrieval_overrides,
+    # }
 
     embedding_model = make_text_encoder(configuration.embedding_model)
 
