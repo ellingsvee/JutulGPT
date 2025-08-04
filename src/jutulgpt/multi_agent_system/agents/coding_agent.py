@@ -20,7 +20,7 @@ from jutulgpt.human_in_the_loop import response_on_error, response_on_generated_
 # from jutulgpt.nodes import check_code
 from jutulgpt.julia import (
     get_error_message,
-    get_function_documentation_from_code,
+    get_function_documentation,
     get_linting_result,
     run_code,
 )
@@ -241,9 +241,7 @@ class CodingAgent:
         # Get the code from the retrieved context
         full_code = _get_code_string_from_response(retrieved_context)
 
-        retrieved_function_documentation = get_function_documentation_from_code(
-            full_code
-        )
+        _, retrieved_function_documentation = get_function_documentation(full_code)
 
         # If any documentation was retrieved, add it ot the state
         if retrieved_function_documentation:
@@ -263,7 +261,7 @@ class CodingAgent:
         code_block = state.code_block
 
         # Try to retrieve the function documentation from the code
-        retrieved_function_documentation = get_function_documentation_from_code(
+        retrieved_function_documentation = get_function_documentation(
             code_block.get_full_code()
         )
 

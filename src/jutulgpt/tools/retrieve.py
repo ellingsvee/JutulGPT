@@ -9,9 +9,8 @@ from pydantic import BaseModel, Field
 import jutulgpt.rag.retrieval as retrieval
 import jutulgpt.rag.split_docs as split_docs
 import jutulgpt.rag.split_examples as split_examples
-from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration, cli_mode
-from jutulgpt.julia import get_function_documentation_from_function_names
+from jutulgpt.julia import get_function_documentation_from_list_of_funcs
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
 
@@ -172,16 +171,11 @@ def retrieve_function_signature_tool(
 ) -> str:
     """Use this tool to retrieve the function signature of a specific function from the JutulDarcy documentation. This is useful for understanding how to use a function, its parameters, and return types."""
 
-    retrieved_signatures = get_function_documentation_from_function_names(
-        function_names=function_names
+    _, retrieved_signatures = get_function_documentation_from_list_of_funcs(
+        func_names=function_names
     )
 
     if retrieved_signatures:
-        print_to_console(
-            text=retrieved_signatures,
-            title="Retrieved Function Documentation",
-            border_style=colorscheme.message,
-        )
         return retrieved_signatures
 
     return "No function signatures found for the provided function names."

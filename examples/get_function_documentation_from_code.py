@@ -1,7 +1,6 @@
-from jutulgpt.cli import print_to_console
-from jutulgpt.julia.get_function_documentation_from_code import (
-    get_function_documentation_from_code,
-    get_function_documentation_from_function_names,
+from jutulgpt.julia import (
+    get_function_documentation,
+    get_function_documentation_from_list_of_funcs,
 )
 
 code_str = """
@@ -18,10 +17,10 @@ Producer = setup_well(domain, (nx, ny, 1), name = :Producer)
 """
 
 if __name__ == "__main__":
-    out = get_function_documentation_from_code(code_str)
+    _, out = get_function_documentation(code_str)
     print(out)
 
-    out2 = get_function_documentation_from_function_names(
+    _, out2 = get_function_documentation_from_list_of_funcs(
         ["setup_vertical_well", "setup_well", "reservoir_domain"]
     )
     print(out2)
