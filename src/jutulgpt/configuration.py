@@ -18,6 +18,13 @@ from jutulgpt import prompts
 # Static settings
 cli_mode: bool = True
 
+# WARNING: For ease of use, delete later
+LOCAL_MODELS = True
+LLM_MODEL_NAME = "ollama/qwen3:14b" if LOCAL_MODELS else "openai/gpt-4.1-mini"
+EMBEDDING_MODEL_NAME = (
+    "ollama/nomic-embed-text" if LOCAL_MODELS else "openai/text-embedding-3-small"
+)
+
 
 # Setup of the environment and some logging. Not neccessary to touch this.
 def _set_env(var: str):
@@ -99,7 +106,7 @@ class BaseConfiguration:
         str,
         {"__template_metadata__": {"kind": "embeddings"}},
     ] = field(
-        default_factory=lambda: "openai/text-embedding-3-small",
+        default_factory=lambda: EMBEDDING_MODEL_NAME,
         metadata={
             "description": "Name of the embedding model to use. Must be a valid embedding model name."
         },
@@ -147,7 +154,7 @@ class BaseConfiguration:
 
     # Models
     response_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default_factory=lambda: "openai/gpt-4.1-mini",
+        default_factory=lambda: LLM_MODEL_NAME,
         metadata={
             "description": "The language model used for generating responses. Should be in the form: provider/model-name."
         },
@@ -155,25 +162,25 @@ class BaseConfiguration:
 
     supervisor_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = (
         field(
-            default_factory=lambda: "openai/gpt-4.1-mini",
+            default_factory=lambda: LLM_MODEL_NAME,
             metadata={
                 "description": "The language model used as the supervisor in the multi-agent model."
             },
         )
     )
     coding_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default_factory=lambda: "openai/gpt-4.1-mini",
+        default_factory=lambda: LLM_MODEL_NAME,
         metadata={"description": "The language model used for coding tasks."},
     )
     rag_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default_factory=lambda: "openai/gpt-4.1-mini",
+        default_factory=lambda: LLM_MODEL_NAME,
         metadata={
             "description": "The language model used for retrieval-augmented generation."
         },
     )
     error_analyzer_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = (
         field(
-            default_factory=lambda: "openai/gpt-4.1-mini",
+            default_factory=lambda: LLM_MODEL_NAME,
             metadata={"description": "The language model used for error analysis."},
         )
     )
