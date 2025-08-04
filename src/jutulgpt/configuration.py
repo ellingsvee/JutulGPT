@@ -19,7 +19,7 @@ from jutulgpt import prompts
 cli_mode: bool = True
 
 # WARNING: For ease of use, delete later
-LOCAL_MODELS = True
+LOCAL_MODELS = False
 LLM_MODEL_NAME = "ollama/qwen3:14b" if LOCAL_MODELS else "openai/gpt-4.1-mini"
 EMBEDDING_MODEL_NAME = (
     "ollama/nomic-embed-text" if LOCAL_MODELS else "openai/text-embedding-3-small"
@@ -43,6 +43,7 @@ class HumanInteraction(BaseModel):
     model_config = ConfigDict(extra="forbid")  # optional strictness
     rag_query: bool = True
     retrieved_documents: bool = True
+    retrieved_examples: bool = True
     generated_code: bool = True
     code_check: bool = True
     decide_to_try_to_fix_error: bool = True
@@ -120,7 +121,24 @@ class BaseConfiguration:
         metadata={"description": "The vector store provider to use for retrieval."},
     )
 
-    search_type: Annotated[
+    documents_search_type: Annotated[
+        Literal["similarity", "mmr", "similarity_score_threshold"],
+        {"__template_metadata__": {"kind": "reranker"}},
+    ] = field(
+        default="similarity_score_threshold",
+        metadata={
+            "description": "Defines the type of search that the retriever should perform."
+        },
+    )
+
+    documents_search_kwargs: dict[str, Any] = field(
+        default_factory=lambda: {"score_threshold": 0.3},
+        metadata={
+            "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types. See https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever"
+        },
+    )
+
+    examples_search_type: Annotated[
         Literal["similarity", "mmr", "similarity_score_threshold"],
         {"__template_metadata__": {"kind": "reranker"}},
     ] = field(
@@ -130,7 +148,7 @@ class BaseConfiguration:
         },
     )
 
-    search_kwargs: dict[str, Any] = field(
+    examples_search_kwargs: dict[str, Any] = field(
         default_factory=lambda: {"k": 3, "fetch_k": 15, "lambda_mult": 0.5},
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types. See https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever"
