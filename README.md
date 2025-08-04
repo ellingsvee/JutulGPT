@@ -1,8 +1,9 @@
 # JutulGPT
 
-Using LLMS to work with the JutulDarcy package.
+An AI assistant for JutulDarcy!
 
 ## Installation
+### Python
 It is recommended to install and run JutulGPT using `uv`. See the [uv documentation](https://github.com/astral-sh/uv). Once installed, create and initialize the project by
 ```bash
 # Clone and choose the repo
@@ -20,37 +21,27 @@ You then have to set the environment variables. Generate a `.env` file by
 ```bash
 cp .env.example .env
 ```
-and modify it by providing your own `OPENAI_API_KEY`and `LANGSMITH_API_KEY` keys.
+and modify it by providing your own `OPENAI_API_KEY` key.  For running in the UI you also must provide an `LANGSMITH_API_KEY` key.
 
-For enabling generative UI components do 
+### Julia
+For running Julia code we also need to set up a working Julia project. 
 ```bash
-cd src/ui
-pnpm install
-cd ../..
+julia
+# In Julia
+julia> import Pkg; Pkg.instantiate()
 ```
-Finally, try to run some code by
-```bash
-uv run examples/question.py
-```
-This should install the necessary Julia packages before running.
+This will install all the necessary packages listed in the `Manifest.toml` the first time you invoke the agent.
 
-## Fimbul
-For using the model to generate code for [Fimbul](https://github.com/sintefmath/Fimbul.jl), install the package by cloning the repository
+
+### Test it!
+
+Finally, try to initialize the agent by
 ```bash
-cd .. # Move to parent directory
-git clone https://github.com/sintefmath/Fimbul.jl.git # Clone Fimbul
-cd JutulGPT/ # Move back into JutulGPT
+uv run examples/cli_multi_agent.py
 ```
-```julia
-using Pkg; Pkg.activate(".");
-Pkg.develop(path="../Fimbul.jl/");
-Pkg.instantiate()
-```
-For the RAG to retrieve from the Fimbul documentation, set the `retrieve_fimbul = True` in `src/jutulgpt/configuration.py`.
+This should install the necessary Julia packages before running. You might need to re-run the model after the installation.
 
 ## CLI 
-
-My favorite way of interacting with the Agent is through the CLI tool. 
 
 Enable the CLI-mode by in `src/jutulgpt/configuration.py` setting
 ```python
@@ -63,6 +54,42 @@ Test it in the examples by running.
 uv run examples/cli_multi_agent.py
 ```
 This gives you a nice interface for asking questions, retrieving info, generating and running code etc. Both agents can also read and write to files.
+
+## Settings and configuration
+The agent is configured in the `src/jutulgpt/configuration.py` file.  
+
+The two main settings you must specify are
+```bash
+# True if run from CLI and False if you use the UI
+cli_mode: bool = True
+
+# Select whether to use local models through Ollama or use OpenAI
+LOCAL_MODELS = False
+LLM_MODEL_NAME = "ollama/qwen3:14b" if LOCAL_MODELS else "openai/gpt-4.1-mini"
+EMBEDDING_MODEL_NAME = (
+    "ollama/nomic-embed-text" if LOCAL_MODELS else "openai/text-embedding-3-small"
+)
+```
+
+More advanced settings are set in the `BaseConfiguration`. LangGraph will turn these into a `RunnableConfig`, which enables easier configuration at runtime.  You specify the following settings:
+- `use_local_model`: Set to `True` for using local models through Ollama. By default equal to the `LOCAL_MODELS` variable.
+- `retrieve_fimbul`: Whether to retrieve Fimbul documentation or not. If `False`, it will only retrieve JutulDarcy documentation.
+- `max_iterations`: If the generated code fails. How many times the model will try to fix the code.
+- `human_interaction`: Enable human-in-the-loop.
+- `embedding_model`: Name of the embedding model to use. By default equal to the `EMBEDDING_MODEL_NAME`.
+- `retriever_provider`: The vector store provider to use for retrieval.
+- `search_type`: Defines the type of search that the retriever should perform.
+- `search_kwargs`: Additional keyword arguments to pass to the search function of the retriever. See Langgraph documentation for details about what kwargs works for the different search types.
+- `rerank_provider`: The provider user for reranking the retrieved documents.
+- `rerank_kwargs`: Keyword arguments provided to the reranker.
+- `response_model`: The language model used for generating responses. Should be in the form: provider/model-name. Currently I have only tested using `OpenAI` or `Ollama` models, but should be easy to extend to other providers. By default equal to the `LLM_MODEL_NAME`.
+- `default_coder_prompt`: The default prompt used for generating Julia code.
+- `supervisor_prompt`: The prompt used for the supervisor agent.
+- `rag_prompt`: The prompt used for the RAG agent.
+- `code_prompt`: The prompt used for the coding agent.
+- `error_analyzer_prompt`: The default prompt for analyzing the error messages and suggesting how to fix them.
+
+The settings can be specifiec by passing a configuration dictionary when invoking the models. See f.ex the `run()` function in `src/jutulgpt/agent.py`. Alternatively, the UI provides a custom interface where the settings can be selected.
 
 ## UI
 The JutulGPT also has an associated UI called [JutulGPT-UI](https://github.com/ellingsvee/JutulGPT-UI).  For using the UI, you must disable the CLI-mode. To this by setting `cli_mode = False` in `src/jutulgpt/configuration.py`.
@@ -86,30 +113,28 @@ pnpm dev # Run from JutulGPT-UI/ directory
 ```
 The UI can now be accessed on `http://localhost:3000/` (or some other location depending on your JutulGPT-UI configuration).
 
+For enabling generative UI components do 
+```bash
+cd src/ui
+pnpm install
+cd ../..
+```
 
-Note, if you plan on using the UI, you must also set `interactive_environment = True` in `src/jutulgpt/configuration.py`. If not, any human in the loop interaction is disabled.
+Note, if you plan on using the UI, you must also set `cli_mode = False` in `src/jutulgpt/configuration.py`.
 
-
-## Settings and configuration
-The agent is configured in the `src/jutulgpt/configuration.py` file.  Settings are set in the `BaseConfiguration`. You specify the following settings:
-- `use_local_model`: Set to `True` for using local models through Ollama.
-- `retrieve_fimbul`: Whether to retrieve Fimbul documentation or not. If False, it will only retrieve JutulDarcy documentation.
-- `max_iterations`: If the generated code fails. How many times the model will try to fix the code.
-- `human_interaction`: Enable human-in-the-loop.
-- `embedding_model`: Name of the embedding model to use.
-- `retriever_provider`: The vector store provider to use for retrieval.
-- `search_type`: Defines the type of search that the retriever should perform.
-- `search_kwargs`: Additional keyword arguments to pass to the search function of the retriever. See Langgraph documentation for details about what kwargs works for the different search types.
-- `rerank_provider`: The provider user for reranking the retrieved documents.
-- `rerank_kwargs`: Keyword arguments provided to the reranker.
-- `response_model`: The language model used for generating responses. Should be in the form: provider/model-name. Currently I have only tested using `OpenAI` or `Ollama` models, but should be easy to extend to other providers.
-- `default_coder_prompt`: The default prompt used for generating Julia code.
-- `supervisor_prompt`: The prompt used for the supervisor agent.
-- `rag_prompt`: The prompt used for the RAG agent.
-- `code_prompt`: The prompt used for the coding agent.
-- `error_analyzer_prompt`: The default prompt for analyzing the error messages and suggesting how to fix them.
-
-The settings can be specifiec by passing a configuration dictionary when invoking the models. See f.ex the `run()` function in `src/jutulgpt/agent.py`. Alternatively, the UI provides a custom interface where the settings can be selected.
+## Fimbul (NOTE: Not well tested)
+For using the model to generate code for [Fimbul](https://github.com/sintefmath/Fimbul.jl), install the package by cloning the repository
+```bash
+cd .. # Move to parent directory
+git clone https://github.com/sintefmath/Fimbul.jl.git # Clone Fimbul
+cd JutulGPT/ # Move back into JutulGPT
+```
+```julia
+using Pkg; Pkg.activate(".");
+Pkg.develop(path="../Fimbul.jl/");
+Pkg.instantiate()
+```
+For the RAG to retrieve from the Fimbul documentation, set the `retrieve_fimbul = True` in `src/jutulgpt/configuration.py`.
 
 ## Testing
 Tests are implemented using [pytest](https://docs.pytest.org/en/stable/). Run tests by
@@ -118,13 +143,10 @@ uv run pytest
 ```
 
 ## Known issues
-- In the `check_code` function, the generated code is modified by the `shorter_simulations` for reducing runtime and avoiding softlocks. However, the current code is not perfect, and should be improved.
-- Strange to separate the static settings from the runnable config. All should eventually be included in the runnable configuration.
+- Need to double check the Fimbul installation.
+- Using GLMakie can cause issues when running the code.
 
 ## Potential improvements
 - Update UI using a callback when running the Julia code. As of now there is no clear indication that the program is running.
-- If the agent tries to invoke a RAG tool, we can currently only modify the query. It would be nice to be able to reject the use of RAG.
-- Would be nice if we could modify the runnable configuration from the UI. F.ex. change what model we use, or the number of documents to retrieve during RAG.
-- Extend to a better CLI based workflow. The current setup primarily meant to be run throught the UI.
-- A more flexible RAG setup.
-- Extend the workflow to a sub-agent collaboration.F.ex. as described here: [Anthropic: Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
+- Update the configuration settings during runtime from the CLI.
+- Consider `JuliaCall` for better calling of Julia code from Python.
