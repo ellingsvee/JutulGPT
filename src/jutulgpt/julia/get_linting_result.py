@@ -1,5 +1,5 @@
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.julia.julia_code_runner import run_lint_code
+from jutulgpt.julia.julia_code_runner import run_julia_file
 
 
 def get_linting_result(code: str) -> str:
@@ -10,7 +10,7 @@ def get_linting_result(code: str) -> str:
     )
 
     try:
-        res, err = run_lint_code(code=code)
+        res, err = run_julia_file(code=code, julia_file_name="julia_lint_script.jl")
         lines = res.splitlines()
         for i, line in enumerate(lines):
             if "STARTING LINT:" in line:

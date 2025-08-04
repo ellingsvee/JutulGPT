@@ -40,7 +40,9 @@ def run_code_tempfile(code: str, project_dir: str | None = None):
             pass  # File might already be deleted
 
 
-def run_lint_code(code: str, project_dir: str | None = None):
+def run_julia_file(code: str, julia_file_name: str, project_dir: str | None = None):
+    assert julia_file_name.endswith(".jl"), "julia_file_name must end with .jl"
+
     if project_dir is None:
         project_dir = os.getcwd()
 
@@ -62,7 +64,7 @@ def run_lint_code(code: str, project_dir: str | None = None):
         #     cwd=project_dir,  # Set working directory to project directory
         # )
         julia_script = os.path.join(
-            project_dir, "src", "jutulgpt", "julia", "julia_lint_script.jl"
+            project_dir, "src", "jutulgpt", "julia", julia_file_name
         )
         # print(f"Running lint script: {julia_script}")
         result = subprocess.run(
