@@ -17,3 +17,4 @@ agent = CodingAgent(
         write_to_file_tool,
     ],
 )
+graph = agent.graph
