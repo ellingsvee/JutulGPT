@@ -166,21 +166,35 @@ def cli_response_on_check_code() -> bool:
         return False
 
 
-def cli_response_on_error() -> bool:
+def cli_response_on_error() -> tuple[bool, str]:
+    """
+    Returns:
+        bool: Whether the user wants to check the code or not
+        str: Additional feedback to the model
+    """
     console.print("\n[bold red]Code check failed[/bold red]")
 
     console.print("What do you want to do?")
     console.print("1. Try to fix the code")
-    console.print("2. Accept code as is")
+    console.print("2. Give extra feedback to the model on what might be wrong")
+    console.print("3. Skip code fixing")
 
     choice = Prompt.ask("Your choice", choices=["1", "2"], default="1")
 
     if choice == "1":
         console.print("[green]✓ Trying to fix code[/green]")
-        return True
-    else:  # choice == "2"
-        console.print("[red]✗ Finishing[/red]")
-        return False
+        return True, ""
+    elif choice == "2":
+        console.print("[bold blue]Give feedback:[/bold blue]")
+        user_input = console.input("> ")
+        if not user_input.strip():  # If the user input is empty
+            console.print("[red]✗ User feedback empty[/red]")
+            return True, ""
+        console.print("[green]✓ Feedback received[/green]")
+        return True, user_input
+    else:  # choice == "3"
+        console.print("[red]✗ Skipping code fix[/red]")
+        return False, ""
 
 
 def cli_modify_rag_query(query: str, retriever_name: str) -> str:
@@ -258,70 +272,19 @@ def cli_handle_code_response(response_content: str) -> None:
     full_code = code_block.get_full_code(within_julia_context=True)
 
     console.print("\n[bold yellow]Code Detected in Response[/bold yellow]")
-    # utils.print_to_console(
-    #     text=full_code,
-    #     title="Generated Julia Code",
-    #     border_style=colorscheme.human_interaction,
-    # )
+    console.print("\nWould you like to save the code?")
+    console.print("1. Yes")
+    console.print("2. No")
 
-    console.print("\nWhat would you like to do with this code?")
-    console.print("1. Run the code")
-    console.print("2. Save to file")
-    console.print("3. Do nothing")
-
-    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="3")
+    choice = Prompt.ask("Your choice", choices=["1", "2"], default="2")
 
     # Run the code if requested
-    if choice == "1":
-        # Get the full code to run
-        full_code_to_run = (
-            code_block.imports + "\n" + code_block.code
-            if code_block.imports
-            else code_block.code
-        )
-
-        try:
-            print_to_console(
-                text="Running code...",
-                title="Code Runner",
-                border_style=colorscheme.warning,
-            )
-
-            result = run_string(full_code_to_run)
-
-            if result.get("error", False):
-                # Handle error case
-                julia_error_message = get_error_message(result)
-                print_to_console(
-                    text=f"Code failed!\n\n{julia_error_message}",
-                    title="Code Runner",
-                    border_style=colorscheme.error,
-                )
-            else:
-                print_to_console(
-                    text="Code succeded!",
-                    title="Code Runner",
-                    border_style=colorscheme.success,
-                )
-        except Exception as e:
-            print_to_console(
-                text=f"Error running code: {str(e)}",
-                title="Code Execution",
-                border_style=colorscheme.error,
-            )
-
-        # After running, ask if user wants to save the code
-        console.print("\nWould you like to save this code to a file?")
-        save_after_run = Prompt.ask("Save to file?", choices=["y", "n"], default="n")
-        if save_after_run.lower() == "y":
-            utils.save_code_to_file(code_block)
 
     # Save the code if requested
-    elif choice == "2":
+    if choice == "1":
         utils.save_code_to_file(code_block)
-
-    else:  # choice == "3"
-        console.print("[blue]ℹ Code response noted but no action taken[/blue]")
+    else:  # choice == "2"
+        console.print("[blue]ℹ No action taken[/blue]")
 
 
 def cli_response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, str]:

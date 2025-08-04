@@ -3,7 +3,6 @@ from rich.console import Group
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
-from rich.rule import Rule
 from rich.text import Text
 
 from jutulgpt.globals import console
@@ -42,7 +41,7 @@ def show_startup_screen():
     )
 
     info_text = Text.from_markup(
-        "\n[bold cyan]Type your prompt below, or type [yellow]'q'[/yellow] to quit.[/bold cyan]\n"
+        "\n[bold cyan]Type your prompt below, or type [yellow]'q'[/yellow] to quit.[/bold cyan]"
     )
 
     ascii_art = Text.from_markup(
