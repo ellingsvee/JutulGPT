@@ -3,8 +3,8 @@
 An AI assistant for JutulDarcy!
 
 ## Installation
-### Python
-It is recommended to install and run JutulGPT using `uv`. See the [uv documentation](https://github.com/astral-sh/uv). Once installed, create and initialize the project by
+### Step 1: Python
+It is recommended to install and run JutulGPT using `uv`. See the [uv repository](https://github.com/astral-sh/uv) for more information. Once installed, create and initialize the project by
 ```bash
 # Clone and choose the repo
 git clone https://github.com/ellingsvee/JutulGPT.git
@@ -23,7 +23,7 @@ cp .env.example .env
 ```
 and modify it by providing your own `OPENAI_API_KEY` key.  For running in the UI you also must provide an `LANGSMITH_API_KEY` key.
 
-### Julia
+### Step 2: Julia
 For running Julia code we also need to set up a working Julia project. 
 ```bash
 julia
@@ -33,7 +33,7 @@ julia> import Pkg; Pkg.instantiate()
 This will install all the necessary packages listed in the `Manifest.toml` the first time you invoke the agent.
 
 
-### Test it!
+### Step 3: Test it!
 
 Finally, try to initialize the agent by
 ```bash
@@ -78,18 +78,22 @@ More advanced settings are set in the `BaseConfiguration`. LangGraph will turn t
 - `human_interaction`: Enable human-in-the-loop.
 - `embedding_model`: Name of the embedding model to use. By default equal to the `EMBEDDING_MODEL_NAME`.
 - `retriever_provider`: The vector store provider to use for retrieval.
-- `search_type`: Defines the type of search that the retriever should perform.
-- `search_kwargs`: Additional keyword arguments to pass to the search function of the retriever. See Langgraph documentation for details about what kwargs works for the different search types.
+- `documents_search_type`: Defines the type of search that the retriever should perform when retrieving documents.
+- `documents_search_kwargs`: Keyword arguments to pass to the search function of the retriever when retrieving documents. See [LangGraph documentation](https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever) for details about what arguments works for the different search types.
+- `examples_search_type`: Defines the type of search that the retriever should perform when retrieving examples.
+- `examples_search_kwargs`: Keyword arguments to pass to the search function of the retriever when retrieving examples. See [LangGraph documentation](https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever) for details about what arguments works for the different search types.
 - `rerank_provider`: The provider user for reranking the retrieved documents.
 - `rerank_kwargs`: Keyword arguments provided to the reranker.
 - `response_model`: The language model used for generating responses. Should be in the form: provider/model-name. Currently I have only tested using `OpenAI` or `Ollama` models, but should be easy to extend to other providers. By default equal to the `LLM_MODEL_NAME`.
+- `supervisor_model`: See `response_model`.
+- `rag_model`: See `response_model`.
+- `coding_model`: See `response_model`.
 - `default_coder_prompt`: The default prompt used for generating Julia code.
 - `supervisor_prompt`: The prompt used for the supervisor agent.
 - `rag_prompt`: The prompt used for the RAG agent.
 - `code_prompt`: The prompt used for the coding agent.
-- `error_analyzer_prompt`: The default prompt for analyzing the error messages and suggesting how to fix them.
 
-The settings can be specifiec by passing a configuration dictionary when invoking the models. See f.ex the `run()` function in `src/jutulgpt/agent.py`. Alternatively, the UI provides a custom interface where the settings can be selected.
+The settings can be specified by passing a configuration dictionary when invoking the models. See f.ex the `run()` function in `src/jutulgpt/multi_agent_system/multi_agent.py`. Alternatively, the UI provides a custom interface where the settings can be selected.
 
 ## UI
 The JutulGPT also has an associated UI called [JutulGPT-UI](https://github.com/ellingsvee/JutulGPT-UI).  For using the UI, you must disable the CLI-mode. To this by setting `cli_mode = False` in `src/jutulgpt/configuration.py`.
@@ -136,7 +140,7 @@ Pkg.instantiate()
 ```
 For the RAG to retrieve from the Fimbul documentation, set the `retrieve_fimbul = True` in `src/jutulgpt/configuration.py`.
 
-## Testing
+## Testing (NOTE: Tests must be updated!)
 Tests are implemented using [pytest](https://docs.pytest.org/en/stable/). Run tests by
 ```bash
 uv run pytest
