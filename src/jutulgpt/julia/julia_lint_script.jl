@@ -1,9 +1,13 @@
 using LanguageServer, StaticLint, SymbolServer;
 using Printf;
 
-path = abspath(ARGS[1])
+first_arg = abspath(ARGS[1])
+path = isdir(first_arg) ? first_arg : dirname(first_arg)
+
 root_file = if length(ARGS) > 1
     abspath(ARGS[2])
+elseif isfile(first_arg)
+    first_arg
 else
     joinpath(path, "src", string(basename(path), ".jl"))
 end

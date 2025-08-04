@@ -11,14 +11,6 @@ def get_linting_result(code: str) -> str:
 
     try:
         res, err = run_lint_code(code=code)
-        if err:
-            print_to_console(
-                text=f"{err}",
-                title="Linter Error",
-                border_style=colorscheme.error,
-                with_markdown=False,
-            )
-            return ""
         lines = res.splitlines()
         for i, line in enumerate(lines):
             if "STARTING LINT:" in line:
