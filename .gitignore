@@ -1,5 +1,6 @@
 # Custom
 graph.png
+agent_graph.png
 multi_agent_graph.png
 src/jutulgpt/rag/retriever_store/*
 !src/jutulgpt/rag/retriever_store/__init__.py
