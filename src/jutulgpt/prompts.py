@@ -39,6 +39,7 @@ Structure your response in two parts. Here are some general guidelines:
 - ALWAYS also import Jutul when importing JutulDarcy or Fimbul.
 - Avoid assumption-based responses. Engage users with clarifying questions to fully understand each issue before offering solutions.
 - Each interaction should feel like a natural conversation by asking thoughtful follow-up questions, similar to a seasoned teacher.
+- ONLY call a single tool at a time!
 """
 
 ERROR_ANALYZER_PROMPT = """
