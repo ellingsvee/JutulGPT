@@ -9,25 +9,18 @@ from langgraph.prebuilt import ToolNode
 
 from jutulgpt.cli import colorscheme, print_to_console, show_startup_screen
 from jutulgpt.cli.cli_human_interaction import (
-    cli_response_on_check_code,
-    cli_response_on_error,
     cli_response_on_generated_code,
 )
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console
-from jutulgpt.human_in_the_loop import response_on_error, response_on_generated_code
-
-# from jutulgpt.nodes import check_code
-from jutulgpt.julia import (
-    get_error_message,
-    get_function_documentation,
-    get_linting_result,
-    run_code,
+from jutulgpt.human_in_the_loop import response_on_generated_code
+from jutulgpt.nodes import (
+    check_code,
+    get_relevant_function_documentation,
+    get_user_input,
 )
-from jutulgpt.nodes.check_code import fix_fimbul_imports, shorter_simulations
 from jutulgpt.state import State
 from jutulgpt.utils import (
-    _get_code_string_from_response,
     get_code_from_response,
     load_chat_model,
     trim_state_messages,
@@ -57,14 +50,14 @@ class CodingAgent:
         workflow.add_node(
             "user_feedback_on_generated_code", self.user_feedback_on_generated_code
         )
-        workflow.add_node("check_code", self.check_code)
+        workflow.add_node("check_code", check_code)
         workflow.add_node(
             "get_relevant_function_documentation",
-            self.get_relevant_function_documentation,
+            get_relevant_function_documentation,
         )
         workflow.add_node("finalize", self.finalize)
         if not self.part_of_multi_agent:
-            workflow.add_node("get_user_input", self.get_user_input)
+            workflow.add_node("get_user_input", get_user_input)
 
         # Set the entrypoint
         if self.part_of_multi_agent:
@@ -107,17 +100,6 @@ class CodingAgent:
             workflow.add_edge("finalize", "get_user_input")
 
         return workflow.compile(name="agent")
-
-    def get_user_input(self, state: State, config: RunnableConfig):
-        console.print("[bold blue]User Input:[/bold blue] ")
-        user_input = console.input("> ")
-
-        # Check for quit command
-        if user_input.strip().lower() in ["q", "exit", "quit", "quit()", "exit()"]:
-            console.print("[bold red]Goodbye![/bold red]")
-            exit(0)
-
-        return {"messages": [HumanMessage(content=user_input)]}
 
     def call_coding_agent(
         self,
@@ -215,189 +197,6 @@ class CodingAgent:
             }
 
         return {}
-
-    def get_relevant_function_documentation(
-        self,
-        state: State,
-        config: RunnableConfig,
-    ):
-        if not state.code_block.is_empty():
-            return self.get_relevant_function_documentation_from_code(state, config)
-
-        if state.retrieved_context:
-            return self.get_relevant_function_documentation_from_retrieved_context(
-                state, config
-            )
-
-        return {}
-
-    def get_relevant_function_documentation_from_retrieved_context(
-        self,
-        state: State,
-        config: RunnableConfig,
-    ):
-        retrieved_context = state.retrieved_context
-
-        # Get the code from the retrieved context
-        full_code = _get_code_string_from_response(retrieved_context)
-
-        _, retrieved_function_documentation = get_function_documentation(full_code)
-
-        # If any documentation was retrieved, add it ot the state
-        if retrieved_function_documentation:
-            return {
-                "retrieved_function_documentation": retrieved_function_documentation
-            }
-        return {}
-
-    def get_relevant_function_documentation_from_code(
-        self,
-        state: State,
-        config: RunnableConfig,
-    ):
-        # TODO: Here we have two more alternatives: Either use a LLM to find relevant functions from the retrieved examples, or use some kind of regex.
-        # This can then be passed to the retriever before the first code generation step.
-
-        code_block = state.code_block
-
-        # Try to retrieve the function documentation from the code
-        retrieved_function_documentation = get_function_documentation(
-            code_block.get_full_code()
-        )
-
-        # If any documentation was retrieved, add it ot the state
-        if retrieved_function_documentation:
-            return {
-                "retrieved_function_documentation": retrieved_function_documentation
-            }
-        return {}
-
-    def check_code(
-        self,
-        state: State,
-        config: RunnableConfig,
-    ):
-        configuration = BaseConfiguration.from_runnable_config(config)
-        code_block = state.code_block
-
-        if code_block.is_empty():
-            return {"error": False}
-
-        check_code_bool = True
-        if configuration.human_interaction.code_check:
-            check_code_bool = cli_response_on_check_code()
-
-        # Return early if the user chose to ignore the code check
-        if not check_code_bool:
-            return {"error": False}
-
-        # First fix the use of the Fimbul package
-        code_block = fix_fimbul_imports(code_block)
-
-        # Then shorten the code for faster simulations
-        full_code = shorter_simulations(code_block.get_full_code())
-
-        # Running the linter
-        linting_message, linting_issues_found = self.run_linter(full_code)
-
-        # Running the code
-        code_running_message, code_running_issues_found = self.run_code(full_code)
-
-        # If we did not find any issues, we return the final code
-        if not linting_issues_found and not code_running_issues_found:
-            return {"error": False}
-
-        # If we found issues, we prepare the feedback messages
-        feedback_message = (
-            "# Code check issues found. Please use these to fix your code:\n"
-        )
-        if linting_issues_found:
-            feedback_message += linting_message + "\n"
-        if code_running_issues_found:
-            feedback_message += code_running_message
-
-        feedback_list = [HumanMessage(content=feedback_message)]
-
-        # If the code fails, the user has the option of trying to fix the code or not.
-        # The user also gets the option to give some additional feedback that might help the agent
-        try_to_fix_code_bool, additional_feedback = True, ""
-        if configuration.human_interaction.decide_to_try_to_fix_error:
-            if cli_mode:
-                try_to_fix_code_bool, additional_feedback = cli_response_on_error()
-            else:  # UI mode
-                try_to_fix_code_bool, additional_feedback = response_on_error()
-
-        # If the user does not want to try to fix the code
-        if not try_to_fix_code_bool:
-            feedback_list.append(
-                HumanMessage(
-                    content="The code failed, but the user chose to not try to fix the error."
-                )
-            )
-            return {"messages": feedback_list, "error": False}
-
-        # If the user provided additional feedback
-        if additional_feedback:
-            feedback_list.append(HumanMessage(content=additional_feedback))
-
-        # Return the feedback messages and and error flag
-        return {"messages": feedback_list, "error": True}
-
-    def run_linter(self, full_code: str) -> tuple[str, bool]:
-        """
-        Returns:
-            str: String containing the linting issues found in the code. Empty if no issues found.
-            bool: True if issues were found, False otherwise.
-        """
-        linting_result = get_linting_result(full_code)
-        if linting_result:
-            linting_message = (
-                "## Linter issues found:\n"
-                + "Linter returned the following issues:\n"
-                + linting_result
-            )
-            return linting_message, True
-        return "", False
-
-    def run_code(self, full_code: str) -> tuple[str, bool]:
-        """
-        Returns:
-            str: String containing the code running failed. Empty if the code executed successfully.
-            bool: True if issues were found, False otherwise.
-        """
-
-        print_to_console(
-            text="Running code...",
-            title="Code Runner",
-            border_style=colorscheme.warning,
-        )
-
-        # result = run_string(full_code)
-        result = run_code(full_code)
-
-        if result.get("error", False):
-            julia_error_message = get_error_message(result)
-
-            print_to_console(
-                text=f"Code failed!\n\n{julia_error_message}",
-                title="Code Runner",
-                border_style=colorscheme.error,
-            )
-
-            code_runner_error_message = (
-                "## Code runner error:\n"
-                + "Running the code generated failed with the following error:\n"
-                + julia_error_message
-            )
-            return code_runner_error_message, True
-
-        print_to_console(
-            text=f"Code succeded in {round(result['runtime'], 2)} seconds!",
-            title="Code Runner",
-            border_style=colorscheme.success,
-        )
-
-        return "", False
 
     def finalize(self, state: State, config: RunnableConfig):
         if self.part_of_multi_agent:

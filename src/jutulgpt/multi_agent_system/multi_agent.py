@@ -11,10 +11,12 @@ from jutulgpt.cli import colorscheme, print_to_console, show_startup_screen
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console, store_retrieved_context
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
+from jutulgpt.nodes import get_user_input
 from jutulgpt.state import State
 from jutulgpt.tools import read_from_file_tool, write_to_file_tool
 from jutulgpt.utils import load_chat_model
 
+# TODO: Possibly move these to a more appropriate place
 rag_graph = RAGAgent().graph
 coding_graph = CodingAgent().graph
 
@@ -109,7 +111,7 @@ class MultiAgent:
         # Set the entrypoint as `agent`
         if cli_mode:
             workflow.set_entry_point("user_input")
-            workflow.add_node("user_input", self._get_user_input)
+            workflow.add_node("user_input", get_user_input)
             workflow.add_edge("user_input", "call_model")
         else:
             workflow.set_entry_point("call_model")
@@ -128,31 +130,12 @@ class MultiAgent:
 
         return workflow.compile(name="agent")
 
-    def _get_user_input(self, state: State, config: RunnableConfig) -> State:
-        console.print("[bold blue]User Input:[/bold blue] ")
-        user_input = console.input("> ")
-
-        # Check for quit command
-        if user_input.strip().lower() in ["q"]:
-            console.print("[bold red]Goodbye![/bold red]")
-            exit(0)
-
-        return {"messages": [HumanMessage(content=user_input)]}
-
     # Define the node that calls the model
     def call_model(
         self,
         state: State,
         config: RunnableConfig,
     ):
-        # If the previous message was a tool call with the rag_agent, we need to update the retrieved context to the state
-        # retrieved_context = ""
-        # if len(state.messages) > 0:
-        #     prev_message = state.messages[-1]
-        #     if isinstance(prev_message, ToolMessage):
-        #         if prev_message.name == "rag_agent":
-        #             retrieved_context = prev_message.content.strip()
-
         configuration = BaseConfiguration.from_runnable_config(config)
         model = load_chat_model(configuration.supervisor_model).bind_tools(self.tools)
 
@@ -206,58 +189,6 @@ class MultiAgent:
             return "continue"
         else:
             return END
-
-    # def tool_node(self, state: State, config: RunnableConfig) -> State:
-    #     tools_by_name = {tool.name: tool for tool in self.tools}
-    #     response = []
-    #     last_message = state.messages[-1]
-    #     tool_calls = getattr(last_message, "tool_calls", [])
-    #
-    #     new_retrieved_context = ""
-    #     for tool_call in tool_calls:
-    #         tool_name = tool_call["name"]
-    #         tool_args = tool_call["args"]
-    #         tool = tools_by_name[tool_name]
-    #
-    #         try:
-    #             if tool_name == "coding_agent":
-    #                 tool_result = tool._run(
-    #                     **tool_args,
-    #                     config=config,
-    #                     retrieved_context=state.retrieved_context,
-    #                 )
-    #             else:
-    #                 tool_result = tool._run(**tool_args, config=config)
-    #             response.append(
-    #                 ToolMessage(
-    #                     content=tool_result,
-    #                     name=tool_name,
-    #                     tool_call_id=tool_call["id"],
-    #                 )
-    #             )
-    #             if tool_name == "rag_agent":
-    #                 new_retrieved_context = tool_result + "\n"
-    #
-    #         except Exception as e:
-    #             response.append(
-    #                 ToolMessage(
-    #                     content="Error: " + str(e),
-    #                     name=tool_name,
-    #                     tool_call_id=tool_call["id"],
-    #                 )
-    #             )
-    #             print_to_console(
-    #                 text=str(e),
-    #                 title="Tool Error",
-    #                 border_style=colorscheme.error,
-    #             )
-    #
-    #     if new_retrieved_context:
-    #         return {
-    #             "messages": response,
-    #             "retrieved_context": state.retrieved_context + new_retrieved_context,
-    #         }
-    #     return {"messages": response}
 
     def run(self) -> None:
         """Run the CLI in interactive mode."""
