@@ -272,18 +272,16 @@ def cli_handle_code_response(response_content: str) -> None:
     full_code = code_block.get_full_code(within_julia_context=True)
 
     console.print("\n[bold yellow]Code Detected in Response[/bold yellow]")
-    console.print("\nWould you like to save the code?")
-    console.print("1. Yes")
-    console.print("2. No")
+    console.print("\nWould you like to save the code (y/n)?")
 
-    choice = Prompt.ask("Your choice", choices=["1", "2"], default="2")
+    choice = Prompt.ask("Your choice", choices=["y", "n"], default="n")
 
     # Run the code if requested
 
     # Save the code if requested
-    if choice == "1":
+    if choice == "y":
         utils.save_code_to_file(code_block)
-    else:  # choice == "2"
+    else:  # choice == "n"
         console.print("[blue]ℹ No action taken[/blue]")
 
 
