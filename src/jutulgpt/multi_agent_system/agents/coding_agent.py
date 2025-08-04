@@ -313,8 +313,29 @@ class CodingAgent:
         if code_running_issues_found:
             feedback_message += code_running_message
 
+        feedback_list = [HumanMessage(content=feedback_message)]
+
+        # If the code fails, the user has the option of trying to fix the code or not.
+        # The user also gets the option to give some additional feedback that might help the agent
+        try_to_fix_code_bool, additional_feedback = True, ""
+        if configuration.human_interaction.decide_to_try_to_fix_error and cli_mode:
+            try_to_fix_code_bool, additional_feedback = cli_response_on_error()
+
+        # If the user does not want to try to fix the code
+        if not try_to_fix_code_bool:
+            feedback_list.append(
+                HumanMessage(
+                    content="The code failed, but the user chose to not try to fix the error."
+                )
+            )
+            return {"messages": feedback_list, "error": False}
+
+        # If the user provided additional feedback
+        if additional_feedback:
+            feedback_list.append(HumanMessage(content=additional_feedback))
+
         # Return the feedback messages and and error flag
-        return {"messages": [HumanMessage(content=feedback_message)], "error": True}
+        return {"messages": feedback_list, "error": True}
 
     def run_linter(self, full_code: str) -> tuple[str, bool]:
         """
@@ -398,12 +419,7 @@ class CodingAgent:
         self, state: State, config: RunnableConfig
     ) -> Literal["get_relevant_function_documentation", "finalize"]:
         if state.error:
-            configuration = BaseConfiguration.from_runnable_config(config)
-            try_to_fix_code_bool = True
-            if configuration.human_interaction.decide_to_try_to_fix_error and cli_mode:
-                try_to_fix_code_bool = cli_response_on_error()
-            if try_to_fix_code_bool:
-                return "get_relevant_function_documentation"
+            return "get_relevant_function_documentation"
         return "finalize"
 
     def decide_to_finish(
