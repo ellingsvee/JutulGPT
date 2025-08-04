@@ -7,7 +7,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from jutulgpt.cli import colorscheme, print_to_console
+from jutulgpt.cli import colorscheme, print_to_console, show_startup_screen
 from jutulgpt.cli.cli_human_interaction import (
     cli_response_on_check_code,
     cli_response_on_error,
@@ -414,6 +414,9 @@ class CodingAgent:
     def run(self) -> None:
         """Run the CLI in interactive mode."""
         try:
+            # Show the startup screen
+            show_startup_screen()
+
             # Create configuration with CLI mode enabled
             config = {}
             while True:

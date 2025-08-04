@@ -7,7 +7,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel, Field
 
-from jutulgpt.cli import colorscheme, print_to_console
+from jutulgpt.cli import colorscheme, print_to_console, show_startup_screen
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console, store_retrieved_context
 from jutulgpt.multi_agent_system.agents import CodingAgent, RAGAgent
@@ -262,6 +262,9 @@ class MultiAgent:
     def run(self) -> None:
         """Run the CLI in interactive mode."""
         try:
+            # Show the startup screen
+            show_startup_screen()
+
             # Create configuration with CLI mode enabled
             config = {}
             while True:

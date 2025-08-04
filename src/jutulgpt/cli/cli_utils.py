@@ -1,6 +1,10 @@
+from rich.align import Align
+from rich.console import Group
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.rule import Rule
+from rich.text import Text
 
 from jutulgpt.globals import console
 from jutulgpt.state import CodeBlock
@@ -28,6 +32,44 @@ def print_to_console(
         panel_kwargs["title"] = title
 
     console.print(Panel.fit(Markdown(text) if with_markdown else text, **panel_kwargs))
+
+
+def show_startup_screen():
+    subtitle = Text(
+        "Sintef Digital's AI Assistant for JutulDarcy",
+        justify="center",
+        style="italic green",
+    )
+
+    info_text = Text.from_markup(
+        "\n[bold cyan]Type your prompt below, or type [yellow]'q'[/yellow] to quit.[/bold cyan]\n"
+    )
+
+    ascii_art = Text.from_markup(
+        "[bold green]"
+        "     ██╗██╗   ██╗████████╗██╗   ██╗██╗      ██████╗ ██████╗ ████████╗\n"
+        "     ██║██║   ██║╚══██╔══╝██║   ██║██║     ██╔════╝ ██╔══██╗╚══██╔══╝\n"
+        "     ██║██║   ██║   ██║   ██║   ██║██║     ██║  ███╗██████╔╝   ██║   \n"
+        "██   ██║██║   ██║   ██║   ██║   ██║██║     ██║   ██║██╔═══╝    ██║   \n"
+        "╚█████╔╝╚██████╔╝   ██║   ╚██████╔╝███████╗╚██████╔╝██║        ██║   \n"
+        " ╚════╝  ╚═════╝    ╚═╝    ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝        ╚═╝   \n"
+        "[/bold green]"
+    )
+
+    content = Group(
+        Align.center(ascii_art),
+        Align.center(subtitle),
+        Align.center(info_text),
+    )
+
+    panel = Panel.fit(
+        content,
+        border_style="green",
+        padding=(1, 4),
+        title="",
+        title_align="left",
+    )
+    console.print(panel)
 
 
 def edit_document_content(original_content: str, edit_julia_file: bool = False) -> str:
