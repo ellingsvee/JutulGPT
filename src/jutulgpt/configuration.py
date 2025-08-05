@@ -19,7 +19,7 @@ from jutulgpt import prompts
 cli_mode: bool = True
 
 # Select whether to use local models through Ollama or use OpenAI
-LOCAL_MODELS = False
+LOCAL_MODELS = True
 LLM_MODEL_NAME = "ollama/qwen3:14b" if LOCAL_MODELS else "openai/gpt-4.1-mini"
 EMBEDDING_MODEL_NAME = (
     "ollama/nomic-embed-text" if LOCAL_MODELS else "openai/text-embedding-3-small"
@@ -41,14 +41,40 @@ logging.getLogger("faiss").setLevel(logging.WARNING)
 
 class HumanInteraction(BaseModel):
     model_config = ConfigDict(extra="forbid")  # optional strictness
-    rag_query: bool = True
-    retrieved_documents: bool = True
-    retrieved_examples: bool = True
-    generated_code: bool = True
-    code_check: bool = True
-    decide_to_try_to_fix_error: bool = True
-    error_analysis: bool = False
-    multi_agent: bool = True
+    rag_query: bool = field(
+        default=True,
+        metadata={"description": "Whether to modify the generated RAG query."},
+    )
+    retrieved_documents: bool = field(
+        default=True,
+        metadata={
+            "description": "Whether to verify and filter the retrieved documents."
+        },
+    )
+    retrieved_examples: bool = field(
+        default=True,
+        metadata={
+            "description": "Whether to verify and filter the retrieved examples."
+        },
+    )
+    generated_code: bool = field(
+        default=True,
+        metadata={
+            "description": "Whether to verify the generated code, edit it manually, or request a fix."
+        },
+    )
+    code_check: bool = field(
+        default=True,
+        metadata={
+            "description": "Whether to perform code checks on the generated code."
+        },
+    )
+    decide_to_try_to_fix_error: bool = field(
+        default=True,
+        metadata={
+            "description": "Whether to decide to try to fix errors in the generated code."
+        },
+    )
 
 
 @dataclass(kw_only=True)

@@ -162,11 +162,7 @@ class MultiAgent:
             )
 
         # If the response.content contains code, and we use a CLI, ask the user if they want to run it and/or save it to a file
-        if (
-            cli_mode
-            and configuration.human_interaction.multi_agent
-            and response.content
-        ):
+        if cli_mode and response.content:
             from jutulgpt.cli.cli_human_interaction import cli_handle_code_response
 
             # Ensure we pass a string (response.content could be str or list)
