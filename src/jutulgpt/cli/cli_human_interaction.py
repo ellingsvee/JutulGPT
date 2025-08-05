@@ -302,7 +302,7 @@ def cli_response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, s
 
     utils.print_to_console(
         text=full_code,
-        title="Generated Code",
+        title="Coding Agent",
         border_style=colorscheme.human_interaction,
     )
 
