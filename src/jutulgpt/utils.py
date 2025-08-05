@@ -101,25 +101,38 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
     provider, model = get_provider_and_model(fully_specified_name)
     match provider:
         case "openai":
-            return init_chat_model(
-                model,
-                model_provider=provider,
-                temperature=0.1,
-            )
+            try:
+                return init_chat_model(
+                    model,
+                    model_provider=provider,
+                    temperature=0.1,
+                )
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to load OpenAI model '{model}': {e}. "
+                    "Ensure the model name is correct and that the OpenAI API key is set in the environmen."
+                )
+
         case "ollama":
             # Resoning models need reasoning=True to hide the thinking, but this fails for non-reasoning models.
-            if model == "qwen3:14b":  # WARNING: This is VERY bad practice!
-                return init_chat_model(
-                    model,
-                    model_provider=provider,
-                    temperature=0.1,
-                    reasoning=True,
-                )
-            else:
-                return init_chat_model(
-                    model,
-                    model_provider=provider,
-                    temperature=0.1,
+            try:
+                if model == "qwen3:14b":  # WARNING: This is VERY bad practice!
+                    return init_chat_model(
+                        model,
+                        model_provider=provider,
+                        temperature=0.1,
+                        reasoning=True,
+                    )
+                else:
+                    return init_chat_model(
+                        model,
+                        model_provider=provider,
+                        temperature=0.1,
+                    )
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to load Ollama model '{model}': {e}. "
+                    "Ensure the model is available and that Ollama is installed."
                 )
 
         case _:
