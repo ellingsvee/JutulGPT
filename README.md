@@ -2,6 +2,8 @@
 
 An AI assistant for JutulDarcy!
 
+![CLI example](images/cli_cropped.png "CLI example")
+
 ## Installation
 ### Step 1: Python
 It is recommended to install and run JutulGPT using `uv`. See the [uv repository](https://github.com/astral-sh/uv) for more information. Once installed, create and initialize the project by
