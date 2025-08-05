@@ -46,14 +46,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .  # or `pip install -e .[dev]` for development
 ```
-
-
-You then have to set the environment variables. Generate a `.env` file by
-```bash
-cp .env.example .env
-```
-and modify it by providing your own `OPENAI_API_KEY` key.  For running in the UI you also must provide an `LANGSMITH_API_KEY` key.
-
 ### Step 2: Julia
 For running Julia code we also need to set up a working Julia project. 
 ```bash
@@ -64,7 +56,15 @@ julia> import Pkg; Pkg.instantiate()
 This will install all the necessary packages listed in the `Project.toml` the first time you invoke the agent.
 
 
-### Step 3: Test it!
+### Step 3: Setup environment
+You then have to set the environment variables. Generate a `.env` file by
+```bash
+cp .env.example .env
+```
+and modify it by providing your own `OPENAI_API_KEY` key.  For running in the UI you also must provide an `LANGSMITH_API_KEY` key.
+
+
+### Step 4: Test it!
 
 Finally, try to initialize the agent by
 ```bash
