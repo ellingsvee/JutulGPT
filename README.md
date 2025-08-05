@@ -4,14 +4,33 @@ An AI assistant for JutulDarcy!
 
 ![CLI example](images/cli_cropped.png "CLI example")
 
-## Installation
+## Getting started
+
+### Prerequisites
+
+This project requires both **Python** and **Julia**, along with some system-level dependencies. Make sure these are installed:
+- `git`
+- Python3 >=3.12
+- Julia (Package tested on version 1.11.6)
+- `build-essential`
+- `graphviz`
+- `graphviz-dev`
+
+It is recommended to use `uv` as your package manager. See the [uv documentation](https://docs.astral.sh/uv/) for more information.
+
+> NOTE: You can also follow [Installing python](https://docs.astral.sh/uv/guides/install-python/) for installing Python using `uv`. 
+
+
+
 ### Step 1: Python
-It is recommended to install and run JutulGPT using `uv`. See the [uv repository](https://github.com/astral-sh/uv) for more information. Once installed, create and initialize the project by
+Retireve the code by cloning the repository
 ```bash
 # Clone and choose the repo
 git clone https://github.com/ellingsvee/JutulGPT.git
 cd JutulGPT/
-
+```
+If you are using `uv`, initialize the environment by
+```bash
 # Initialize the enviroment
 uv venv
 source .venv/bin/activate
@@ -19,6 +38,16 @@ source .venv/bin/activate
 # Install packages
 uv sync
 ```
+
+
+Alternatively, if you use `pip`, create and activate the virtual environment by
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .  # or `pip install -e .[dev]` for development
+```
+
+
 You then have to set the environment variables. Generate a `.env` file by
 ```bash
 cp .env.example .env
@@ -32,7 +61,7 @@ julia
 # In Julia
 julia> import Pkg; Pkg.instantiate()
 ```
-This will install all the necessary packages listed in the `Manifest.toml` the first time you invoke the agent.
+This will install all the necessary packages listed in the `Project.toml` the first time you invoke the agent.
 
 
 ### Step 3: Test it!
