@@ -35,7 +35,7 @@ def print_to_console(
 
 def show_startup_screen():
     subtitle = Text(
-        "Sintef Digital's AI Assistant for JutulDarcy",
+        "SINTEF Digital's AI Assistant for JutulDarcy",
         justify="center",
         style="italic green",
     )
