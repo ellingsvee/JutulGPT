@@ -1,8 +1,6 @@
-from typing import Callable, List, Literal
+from typing import Callable, List
 
 from langchain_core.documents import Document
-from langchain_core.messages import HumanMessage
-from rich.markdown import CodeBlock
 from rich.prompt import Prompt
 from rich.table import Table
 
@@ -257,8 +255,6 @@ def cli_handle_code_response(response_content: str) -> None:
         console: Rich console for display
         response_content: The response content that may contain code
     """
-    from jutulgpt.cli import colorscheme, print_to_console
-    from jutulgpt.julia_interface import get_error_message, run_string
     from jutulgpt.utils import get_code_from_response
 
     # Extract code from the response

@@ -2,10 +2,8 @@ import os
 from typing import Annotated
 
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool, InjectedToolArg, tool
+from langchain_core.tools import InjectedToolArg, tool
 from pydantic import BaseModel, Field
-from rich.console import Console
-from rich.markdown import Markdown
 from rich.panel import Panel
 
 from jutulgpt.cli import colorscheme, print_to_console
