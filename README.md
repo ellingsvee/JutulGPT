@@ -75,7 +75,7 @@ More advanced settings are set in the `BaseConfiguration`. LangGraph will turn t
 - `use_local_model`: Set to `True` for using local models through Ollama. By default equal to the `LOCAL_MODELS` variable.
 - `retrieve_fimbul`: Whether to retrieve Fimbul documentation or not. If `False`, it will only retrieve JutulDarcy documentation.
 - `max_iterations`: If the generated code fails. How many times the model will try to fix the code.
-- `human_interaction`: Enable human-in-the-loop.
+- `human_interaction`: Enable human-in-the-loop. See the `HumanInteraction` class in the configuration file for detailed control.
 - `embedding_model`: Name of the embedding model to use. By default equal to the `EMBEDDING_MODEL_NAME`.
 - `retriever_provider`: The vector store provider to use for retrieval.
 - `documents_search_type`: Defines the type of search that the retriever should perform when retrieving documents.
