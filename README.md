@@ -9,16 +9,17 @@ An AI assistant for JutulDarcy!
 ### Prerequisites
 
 This project requires both **Python** and **Julia**, along with some system-level dependencies. Make sure these are installed:
-- `git`
-- Python3 >=3.12
-- Julia (Package tested on version 1.11.6)
+- `git`: See [git downloads](https://git-scm.com/downloads).
+- `Python3 >=3.12`: See NOTE or [Download Python](https://www.python.org/downloads/)
+- `Julia`: Package tested on version 1.11.6. See [Installing Julia](https://julialang.org/install/).
 - `build-essential`
-- `graphviz`
-- `graphviz-dev`
+- `graphviz` and `graphviz-dev`: See [Graphviz download](https://graphviz.org/download/)
 
-It is recommended to use `uv` as your package manager. See the [uv documentation](https://docs.astral.sh/uv/) for more information.
+Optional:
+- `uv`: Recommended package manager. See [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
+- `ollama`: For running local models. See [Download Ollama](https://ollama.com/download).
 
-> NOTE: You can also follow [Installing python](https://docs.astral.sh/uv/guides/install-python/) for installing Python using `uv`. 
+> NOTE: See [Installing python](https://docs.astral.sh/uv/guides/install-python/) for installing Python using `uv`. 
 
 
 
