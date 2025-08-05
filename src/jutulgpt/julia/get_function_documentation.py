@@ -52,6 +52,9 @@ def get_function_documentation(code: str) -> tuple[list[str], str]:
         func_names, documentation = _parse_julia_doc_output(res)
 
         if func_names:
+            func_names = [
+                name for name in func_names if name != "String[]"
+            ]  # filter out empty function names
             out_text = "Retrieved function names:\n- " + "\n- ".join(func_names)
         else:
             out_text = "No function names found in the code."

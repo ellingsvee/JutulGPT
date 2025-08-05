@@ -1,4 +1,4 @@
-
+using Base;
 using Jutul, JutulDarcy;
 using CSTParser;
 using CSTParser: EXPR;
@@ -7,8 +7,7 @@ using CSTParser: EXPR;
 # if length(ARGS) < 1
 #     error("No input file provided!")
 # end
-
-# input_file = ARGS[1]
+# root_file = ARGS[1]
 
 first_arg = abspath(ARGS[1])
 path = isdir(first_arg) ? first_arg : dirname(first_arg)
@@ -22,20 +21,51 @@ else
 end
 
 code_string = read(root_file, String)
+# code_string = replace(read(root_file, String), "\r\n" => "\n")
 
-# Your existing docstring retriever function
+# println("Retrieved code from file: $root_file")
+# println("Code string:\n", code_string)
+
 function get_doc(funcname::String)
-    try
-        obj = getfield(Main, Symbol(funcname))
-        doc = Base.Docs.doc(obj)
-        # print(doc)
-        # return doc === nothing ? "No documentation found." : sprint(show, "text/plain", doc)
-        return doc === nothing ? "No documentation found." : doc
-    catch e
-        # return "Error retrieving documentation: $e"
-        return ""
+    modules = [Main, Jutul, JutulDarcy]
+
+    for mod in modules
+        try
+            if isdefined(mod, Symbol(funcname))
+                # Use @doc macro approach
+                doc_expr = :(@doc $(Symbol(funcname)))
+                doc = Core.eval(mod, doc_expr)
+
+                if doc !== nothing
+                    # Extract the actual documentation string from DocStr
+                    if isa(doc, Base.Docs.DocStr)
+                        # Get the text content from DocStr
+                        doc_text = doc.text
+                        if isa(doc_text, Core.SimpleVector) && length(doc_text) > 0
+                            # Extract the first element which contains the actual doc string
+                            actual_doc = string(doc_text[1])
+                            if !isempty(strip(actual_doc))
+                                return actual_doc
+                            end
+                        elseif isa(doc_text, String)
+                            return doc_text
+                        end
+                    else
+                        # Fallback: convert to string
+                        doc_str = string(doc)
+                        if !isempty(strip(doc_str)) && doc_str != "nothing"
+                            return doc_str
+                        end
+                    end
+                end
+            end
+        catch e
+            # println("Error with @doc approach in $mod: $e")
+        end
     end
-end;
+    return ""
+end
+
 
 # Function to extract function names from CST
 function extract_function_names(expr::EXPR)
@@ -165,8 +195,49 @@ function parse_and_extract_functions(code_string::String)
 end;
 
 
+# function get_docs_for_functions(code_string::String)
+#     function_names = parse_and_extract_functions(code_string)
+#     println("Extracted function names: ", function_names)
+#     output = ""
+
+#     func_names_with_doc = String[]
+#     for func_name in function_names
+#         doc = string(get_doc(func_name))
+#         if !isempty(doc)
+#             # Add func_name to the list of func_names_with_doc
+#             push!(func_names_with_doc, func_name)
+#             # Format the output
+#             output *= "\n# Documentation for '$func_name':\n"
+#             # If doc is a string, apply regex replacement
+#             if isa(doc, String)
+#                 # Replace every # at the start of a line with ##
+#                 doc = replace(doc, r"^#"m => "##")
+#             end
+#             output *= doc * "\n"
+#             output *= "\n" * "="^50 * "\n"
+#         end
+#     end
+
+#     return output, func_names_with_doc
+# end;
+
+# Helper function to remove leading whitespace while preserving relative indentation
+function remove_leading_whitespace(text::String)
+    lines = split(text, '\n')
+    processed_lines = String[]
+
+    for line in lines
+        # Remove leading whitespace from each line
+        trimmed_line = lstrip(line)
+        push!(processed_lines, trimmed_line)
+    end
+
+    return join(processed_lines, '\n')
+end
+
 function get_docs_for_functions(code_string::String)
     function_names = parse_and_extract_functions(code_string)
+    println("Extracted function names: ", function_names)
     output = ""
 
     func_names_with_doc = String[]
@@ -177,20 +248,21 @@ function get_docs_for_functions(code_string::String)
             push!(func_names_with_doc, func_name)
             # Format the output
             output *= "\n# Documentation for '$func_name':\n"
-            # If doc is a string, apply regex replacement
+            # If doc is a string, apply regex replacement and remove leading whitespace
             if isa(doc, String)
                 # Replace every # at the start of a line with ##
                 doc = replace(doc, r"^#"m => "##")
+                # Remove leading whitespace from all lines
+                doc = remove_leading_whitespace(doc)
             end
-            output *= doc * "\n"
+            output *= doc * ""
             output *= "\n" * "="^50 * "\n"
         end
     end
 
     return output, func_names_with_doc
-end;
+end
 
-# code_string = """CartesianMesh();setup_doublet();simulate_reservoir();""";
 documentation, func_names = get_docs_for_functions(code_string);
 println("FUNCTION NAMES:");
 println(func_names);
