@@ -255,8 +255,8 @@ function get_docs_for_functions(code_string::String)
                 # Remove leading whitespace from all lines
                 doc = remove_leading_whitespace(doc)
             end
-            output *= doc * ""
-            output *= "\n" * "="^50 * "\n"
+            output *= doc * "\n"
+            # output *= "\n" * "="^50 * "\n"
         end
     end
 
