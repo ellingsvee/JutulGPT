@@ -149,14 +149,7 @@ pnpm dev # Run from JutulGPT-UI/ directory
 ```
 The UI can now be accessed on `http://localhost:3000/` (or some other location depending on your JutulGPT-UI configuration).
 
-For enabling generative UI components do 
-```bash
-cd src/ui
-pnpm install
-cd ../..
-```
-
-Note, if you plan on using the UI, you must also set `cli_mode = False` in `src/jutulgpt/configuration.py`.
+> NOTE: Remember to set `cli_mode = False` in `src/jutulgpt/configuration.py`.
 
 ## Fimbul (NOTE: Not well tested)
 For using the model to generate code for [Fimbul](https://github.com/sintefmath/Fimbul.jl), install the package by cloning the repository
