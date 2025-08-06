@@ -249,12 +249,6 @@ class BaseConfiguration:
         default=prompts.CODE_GENERATION_PROMPT,
         metadata={"description": "The prompt used for the coding agent."},
     )
-    error_analyzer_prompt: str = field(
-        default=prompts.ERROR_ANALYZER_PROMPT,
-        metadata={
-            "description": "The default prompt for analyzing the error messages and suggesting how to fix them."
-        },
-    )
 
     @classmethod
     def from_runnable_config(
