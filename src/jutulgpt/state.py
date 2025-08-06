@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
-from langgraph.managed import IsLastStep
+from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated, Sequence
 
@@ -70,6 +70,8 @@ class InputState:
     messages: Annotated[Sequence[AnyMessage], add_messages] = field(
         default_factory=list
     )
+    is_last_step: IsLastStep = field(default=False)
+    remaining_steps: RemainingSteps = field(default=25)
 
 
 @dataclass
@@ -87,7 +89,6 @@ class State(InputState):
     - retrieved_function_definitions: Retrieved function definitions. Used by the code-agent.
     """
 
-    is_last_step: IsLastStep = field(default=False)
     error: bool = field(default=False)
     error_message: str = field(default="")
     iterations: int = field(default=0)
