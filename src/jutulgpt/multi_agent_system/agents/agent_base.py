@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Literal, Optional, Sequence, Union, cast
+from typing import Any, Callable, List, Literal, Optional, Sequence, Union, cast
 
 from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.language_models.base import LanguageModelInput
@@ -291,32 +291,37 @@ class BaseAgent(ABC):
     def call_model(self, state: State, config: RunnableConfig) -> dict:
         """Call the model with the current state."""
 
+        configuration = BaseConfiguration.from_runnable_config(config)
+
         # Get the runnable model based on what is specified in the configuration
         model = self.load_model(config=config)
-        prompt_runnable = self._get_prompt_runnable(
-            self.get_prompt_from_config(config=config)
-        )
-        model_runnable = prompt_runnable | model
+        # prompt_runnable = self._get_prompt_runnable(
+        #     self.get_prompt_from_config(config=config)
+        # )
+        # model_runnable = prompt_runnable | model
 
         messages = state.messages
         self._validate_chat_history(messages)
 
+        messages_list: List = [SystemMessage(content=configuration.code_prompt)]
+        messages_list.extend(messages)
         # Invoke the model
-        response = cast(AIMessage, model_runnable.invoke(state, config))
+        # response = cast(AIMessage, model_runnable.invoke(state, config))
+        response = cast(AIMessage, model.invoke(messages_list, config))
 
         # Add agent name to the response
         response.name = self.name
 
         # Check if we need more steps
-        if self._are_more_steps_needed(state, response):
-            return {
-                "messages": [
-                    AIMessage(
-                        id=response.id,
-                        content="Sorry, need more steps to process this request.",
-                    )
-                ]
-            }
+        # if self._are_more_steps_needed(state, response):
+        #     return {
+        #         "messages": [
+        #             AIMessage(
+        #                 id=response.id,
+        #                 content="Sorry, need more steps to process this request.",
+        #             )
+        #         ]
+        #     }
 
         if response.content.strip() and self.print_chat_output:
             print_to_console(

@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Callable,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Any, Callable, Optional, Sequence, Union
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import RunnableConfig
@@ -74,7 +68,7 @@ rag_agent = RAGAgent(
         retrieve_function_signature_tool,
         retrieve_jutuldarcy_tool,
     ],
-    name="RAG Agent",
+    name="rag_agent",
     print_chat_output=False,
 )
 rag_graph = rag_agent.graph

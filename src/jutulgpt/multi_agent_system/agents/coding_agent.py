@@ -10,17 +10,13 @@ from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.cli.cli_human_interaction import (
-    cli_response_on_generated_code,
-)
+from jutulgpt.cli.cli_human_interaction import cli_response_on_generated_code
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.human_in_the_loop import response_on_generated_code
 from jutulgpt.multi_agent_system.agents.agent_base import BaseAgent
 from jutulgpt.nodes import check_code, get_relevant_function_documentation
 from jutulgpt.state import State
-from jutulgpt.utils import (
-    get_code_from_response,
-)
+from jutulgpt.utils import get_code_from_response
 
 
 class CodingAgent(BaseAgent):
@@ -260,7 +256,7 @@ class CodingAgent(BaseAgent):
 coding_agent = CodingAgent(
     part_of_multi_agent=True,
     tools=[],
-    name="Coding Agent",
+    name="coding_agent",
     print_chat_output=False,
 )
 coding_graph = coding_agent.graph
