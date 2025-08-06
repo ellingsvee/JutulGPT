@@ -52,7 +52,7 @@ For running Julia code we also need to set up a working Julia project.
 ```bash
 julia
 # In Julia
-julia> import Pkg; Pkg.instantiate()
+julia> import Pkg; Pkg.activate("."); Pkg.instantiate()
 ```
 This will install all the necessary packages listed in the `Project.toml` the first time you invoke the agent.
 
