@@ -21,7 +21,7 @@ class RetrievalParams(TypedDict):
 
 def make_text_encoder(model: str) -> Embeddings:
     """Connect to the configured text encoder."""
-    provider, model = model.split("/", maxsplit=1)
+    provider, model = model.split(":", maxsplit=1)
     match provider:
         case "openai":
             from langchain_openai import OpenAIEmbeddings
