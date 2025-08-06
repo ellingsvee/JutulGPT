@@ -25,7 +25,11 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt.tool_node import ToolNode
 from langgraph.utils.runnable import RunnableCallable
 
-from jutulgpt.cli import colorscheme, print_to_console, show_startup_screen
+from jutulgpt.cli import (
+    colorscheme,
+    show_startup_screen,
+    stream_to_console,
+)
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.globals import console
 from jutulgpt.state import State
@@ -154,10 +158,14 @@ class BaseAgent(ABC):
                     model_provider=provider,
                     temperature=0,
                     reasoning=True,
+                    streaming=True,
                 )
             else:
                 chat_model = init_chat_model(
-                    model_name, model_provider=provider, temperature=0
+                    model_name,
+                    model_provider=provider,
+                    temperature=0,
+                    streaming=True,
                 )
             model = cast(BaseChatModel, chat_model)
 
@@ -310,19 +318,22 @@ class BaseAgent(ABC):
 
         messages_list: List = [SystemMessage(content=configuration.code_prompt)]
         messages_list.extend(messages)
+
         # Invoke the model
-        # response = cast(AIMessage, model_runnable.invoke(state, config))
-        response = cast(AIMessage, model.invoke(messages_list, config))
-
-        # Add agent name to the response
-        response.name = self.name
-
-        if response.content.strip() and self.print_chat_output:
-            print_to_console(
-                text=response.content.strip(),
+        if self.print_chat_output:
+            chat_response = stream_to_console(
+                llm=model,
+                message_list=messages_list,
+                config=config,
                 title=self.printed_name,
                 border_style=colorscheme.normal,
             )
+            response = cast(AIMessage, chat_response)
+        else:
+            response = cast(AIMessage, model.invoke(messages_list, config))
+
+        # Add agent name to the response
+        response.name = self.name
 
         return {"messages": [response]}
 

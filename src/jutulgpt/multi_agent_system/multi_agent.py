@@ -7,7 +7,7 @@ from langchain_core.tools import BaseTool, tool
 from langgraph.prebuilt import ToolNode
 from pydantic import BaseModel, Field
 
-from jutulgpt.cli import colorscheme, print_to_console
+from jutulgpt.cli import colorscheme, print_to_console, stream_to_console
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import store_retrieved_context
 from jutulgpt.multi_agent_system.agents.agent_base import BaseAgent
@@ -15,10 +15,6 @@ from jutulgpt.multi_agent_system.agents.coding_agent import coding_graph
 from jutulgpt.multi_agent_system.agents.rag_agent import rag_graph
 from jutulgpt.state import State
 from jutulgpt.tools import read_from_file_tool, write_to_file_tool
-
-# TODO: Possibly move these to a more appropriate place
-# rag_graph = RAGAgent().graph
-# coding_graph = CodingAgent().graph
 
 
 class RAGAgentToolInput(BaseModel):
@@ -142,24 +138,25 @@ class MultiAgent(BaseAgent):
         # this is similar to customizing the create_react_agent with 'prompt' parameter, but is more flexible
         system_message = configuration.supervisor_prompt
 
-        # Get the model's response
-        response = cast(
-            AIMessage,
-            model.invoke(
-                [
-                    {"role": "system", "content": system_message},
-                    *state.messages,
-                ],
-                config,
-            ),
+        # Stream the response
+        chat_response = stream_to_console(
+            llm=model,
+            message_list=[
+                {"role": "system", "content": system_message},
+                *state.messages,
+            ],
+            config=config,
+            title=self.printed_name,
+            border_style=colorscheme.normal,
         )
+        response = cast(AIMessage, chat_response)
 
-        if response.content.strip():
-            print_to_console(
-                text=response.content.strip(),
-                title="Mutli-Agent",
-                border_style=colorscheme.normal,
-            )
+        # if response.content.strip():
+        #     print_to_console(
+        #         text=response.content.strip(),
+        #         title="Mutli-Agent",
+        #         border_style=colorscheme.normal,
+        #     )
 
         # If the response.content contains code, and we use a CLI, ask the user if they want to run it and/or save it to a file
         if cli_mode and response.content.strip():
@@ -189,3 +186,6 @@ graph = multi_agent.graph
 multi_agent.graph.get_graph().draw_mermaid_png(
     output_file_path="./multi_agent_graph.png"
 )
+
+if __name__ == "__main__":
+    multi_agent.run()

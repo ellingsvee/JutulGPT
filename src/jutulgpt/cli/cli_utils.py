@@ -1,5 +1,10 @@
+from typing import List, Optional
+
+from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableConfig
 from rich.align import Align
 from rich.console import Group
+from rich.live import Live
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -31,6 +36,98 @@ def print_to_console(
         panel_kwargs["title"] = title
 
     console.print(Panel.fit(Markdown(text) if with_markdown else text, **panel_kwargs))
+
+
+# def stream_to_console(
+#     llm,
+#     message_list: List,
+#     config: RunnableConfig,
+#     title: Optional[str] = "",
+#     border_style: str = "",
+#     panel_kwargs: dict = {},
+#     with_markdown: bool = True,
+# ) -> AIMessage:
+#     ai_message: AIMessage = None
+#     streamed_text: str = ""
+
+#     if border_style != "":
+#         panel_kwargs["border_style"] = border_style
+#     if title != "":
+#         panel_kwargs["title"] = title
+
+#     with Live(
+#         Panel(Markdown(""), **panel_kwargs), console=console, refresh_per_second=5
+#     ) as live:
+#         for chunk in llm.stream(message_list, config=config):
+#             if ai_message is None:
+#                 ai_message = chunk
+#             else:
+#                 ai_message += chunk
+#             if chunk.content:
+#                 streamed_text += chunk.content
+#                 live.update(
+#                     Panel.fit(
+#                         Markdown(streamed_text) if with_markdown else streamed_text,
+#                         **panel_kwargs,
+#                     )
+#                 )
+#     return ai_message
+
+
+def stream_to_console(
+    llm,
+    message_list: List,
+    config: RunnableConfig,
+    title: Optional[str] = "",
+    border_style: str = "",
+    panel_kwargs: dict = {},
+    with_markdown: bool = True,
+) -> AIMessage:
+    ai_message: AIMessage = None
+    streamed_text: str = ""
+    panel_kwargs = panel_kwargs.copy()  # prevent mutation
+
+    if border_style:
+        panel_kwargs["border_style"] = border_style
+    if title:
+        panel_kwargs["title"] = title
+
+    # Stream the chunks, but don't create Live until the first meaningful one
+    stream = llm.stream(message_list, config=config)
+
+    for chunk in stream:
+        if chunk.content:
+            streamed_text += chunk.content
+            ai_message = chunk if ai_message is None else ai_message + chunk
+
+            # Now that we have some content, start the Live panel
+            with Live(
+                Panel(
+                    Markdown(streamed_text) if with_markdown else streamed_text,
+                    **panel_kwargs,
+                ),
+                console=console,
+                refresh_per_second=4,
+            ) as live:
+                for chunk in stream:
+                    ai_message += chunk
+                    if chunk.content:
+                        streamed_text += chunk.content
+                        live.update(
+                            Panel.fit(
+                                Markdown(streamed_text)
+                                if with_markdown
+                                else streamed_text,
+                                **panel_kwargs,
+                            )
+                        )
+            break  # We've handled all remaining chunks inside the Live context
+        elif ai_message is None:
+            ai_message = chunk
+        else:
+            ai_message += chunk
+
+    return ai_message
 
 
 def show_startup_screen():

@@ -9,7 +9,7 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from jutulgpt.cli import colorscheme, print_to_console
+from jutulgpt.cli import colorscheme, stream_to_console
 from jutulgpt.cli.cli_human_interaction import cli_response_on_generated_code
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.human_in_the_loop import response_on_generated_code
@@ -161,17 +161,21 @@ class CodingAgent(BaseAgent):
         messages_list.extend(trimmed_state_messages)
 
         # Invoke the model
-        response = cast(AIMessage, model.invoke(messages_list, config))
-
-        # Add agent name to the response
-        response.name = self.name
-
-        if response.content.strip() and self.print_chat_output:
-            print_to_console(
-                text=response.content.strip(),
+        # response = cast(AIMessage, model.invoke(messages_list, config))
+        if self.print_chat_output:
+            chat_response = stream_to_console(
+                llm=model,
+                message_list=messages_list,
+                config=config,
                 title=self.printed_name,
                 border_style=colorscheme.normal,
             )
+            response = cast(AIMessage, chat_response)
+        else:
+            response = cast(AIMessage, model.invoke(messages_list, config))
+
+        # Add agent name to the response
+        response.name = self.name
 
         code_block = get_code_from_response(response=response.content)
 
@@ -249,6 +253,6 @@ coding_agent = CodingAgent(
     tools=[],
     name="CodingAgent",
     printed_name="Coding Agent",
-    print_chat_output=False,
+    print_chat_output=True,
 )
 coding_graph = coding_agent.graph
