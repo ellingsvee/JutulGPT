@@ -335,7 +335,7 @@ def get_provider_and_model(name: str) -> tuple[str, str]:
     """
     Get the provider and name from a string on the format 'provider/model'.
     """
-    provider, model = name.split("/", maxsplit=1)
+    provider, model = name.split(":", maxsplit=1)
     return provider, model
 
 
