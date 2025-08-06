@@ -47,6 +47,7 @@ class Agent(BaseAgent):
         super().__init__(
             tools=tools,
             name=name or "Agent",
+            printed_name="Agent",
             part_of_multi_agent=False,
             state_schema=State,
             print_chat_output=print_chat_output,

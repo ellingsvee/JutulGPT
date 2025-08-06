@@ -45,12 +45,17 @@ class BaseAgent(ABC):
         self,
         tools: Union[Sequence[Union[BaseTool, Callable, dict[str, Any]]], ToolNode],
         name: Optional[str] = None,
+        printed_name: Optional[str] = "",
         part_of_multi_agent: bool = False,
         state_schema: Optional[type] = None,
         print_chat_output: bool = True,
     ):
+        if name is not None and (" " in name or not name):
+            raise ValueError("Agent name must not be empty or contain spaces.")
+
         self.part_of_multi_agent = part_of_multi_agent
         self.name = name or self.__class__.__name__
+        self.printed_name = printed_name
         self.state_schema = state_schema or State
         self.print_chat_output = print_chat_output
 
@@ -312,21 +317,10 @@ class BaseAgent(ABC):
         # Add agent name to the response
         response.name = self.name
 
-        # Check if we need more steps
-        # if self._are_more_steps_needed(state, response):
-        #     return {
-        #         "messages": [
-        #             AIMessage(
-        #                 id=response.id,
-        #                 content="Sorry, need more steps to process this request.",
-        #             )
-        #         ]
-        #     }
-
         if response.content.strip() and self.print_chat_output:
             print_to_console(
                 text=response.content.strip(),
-                title=self.name,
+                title=self.printed_name,
                 border_style=colorscheme.normal,
             )
 

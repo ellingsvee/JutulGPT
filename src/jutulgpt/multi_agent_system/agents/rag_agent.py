@@ -25,6 +25,7 @@ class RAGAgent(BaseAgent):
             Union[Sequence[Union[BaseTool, Callable, dict[str, Any]]], ToolNode]
         ] = None,
         name: Optional[str] = None,
+        printed_name: Optional[str] = "",
         part_of_multi_agent: bool = True,
         print_chat_output: bool = True,
     ):
@@ -35,7 +36,8 @@ class RAGAgent(BaseAgent):
         # Initialize the base agent
         super().__init__(
             tools=tools,
-            name=name or "RAG Agent",
+            name=name or "RAGAgent",
+            printed_name=printed_name or "RAG Agent",
             part_of_multi_agent=part_of_multi_agent,
             state_schema=State,
             print_chat_output=print_chat_output,
@@ -68,7 +70,8 @@ rag_agent = RAGAgent(
         retrieve_function_signature_tool,
         retrieve_jutuldarcy_tool,
     ],
-    name="rag_agent",
+    name="RAGAgent",
+    printed_name="Rag Agent",
     print_chat_output=False,
 )
 rag_graph = rag_agent.graph

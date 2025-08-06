@@ -26,6 +26,7 @@ class CodingAgent(BaseAgent):
             Union[Sequence[Union[BaseTool, Callable, dict[str, Any]]], ToolNode]
         ] = None,
         name: Optional[str] = None,
+        printed_name: Optional[str] = "",
         part_of_multi_agent: bool = True,
         print_chat_output: bool = True,
     ):
@@ -37,6 +38,7 @@ class CodingAgent(BaseAgent):
         super().__init__(
             tools=tools,
             name=name or "CodingAgent",
+            printed_name=printed_name or "Coding Agent",
             part_of_multi_agent=part_of_multi_agent,
             state_schema=State,
             print_chat_output=print_chat_output,
@@ -164,21 +166,10 @@ class CodingAgent(BaseAgent):
         # Add agent name to the response
         response.name = self.name
 
-        # Check if we need more steps
-        if self._are_more_steps_needed(state, response):
-            return {
-                "messages": [
-                    AIMessage(
-                        id=response.id,
-                        content="Sorry, need more steps to process this request.",
-                    )
-                ]
-            }
-
         if response.content.strip() and self.print_chat_output:
             print_to_console(
                 text=response.content.strip(),
-                title=self.name,
+                title=self.printed_name,
                 border_style=colorscheme.normal,
             )
 
@@ -256,7 +247,8 @@ class CodingAgent(BaseAgent):
 coding_agent = CodingAgent(
     part_of_multi_agent=True,
     tools=[],
-    name="coding_agent",
+    name="CodingAgent",
+    printed_name="Coding Agent",
     print_chat_output=False,
 )
 coding_graph = coding_agent.graph

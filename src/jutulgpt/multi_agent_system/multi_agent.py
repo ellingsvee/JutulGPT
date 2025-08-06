@@ -107,7 +107,8 @@ class MultiAgent(BaseAgent):
         # Initialize the base agent
         super().__init__(
             tools=tools,
-            name=name or "multi_agent",
+            name=name or "MultiAgent",
+            printed_name="Multi-Agent",
             part_of_multi_agent=False,
             state_schema=State,
         )
