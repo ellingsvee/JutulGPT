@@ -71,7 +71,7 @@ class InputState:
         default_factory=list
     )
     is_last_step: IsLastStep = field(default=False)
-    remaining_steps: RemainingSteps = field(default=25)
+    remaining_steps: RemainingSteps = field(default=50)
 
 
 @dataclass
@@ -95,4 +95,4 @@ class State(InputState):
     regenerate_code: bool = field(default=False)
     retrieved_context: str = field(default="")
     code_block: CodeBlock = field(default_factory=CodeBlock)
-    retrieved_function_documentation: str = field(default="")
+    original_user_query: str = field(default="")

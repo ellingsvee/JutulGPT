@@ -20,7 +20,10 @@ cli_mode: bool = True
 
 # Select whether to use local models through Ollama or use OpenAI
 LOCAL_MODELS = False
-LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4.1-mini"
+# LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4.1-mini"
+LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4o"
+
+
 EMBEDDING_MODEL_NAME = (
     "ollama:nomic-embed-text" if LOCAL_MODELS else "openai:text-embedding-3-small"
 )
@@ -42,17 +45,17 @@ logging.getLogger("faiss").setLevel(logging.WARNING)
 class HumanInteraction(BaseModel):
     model_config = ConfigDict(extra="forbid")  # optional strictness
     rag_query: bool = field(
-        default=True,
+        default=False,
         metadata={"description": "Whether to modify the generated RAG query."},
     )
     retrieved_documents: bool = field(
-        default=True,
+        default=False,
         metadata={
             "description": "Whether to verify and filter the retrieved documents."
         },
     )
     retrieved_examples: bool = field(
-        default=True,
+        default=False,
         metadata={
             "description": "Whether to verify and filter the retrieved examples."
         },
@@ -70,7 +73,7 @@ class HumanInteraction(BaseModel):
         },
     )
     decide_to_try_to_fix_error: bool = field(
-        default=True,
+        default=False,
         metadata={
             "description": "Whether to decide to try to fix errors in the generated code."
         },
@@ -176,7 +179,7 @@ class BaseConfiguration:
     )
 
     examples_search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"k": 3, "fetch_k": 15, "lambda_mult": 0.5},
+        default_factory=lambda: {"k": 2, "fetch_k": 10, "lambda_mult": 0.5},
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types. See https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever"
         },
