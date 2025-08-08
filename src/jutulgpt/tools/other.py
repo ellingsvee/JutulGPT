@@ -10,7 +10,8 @@ from langchain_core.tools.base import ArgsSchema
 from pydantic import BaseModel, Field
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.nodes.check_code import _run_julia_code, _run_linter, _shorter_simulations
+from jutulgpt.nodes.check_code import _run_julia_code, _run_linter
+from jutulgpt.utils import fix_imports, shorter_simulations
 
 
 class SemanticSearchInput(BaseModel):
@@ -242,21 +243,14 @@ class RunJuliaCodeToolInput(BaseModel):
     )
 
 
-def _fix_imports(code: str) -> str:
-    required_imports = ["Fimbul", "GLMakie"]
-    if not all(pkg in code for pkg in required_imports):
-        return code
-    return 'using Pkg; Pkg.activate(".");\n' + code
-
-
 @tool(
     "run_julia_code",
     args_schema=RunJuliaCodeToolInput,
     description="Execute Julia code. Returns output or error message.",
 )
 def run_julia_code_tool(code: str):
-    code = _fix_imports(code)
-    code = _shorter_simulations(code)
+    code = fix_imports(code)
+    code = shorter_simulations(code)
     out, code_failed = _run_julia_code(code, print_code=True)
     if code_failed:
         return out

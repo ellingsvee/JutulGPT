@@ -3,7 +3,6 @@ from __future__ import annotations
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
-import jutulgpt.state as state
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.cli.cli_human_interaction import (
     cli_response_on_check_code,
@@ -11,59 +10,21 @@ from jutulgpt.cli.cli_human_interaction import (
 )
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.human_in_the_loop import response_on_error
-from jutulgpt.julia import (
-    get_error_message,
-    get_linting_result,
-    run_code,
-)
+from jutulgpt.julia import get_error_message, get_linting_result, run_code
 from jutulgpt.state import State
-
-# from jutulgpt.julia_interface import get_error_message, run_string
 from jutulgpt.utils import (
-    replace_case,
-    shorten_first_argument,
+    fix_imports,
+    shorter_simulations,
 )
 
 
-def _shorter_simulations(code: str) -> str:
-    """
-    In the case when some simulation is called, this function replaces it with a shorter simulation.
-    """
-    simulation_functions = [
-        "simulate_reservoir",
-    ]
-    original_code = code
-
-    code = replace_case(
-        code=code, case_name="case", simulation_functions=simulation_functions
-    )
-    code = replace_case(
-        code=code, case_name="dt", simulation_functions=simulation_functions
-    )
-
-    if original_code == code:
-        # WARNING: If the previous functions have not changed the code, it might inidate that some other name is used. However, this might we a weird assumption?
-        code = shorten_first_argument(
-            code=code, simulation_functions=simulation_functions
-        )
-
-    return code
-
-
-def _fix_fimbul_imports(code_block: state.CodeBlock) -> state.CodeBlock:
-    if "Fimbul" not in code_block.imports:
-        return code_block  # No need to fix if Fimbul is not imported
-    imports = 'using Pkg; Pkg.activate(".");\n' + code_block.imports
-    return state.CodeBlock(imports=imports, code=code_block.code)
-
-
-def _run_linter(full_code: str) -> tuple[str, bool]:
+def _run_linter(code: str) -> tuple[str, bool]:
     """
     Returns:
         str: String containing the linting issues found in the code. Empty if no issues found.
         bool: True if issues were found, False otherwise.
     """
-    linting_result = get_linting_result(full_code)
+    linting_result = get_linting_result(code)
     if linting_result:
         linting_message = (
             "## Linter issues found:\n"
@@ -74,7 +35,7 @@ def _run_linter(full_code: str) -> tuple[str, bool]:
     return "", False
 
 
-def _run_julia_code(full_code: str, print_code: bool = False) -> tuple[str, bool]:
+def _run_julia_code(code: str, print_code: bool = False) -> tuple[str, bool]:
     """
     Returns:
         str: String containing the code running failed. Empty if the code executed successfully.
@@ -82,7 +43,7 @@ def _run_julia_code(full_code: str, print_code: bool = False) -> tuple[str, bool
     """
 
     if print_code:
-        code_within_julia_context = f"```julia\n{full_code}```"
+        code_within_julia_context = f"```julia\n{code}```"
         print_to_console(
             text="Running code:\n" + code_within_julia_context[:500] + "...",
             title="Code Runner",
@@ -94,8 +55,8 @@ def _run_julia_code(full_code: str, print_code: bool = False) -> tuple[str, bool
         border_style=colorscheme.warning,
     )
 
-    # result = run_string(full_code)
-    result = run_code(full_code)
+    # result = run_string(code)
+    result = run_code(code)
 
     if result.get("error", False):
         julia_error_message = get_error_message(result)
@@ -141,16 +102,19 @@ def check_code(
         return {"error": False}
 
     # First fix the use of the Fimbul package
-    code_block = _fix_fimbul_imports(code_block)
+    code = code_block.get_full_code()
+
+    # Hangle the importing of the Fimbul and GLMakie package
+    code = fix_imports(code)
 
     # Then shorten the code for faster simulations
-    full_code = _shorter_simulations(code_block.get_full_code())
+    code = shorter_simulations(code)
 
     # Running the linter
-    linting_message, linting_issues_found = _run_linter(full_code)
+    linting_message, linting_issues_found = _run_linter(code)
 
     # Running the code
-    code_running_message, code_running_issues_found = _run_julia_code(full_code)
+    code_running_message, code_running_issues_found = _run_julia_code(code)
 
     # If we did not find any issues, we return the final code
     if not linting_issues_found and not code_running_issues_found:
