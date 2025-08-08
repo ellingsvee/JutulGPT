@@ -25,6 +25,7 @@ dependencies = [
     "pygraphviz>=1.14",
     "python-dotenv>=1.1.1",
     "rich>=14.1.0",
+    "ruff>=0.12.4",
     "transformers>=4.53.3",
     "unstructured[md]>=0.18.2",
 ]
