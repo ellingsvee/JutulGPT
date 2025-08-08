@@ -32,7 +32,7 @@ from jutulgpt.cli import (
     show_startup_screen,
     stream_to_console,
 )
-from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.configuration import RECURSION_LIMIT, BaseConfiguration
 from jutulgpt.globals import console
 from jutulgpt.utils import get_provider_and_model
 
@@ -285,6 +285,7 @@ class BaseAgent(ABC):
                 title=self.printed_name,
                 border_style=colorscheme.normal,
             )
+
             response = cast(AIMessage, chat_response)
         else:
             response = cast(AIMessage, model.invoke(messages_list, config))
@@ -468,13 +469,12 @@ class BaseAgent(ABC):
             show_startup_screen()
 
             # Create configuration
-            # config = RunnableConfig(recursion_limit=RECURSION_LIMIT)
-            config = {"recursion_limit": 100}
+            config = RunnableConfig(configurable={}, recursion_limit=RECURSION_LIMIT)
 
             # Create initial state conforming to the state schema
             initial_state = {
                 "messages": [],  # Start with empty messages, user input will add the first message
-                "remaining_steps": 25,
+                "remaining_steps": RECURSION_LIMIT,
                 "is_last_step": False,
             }
 

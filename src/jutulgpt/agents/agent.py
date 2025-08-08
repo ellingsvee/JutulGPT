@@ -9,23 +9,18 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
+from jutulgpt.agents.agent_base import BaseAgent
 from jutulgpt.cli.cli_human_interaction import cli_response_on_generated_code
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.human_in_the_loop import response_on_generated_code
-from jutulgpt.multi_agent_system.agents.agent_base import BaseAgent
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.tools import (
     get_relevant_examples_tool,
-    get_working_directory_tool,
     grep_search_tool,
     read_file_tool,
     retrieve_function_documentation_tool,
-    retrieve_jutuldarcy_tool,
-    run_julia_code_tool,
-    run_julia_linter_tool,
     semantic_search_tool,
-    write_to_file_tool,
 )
 from jutulgpt.utils import get_code_from_response
 
@@ -214,12 +209,8 @@ agent = Agent(
         get_relevant_examples_tool,
         retrieve_function_documentation_tool,
         read_file_tool,
-        write_to_file_tool,
-        # run_julia_code_tool,
         semantic_search_tool,
         grep_search_tool,
-        get_working_directory_tool,
-        # run_julia_linter_tool,
     ],
     name="Agent",
     print_chat_output=True,
