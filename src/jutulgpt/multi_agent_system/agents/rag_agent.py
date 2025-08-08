@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Callable, Optional, Sequence, Union
 
-from langchain_core.language_models import BaseChatModel
+from langgraph.graph import END, StateGraph
+
+
+from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.prebuilt import ToolNode
@@ -13,7 +16,7 @@ from jutulgpt.multi_agent_system.agents.agent_base import BaseAgent
 from jutulgpt.state import State
 from jutulgpt.tools.retrieve import (
     retrieve_fimbul_tool,
-    retrieve_function_signature_tool,
+    retrieve_function_documentation_tool,
     retrieve_jutuldarcy_tool,
 )
 
@@ -45,29 +48,22 @@ class RAGAgent(BaseAgent):
 
         self.user_provided_feedback = False
 
-    def load_model(self, config: RunnableConfig) -> BaseChatModel:
-        """
-        Load the model from the name specified in the configuration.
-        """
-        configuration = BaseConfiguration.from_runnable_config(config)
-        return self._setup_model(model=configuration.rag_model)
-
     def get_prompt_from_config(self, config: RunnableConfig) -> str:
-        """
-        Get the prompt from the configuration.
-
-        Returns:
-            A string containing the spesific prompt from the config
-        """
         configuration = BaseConfiguration.from_runnable_config(config)
         return configuration.rag_prompt
+
+    def get_model_from_config(
+        self, config: RunnableConfig
+    ) -> Union[str, LanguageModelLike]:
+        configuration = BaseConfiguration.from_runnable_config(config)
+        return configuration.rag_model
 
 
 rag_agent = RAGAgent(
     part_of_multi_agent=True,
     tools=[
         retrieve_fimbul_tool,
-        retrieve_function_signature_tool,
+        retrieve_function_documentation_tool,
         retrieve_jutuldarcy_tool,
     ],
     name="RAGAgent",

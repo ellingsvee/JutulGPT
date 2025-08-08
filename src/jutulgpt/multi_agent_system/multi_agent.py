@@ -1,6 +1,6 @@
 from typing import Any, Callable, Optional, Sequence, Union, cast
 
-from langchain_core.language_models import BaseChatModel
+from langchain_core.language_models import LanguageModelLike
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
@@ -109,12 +109,11 @@ class MultiAgent(BaseAgent):
             state_schema=State,
         )
 
-    def load_model(self, config: RunnableConfig) -> BaseChatModel:
-        """
-        Load the model from the name specified in the configuration.
-        """
+    def get_model_from_config(
+        self, config: RunnableConfig
+    ) -> Union[str, LanguageModelLike]:
         configuration = BaseConfiguration.from_runnable_config(config)
-        return self._setup_model(model=configuration.supervisor_model)
+        return configuration.supervisor_model
 
     def get_prompt_from_config(self, config: RunnableConfig) -> str:
         """
