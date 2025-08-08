@@ -38,42 +38,6 @@ def print_to_console(
     console.print(Panel.fit(Markdown(text) if with_markdown else text, **panel_kwargs))
 
 
-# def stream_to_console(
-#     llm,
-#     message_list: List,
-#     config: RunnableConfig,
-#     title: Optional[str] = "",
-#     border_style: str = "",
-#     panel_kwargs: dict = {},
-#     with_markdown: bool = True,
-# ) -> AIMessage:
-#     ai_message: AIMessage = None
-#     streamed_text: str = ""
-
-#     if border_style != "":
-#         panel_kwargs["border_style"] = border_style
-#     if title != "":
-#         panel_kwargs["title"] = title
-
-#     with Live(
-#         Panel(Markdown(""), **panel_kwargs), console=console, refresh_per_second=5
-#     ) as live:
-#         for chunk in llm.stream(message_list, config=config):
-#             if ai_message is None:
-#                 ai_message = chunk
-#             else:
-#                 ai_message += chunk
-#             if chunk.content:
-#                 streamed_text += chunk.content
-#                 live.update(
-#                     Panel.fit(
-#                         Markdown(streamed_text) if with_markdown else streamed_text,
-#                         **panel_kwargs,
-#                     )
-#                 )
-#     return ai_message
-
-
 def stream_to_console(
     llm,
     message_list: List,
