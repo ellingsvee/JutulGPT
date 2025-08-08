@@ -1,4 +1,0 @@
-Set up a simple Cartesian Mesh. Let the cartesian dimensions be nx = ny = 25 and nz = 10, and make the physical dimensions be 1000x1000x100 meter.
-From a CartesianMesh g, construct a reservoar domain with permeability = 0.3 darcy and porosity = 0.2.
-On a reservoir domain called "domain", set up two wells: One vertical well for injection and a single perforation producer. 
-Create two-phase immiscible system by declaring that the liquid and vapor phases are present in the model. Assume to have densities of 1000 and 100 kilograms per meters cubed at reference pressure and temperature conditions.
