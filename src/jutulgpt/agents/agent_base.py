@@ -32,7 +32,7 @@ from jutulgpt.cli import (
     show_startup_screen,
     stream_to_console,
 )
-from jutulgpt.configuration import RECURSION_LIMIT, BaseConfiguration
+from jutulgpt.configuration import LLM_TEMPERATURE, RECURSION_LIMIT, BaseConfiguration
 from jutulgpt.globals import console
 from jutulgpt.utils import get_provider_and_model
 
@@ -84,6 +84,7 @@ class BaseAgent(ABC):
         self.graph = self.build_graph()
 
         # Generate graph visualization
+        # WARNING: This requires connection to internet. Therefore it is currently commented out.
         # self._generate_graph_visualization()
 
     @abstractmethod
@@ -124,7 +125,7 @@ class BaseAgent(ABC):
                 chat_model = init_chat_model(
                     model_name,
                     model_provider=provider,
-                    temperature=0,
+                    temperature=LLM_TEMPERATURE,
                     reasoning=True,
                     streaming=True,
                 )
@@ -132,7 +133,7 @@ class BaseAgent(ABC):
                 chat_model = init_chat_model(
                     model_name,
                     model_provider=provider,
-                    temperature=0,
+                    temperature=LLM_TEMPERATURE,
                     streaming=True,
                 )
             model = cast(BaseChatModel, chat_model)

@@ -171,6 +171,7 @@ def response_on_check_code() -> tuple[bool, str]:
         if not user_input.strip():  # If the user input is empty
             console.print("[red]✗ User feedback empty[/red]")
             return False, ""
+        console.print("[green]✓ Feedback recieved[/green]")
         return False, user_input
     else:  # choice == "3"
         console.print("[red]✗ Skipping code checks[/red]")

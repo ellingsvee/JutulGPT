@@ -28,6 +28,7 @@ EMBEDDING_MODEL_NAME = (
 )
 
 RECURSION_LIMIT = 50  # Number of recursions before an error is thrown.
+LLM_TEMPERATURE = 0
 
 
 # Setup of the environment and some logging. Not neccessary to touch this.

@@ -24,7 +24,7 @@ def get_linting_result(code: str) -> str:
                     )
                 else:
                     print_to_console(
-                        text="No linting issues found.",
+                        text="No linting issues found!",
                         title="Linter Result",
                         border_style=colorscheme.success,
                     )
