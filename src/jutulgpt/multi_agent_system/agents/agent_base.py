@@ -25,14 +25,15 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt.tool_node import ToolNode
 from langgraph.utils.runnable import RunnableCallable
 
+import jutulgpt.state as state
 from jutulgpt.cli import (
     colorscheme,
+    print_to_console,
     show_startup_screen,
     stream_to_console,
 )
 from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.globals import console
-from jutulgpt.state import State
 from jutulgpt.utils import get_provider_and_model
 
 
@@ -53,6 +54,7 @@ class BaseAgent(ABC):
         part_of_multi_agent: bool = False,
         state_schema: Optional[type] = None,
         print_chat_output: bool = True,
+        filepath: Optional[str] = None,
     ):
         if name is not None and (" " in name or not name):
             raise ValueError("Agent name must not be empty or contain spaces.")
@@ -60,8 +62,9 @@ class BaseAgent(ABC):
         self.part_of_multi_agent = part_of_multi_agent
         self.name = name or self.__class__.__name__
         self.printed_name = printed_name
-        self.state_schema = state_schema or State
+        self.state_schema = state_schema or state.State
         self.print_chat_output = print_chat_output
+        self.filepath = filepath
 
         # Process tools
         if isinstance(tools, ToolNode):
@@ -84,13 +87,6 @@ class BaseAgent(ABC):
         # self._generate_graph_visualization()
 
     @abstractmethod
-    def load_model(self, config: RunnableConfig) -> BaseChatModel:
-        """
-        Load the model from the name specified in the configuration.
-        """
-        pass
-
-    @abstractmethod
     def get_prompt_from_config(self, config: RunnableConfig) -> str:
         """
         Get the prompt from the configuration.
@@ -100,8 +96,80 @@ class BaseAgent(ABC):
         """
         pass
 
-    def build_graph(self):
-        workflow = StateGraph(State, config_schema=BaseConfiguration)
+    @abstractmethod
+    def get_model_from_config(
+        self, config: RunnableConfig
+    ) -> Union[str, LanguageModelLike]:
+        """
+        Get the prompt from the configuration.
+
+        Returns:
+            A string containing the spesific prompt from the config
+        """
+        pass
+
+    def _get_chat_model(self, model: Union[str, LanguageModelLike]) -> BaseChatModel:
+        """Setup and bind tools to the model."""
+        if isinstance(model, str):
+            try:
+                from langchain.chat_models import init_chat_model
+            except ImportError:
+                raise ImportError("Please install langchain to use string model names")
+
+            provider, model_name = get_provider_and_model(model)
+
+            if (
+                provider == "ollama" and model_name == "qwen3:14b"
+            ):  # WARNING: This is VERY bad practice!
+                chat_model = init_chat_model(
+                    model_name,
+                    model_provider=provider,
+                    temperature=0,
+                    reasoning=True,
+                    streaming=True,
+                )
+            else:
+                chat_model = init_chat_model(
+                    model_name,
+                    model_provider=provider,
+                    temperature=0,
+                    streaming=True,
+                )
+            model = cast(BaseChatModel, chat_model)
+
+        # Get the underlying model
+        if isinstance(model, RunnableSequence):
+            model = next(
+                (
+                    step
+                    for step in model.steps
+                    if isinstance(step, (RunnableBinding, BaseChatModel))
+                ),
+                model,
+            )
+
+        if isinstance(model, RunnableBinding):
+            model = model.bound
+
+        if not isinstance(model, BaseChatModel):
+            raise TypeError(f"Expected model to be a ChatModel, got {type(model)}")
+
+        return cast(BaseChatModel, model)
+
+    def load_model(self, config: RunnableConfig) -> BaseChatModel:
+        """Load the model from the name specified in the configuration."""
+        chat_model = self._get_chat_model(self.get_model_from_config(config=config))
+        if self._should_bind_tools(chat_model):
+            chat_model = chat_model.bind_tools(self.tool_classes)
+        return cast(BaseChatModel, chat_model)
+
+    def build_graph(self) -> Any:
+        """
+        By default create a ReAct agent
+        https://langchain-ai.github.io/langgraph/how-tos/react-agent-from-scratch/#define-graph-state
+        """
+
+        workflow = StateGraph(state.State, config_schema=BaseConfiguration)
 
         # Define the two nodes we will cycle between
         workflow.add_node("agent", self.call_model)
@@ -192,6 +260,40 @@ class BaseAgent(ABC):
 
         return cast(BaseChatModel, model)
 
+    def invoke_model(
+        self,
+        state: state.State,
+        config: RunnableConfig,
+        messages_list: Optional[List] = None,
+    ) -> AIMessage:
+        """Invoke the model with the given prompt and state."""
+        model = self.load_model(config=config)
+
+        if not messages_list:
+            messages_list: List = [
+                SystemMessage(content=self.get_prompt_from_config(config=config))
+            ]
+            trimmed_state_messages = self._trim_state_messages(state.messages, model)
+            messages_list.extend(trimmed_state_messages)
+
+        # Invoke the model
+        if self.print_chat_output:
+            chat_response = stream_to_console(
+                llm=model,
+                message_list=messages_list,
+                config=config,
+                title=self.printed_name,
+                border_style=colorscheme.normal,
+            )
+            response = cast(AIMessage, chat_response)
+        else:
+            response = cast(AIMessage, model.invoke(messages_list, config))
+
+        # Add agent name to the response
+        response.name = self.name
+
+        return response
+
     def _should_bind_tools(self, model: BaseChatModel) -> bool:
         """Check if we need to bind tools to the model."""
         if len(self.tool_classes) == 0:
@@ -250,7 +352,7 @@ class BaseAgent(ABC):
             )
             raise ValueError(error_message)
 
-    def _are_more_steps_needed(self, state: State, response: BaseMessage) -> bool:
+    def _are_more_steps_needed(self, state: state.State, response: BaseMessage) -> bool:
         """Check if more steps are needed based on remaining steps and tool calls."""
         has_tool_calls = isinstance(response, AIMessage) and bool(response.tool_calls)
         all_tools_return_direct = (
@@ -289,7 +391,7 @@ class BaseAgent(ABC):
         )
         return trimmed_state_messages
 
-    def should_continue(self, state: State) -> Literal["tools", "continue"]:
+    def should_continue(self, state: state.State) -> Literal["tools", "continue"]:
         """Determine whether to continue to tools, end, or get user input."""
         messages = state.messages
         last_message = messages[-1]
@@ -301,43 +403,12 @@ class BaseAgent(ABC):
             return "continue"
 
     # Common node functions that can be used by child classes
-    def call_model(self, state: State, config: RunnableConfig) -> dict:
+    def call_model(self, state: state.State, config: RunnableConfig) -> dict:
         """Call the model with the current state."""
-
-        configuration = BaseConfiguration.from_runnable_config(config)
-
-        # Get the runnable model based on what is specified in the configuration
-        model = self.load_model(config=config)
-        # prompt_runnable = self._get_prompt_runnable(
-        #     self.get_prompt_from_config(config=config)
-        # )
-        # model_runnable = prompt_runnable | model
-
-        messages = state.messages
-        self._validate_chat_history(messages)
-
-        messages_list: List = [SystemMessage(content=configuration.code_prompt)]
-        messages_list.extend(messages)
-
-        # Invoke the model
-        if self.print_chat_output:
-            chat_response = stream_to_console(
-                llm=model,
-                message_list=messages_list,
-                config=config,
-                title=self.printed_name,
-                border_style=colorscheme.normal,
-            )
-            response = cast(AIMessage, chat_response)
-        else:
-            response = cast(AIMessage, model.invoke(messages_list, config))
-
-        # Add agent name to the response
-        response.name = self.name
-
+        response = self.invoke_model(state=state, config=config)
         return {"messages": [response]}
 
-    def get_user_input(self, state: State, config: RunnableConfig) -> dict:
+    def get_user_input(self, state: state.State, config: RunnableConfig) -> dict:
         """Get user input for standalone mode."""
         console.print("[bold blue]User Input:[/bold blue] ")
         user_input = console.input("> ")
@@ -347,18 +418,46 @@ class BaseAgent(ABC):
             console.print("[bold red]Goodbye![/bold red]")
             exit(0)
 
-        return {"messages": [HumanMessage(content=user_input)]}
+        return {
+            "messages": [HumanMessage(content=user_input)],
+            "original_user_query": user_input,
+        }
 
     # Common utility methods for child classes
     def invoke(
-        self, input_data: State, config: Optional[RunnableConfig] = None
+        self, input_data: state.State, config: Optional[RunnableConfig] = None
     ) -> dict:
         """Invoke the agent (for multi-agent use)."""
         return self.graph.invoke(input_data, config)
 
-    def ainvoke(self, input_data: State, config: Optional[RunnableConfig] = None):
+    def ainvoke(self, input_data: state.State, config: Optional[RunnableConfig] = None):
         """Async invoke the agent (for multi-agent use)."""
         return self.graph.ainvoke(input_data, config)
+
+    def write_julia_code_to_file(
+        self, code_block: state.CodeBlock, append: bool = False
+    ) -> None:
+        """
+        Write Julia code to a file.
+        """
+        if self.filepath:
+            filepath = self.filepath
+            code = code_block.get_full_code()
+            try:
+                mode = "a" if append else "w"
+                with open(filepath, mode) as f:
+                    if append:
+                        f.write("\n")
+                    f.write(code)
+                    if not code.endswith("\n"):
+                        f.write("\n")
+
+            except Exception as e:
+                print_to_console(
+                    text=f"ERROR: Failed to write to {filepath}:\n{str(e)}",
+                    title="File Writer",
+                    border_style=colorscheme.error,
+                )
 
     def run(self) -> None:
         """Run the agent in interactive mode (standalone only)."""
