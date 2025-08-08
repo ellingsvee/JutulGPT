@@ -74,13 +74,20 @@ def _run_linter(full_code: str) -> tuple[str, bool]:
     return "", False
 
 
-def _run_julia_code(full_code: str) -> tuple[str, bool]:
+def _run_julia_code(full_code: str, print_code: bool = False) -> tuple[str, bool]:
     """
     Returns:
         str: String containing the code running failed. Empty if the code executed successfully.
         bool: True if issues were found, False otherwise.
     """
 
+    if print_code:
+        code_within_julia_context = f"```julia\n{full_code}```"
+        print_to_console(
+            text="Running code:\n" + code_within_julia_context[:500] + "...",
+            title="Code Runner",
+            border_style=colorscheme.warning,
+        )
     print_to_console(
         text="Running code...",
         title="Code Runner",

@@ -10,6 +10,7 @@ from jutulgpt.tools.other import (
     run_julia_linter_tool,
 )
 from jutulgpt.tools.retrieve import (
+    get_relevant_examples_tool,
     retrieve_fimbul_tool,
     retrieve_function_documentation_tool,
     retrieve_jutuldarcy_tool,
@@ -26,4 +27,5 @@ __all__ = [
     "retrieve_function_documentation_tool",
     "read_from_file_tool",
     "write_to_file_tool",
+    "get_relevant_examples_tool",
 ]

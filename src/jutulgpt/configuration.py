@@ -20,13 +20,15 @@ cli_mode: bool = True
 
 # Select whether to use local models through Ollama or use OpenAI
 LOCAL_MODELS = False
-# LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4.1-mini"
-LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4o"
+LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4.1"
+# LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4o"
 
 
 EMBEDDING_MODEL_NAME = (
     "ollama:nomic-embed-text" if LOCAL_MODELS else "openai:text-embedding-3-small"
 )
+
+RECURSION_LIMIT = 50  # Number of recursions before an error is thrown.
 
 
 # Setup of the environment and some logging. Not neccessary to touch this.
@@ -61,7 +63,7 @@ class HumanInteraction(BaseModel):
         },
     )
     generated_code: bool = field(
-        default=True,
+        default=False,
         metadata={
             "description": "Whether to verify the generated code, edit it manually, or request a fix."
         },

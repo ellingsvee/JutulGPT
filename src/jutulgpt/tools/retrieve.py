@@ -126,6 +126,12 @@ retrieve_jutuldarcy_tool = make_retrieve_tool(
     doc_label="JutulDarcy",
     input_cls=RetrieveJutulDarcyToolInput,
 )
+get_relevant_examples_tool = make_retrieve_tool(
+    name="get_relevant_examples",
+    doc_key="jutuldarcy",
+    doc_label="JutulDarcy",
+    input_cls=RetrieveJutulDarcyToolInput,
+)
 
 retrieve_fimbul_tool = make_retrieve_tool(
     name="retrieve_fimbul",

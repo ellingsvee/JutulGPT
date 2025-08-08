@@ -248,7 +248,7 @@ class RunJuliaCodeToolInput(BaseModel):
 )
 def run_julia_code_tool(code: str):
     code = _shorter_simulations(code)
-    out, code_failed = _run_julia_code(code)
+    out, code_failed = _run_julia_code(code, print_code=True)
     if code_failed:
         return out
     return "Code executed successfully!"
