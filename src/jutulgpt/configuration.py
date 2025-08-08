@@ -231,6 +231,10 @@ class BaseConfiguration:
     )
 
     # Prompts
+    agent_prompt: str = field(
+        default=prompts.AGENT_PROMPT,
+        metadata={"description": "The default prompt used for the agent."},
+    )
     default_coder_prompt: str = field(
         default=prompts.DEFAULT_CODER_PROMPT,
         metadata={"description": "The default prompt used for generating Julia code."},
