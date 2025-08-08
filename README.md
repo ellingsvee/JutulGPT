@@ -2,7 +2,7 @@
 
 An AI assistant for JutulDarcy!
 
-![CLI example](images/cli_cropped.png "CLI example")
+![CLI example](media/cli_cropped.png "CLI example")
 
 ## Getting started
 
