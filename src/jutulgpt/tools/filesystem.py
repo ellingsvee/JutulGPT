@@ -9,7 +9,6 @@ from rich.panel import Panel
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.globals import console
-from jutulgpt.human_in_the_loop import response_on_file_write
 
 
 class ReadFromFileInput(BaseModel):
@@ -122,6 +121,8 @@ def write_to_file_tool(
                     )
                     return f"File write cancelled by user: {file_path}"
             else:  # UI mode
+                from jutulgpt.human_in_the_loop.ui import response_on_file_write
+
                 write_to_file, file_path = response_on_file_write(file_path)
                 if not write_to_file:
                     return f"File write cancelled by user: {file_path}"

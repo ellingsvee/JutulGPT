@@ -4,18 +4,11 @@ from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.cli.cli_human_interaction import (
-    cli_response_on_check_code,
-    cli_response_on_error,
-)
-from jutulgpt.configuration import BaseConfiguration, cli_mode
-from jutulgpt.human_in_the_loop import response_on_error
+from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.human_in_the_loop.cli import response_on_check_code
 from jutulgpt.julia import get_error_message, get_linting_result, run_code
 from jutulgpt.state import State
-from jutulgpt.utils import (
-    fix_imports,
-    shorter_simulations,
-)
+from jutulgpt.utils import fix_imports, shorter_simulations
 
 
 def _run_linter(code: str) -> tuple[str, bool]:
@@ -89,20 +82,22 @@ def check_code(
 ):
     configuration = BaseConfiguration.from_runnable_config(config)
     code_block = state.code_block
+    code = code_block.get_full_code()
 
+    # Return early if no code is present
     if code_block.is_empty():
         return {"error": False}
 
     check_code_bool = True
+    user_response = ""
     if configuration.human_interaction.code_check:
-        check_code_bool = cli_response_on_check_code()
+        check_code_bool, user_response = response_on_check_code()
 
-    # Return early if the user chose to ignore the code check
+    # Return early if user provides response or does not want to check code
+    if user_response:
+        return {"error": True, "messages": [HumanMessage(content=user_response)]}
     if not check_code_bool:
         return {"error": False}
-
-    # First fix the use of the Fimbul package
-    code = code_block.get_full_code()
 
     # Hangle the importing of the Fimbul and GLMakie package
     code = fix_imports(code)
@@ -127,29 +122,5 @@ def check_code(
     if code_running_issues_found:
         feedback_message += code_running_message
 
-    feedback_list = [HumanMessage(content=feedback_message)]
-
-    # If the code fails, the user has the option of trying to fix the code or not.
-    # The user also gets the option to give some additional feedback that might help the agent
-    try_to_fix_code_bool, additional_feedback = True, ""
-    if configuration.human_interaction.decide_to_try_to_fix_error:
-        if cli_mode:
-            try_to_fix_code_bool, additional_feedback = cli_response_on_error()
-        else:  # UI mode
-            try_to_fix_code_bool, additional_feedback = response_on_error()
-
-    # If the user does not want to try to fix the code
-    if not try_to_fix_code_bool:
-        feedback_list.append(
-            HumanMessage(
-                content="The code failed, but the user chose to not try to fix the error."
-            )
-        )
-        return {"messages": feedback_list, "error": False}
-
-    # If the user provided additional feedback
-    if additional_feedback:
-        feedback_list.append(HumanMessage(content=additional_feedback))
-
     # Return the feedback messages and and error flag
-    return {"messages": feedback_list, "error": True}
+    return {"messages": [HumanMessage(content=feedback_message)], "error": True}

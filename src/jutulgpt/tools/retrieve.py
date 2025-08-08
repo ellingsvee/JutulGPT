@@ -34,11 +34,11 @@ def make_retrieve_tool(
         # Human interaction: modify query
         if configuration.human_interaction.rag_query:
             if cli_mode:
-                from jutulgpt.cli.cli_human_interaction import cli_modify_rag_query
+                from jutulgpt.human_in_the_loop.cli import modify_rag_query
 
-                query = cli_modify_rag_query(query, doc_label)
+                query = modify_rag_query(query, doc_label)
             else:
-                from jutulgpt.human_in_the_loop import modify_rag_query
+                from jutulgpt.human_in_the_loop.ui import modify_rag_query
 
                 query = modify_rag_query(query, doc_label)
         else:
@@ -68,10 +68,10 @@ def make_retrieve_tool(
             or configuration.human_interaction.retrieved_examples
         ):
             if cli_mode:
-                from jutulgpt.cli.cli_human_interaction import cli_response_on_rag
+                from jutulgpt.human_in_the_loop.cli import response_on_rag
 
                 if configuration.human_interaction.retrieved_examples:
-                    retrieved_examples = cli_response_on_rag(
+                    retrieved_examples = response_on_rag(
                         docs=retrieved_examples,
                         get_file_source=get_file_source,
                         get_section_path=split_examples.get_section_path,
@@ -82,7 +82,7 @@ def make_retrieve_tool(
                         edit_julia_file=True,
                     )
             else:
-                from jutulgpt.human_in_the_loop import response_on_rag
+                from jutulgpt.human_in_the_loop.ui import response_on_rag
 
                 if configuration.human_interaction.retrieved_examples:
                     retrieved_examples = response_on_rag(

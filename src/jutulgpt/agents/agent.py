@@ -9,10 +9,10 @@ from langchain_core.tools import BaseTool
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
+import jutulgpt.human_in_the_loop.cli as cli
+import jutulgpt.human_in_the_loop.ui as ui
 from jutulgpt.agents.agent_base import BaseAgent
-from jutulgpt.cli.cli_human_interaction import cli_response_on_generated_code
 from jutulgpt.configuration import BaseConfiguration, cli_mode
-from jutulgpt.human_in_the_loop import response_on_generated_code
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.tools import (
@@ -156,10 +156,10 @@ class Agent(BaseAgent):
         new_code_block, code_updated, user_feedback = code_block, False, ""
         if cli_mode:
             new_code_block, code_updated, user_feedback = (
-                cli_response_on_generated_code(code_block)
+                cli.response_on_generated_code(code_block)
             )
         else:  # UI mode
-            new_code_block, code_updated, user_feedback = response_on_generated_code(
+            new_code_block, code_updated, user_feedback = ui.response_on_generated_code(
                 code_block
             )
 

@@ -12,7 +12,7 @@ from jutulgpt.rag.utils import modify_doc_content
 from jutulgpt.utils import add_julia_context
 
 
-def cli_response_on_rag(
+def response_on_rag(
     docs: List[Document],
     get_file_source: Callable,
     get_section_path: Callable,
@@ -147,24 +147,37 @@ def cli_response_on_rag(
     return filtered_docs
 
 
-def cli_response_on_check_code() -> bool:
+def response_on_check_code() -> tuple[bool, str]:
+    """
+    Returns:
+        bool: Whether the user wants to check the code or not
+        str: Additional feedback to the model
+    """
     console.print("\n[bold yellow]Code check[/bold yellow]")
 
     console.print("Do you want to check the code for any potential errors?")
     console.print("1. Check the code")
-    console.print("2. Skip code check")
+    console.print("2. Give feedback to model")
+    console.print("3. Skip code check")
 
-    choice = Prompt.ask("Your choice", choices=["1", "2"], default="1")
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
 
     if choice == "1":
         console.print("[green]✓ Running code checks[/green]")
-        return True
-    else:  # choice == "2"
+        return True, ""
+    elif choice == "2":
+        console.print("[bold blue]Give feedback:[/bold blue] ")
+        user_input = console.input("> ")
+        if not user_input.strip():  # If the user input is empty
+            console.print("[red]✗ User feedback empty[/red]")
+            return False, ""
+        return False, user_input
+    else:  # choice == "3"
         console.print("[red]✗ Skipping code checks[/red]")
-        return False
+        return False, ""
 
 
-def cli_response_on_error() -> tuple[bool, str]:
+def response_on_error() -> tuple[bool, str]:
     """
     Returns:
         bool: Whether the user wants to check the code or not
@@ -195,7 +208,7 @@ def cli_response_on_error() -> tuple[bool, str]:
         return False, ""
 
 
-def cli_modify_rag_query(query: str, retriever_name: str) -> str:
+def modify_rag_query(query: str, retriever_name: str) -> str:
     """
     CLI version of modify_rag_query that allows interactive query modification.
 
@@ -246,7 +259,7 @@ def cli_modify_rag_query(query: str, retriever_name: str) -> str:
         return ""  # Return empty string to indicate no query
 
 
-def cli_handle_code_response(response_content: str) -> None:
+def handle_code_response(response_content: str) -> None:
     """
     CLI interaction for handling code found in multi-agent responses.
     Allows user to run the code and/or save it to a file.
@@ -281,7 +294,7 @@ def cli_handle_code_response(response_content: str) -> None:
         console.print("[blue]ℹ No action taken[/blue]")
 
 
-def cli_response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, str]:
+def response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, str]:
     """
 
     Returns:
