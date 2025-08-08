@@ -187,12 +187,6 @@ class ReadFileTool(BaseTool):
     ) -> str:
         """Read file contents within the specified line range."""
 
-        print_to_console(
-            text=f"filePath: {filePath}, startLineNumberBaseZero: {startLineNumberBaseZero}, endLineNumberBaseZero: {endLineNumberBaseZero}",
-            title=f"Tool invoked: {self.name}",
-            border_style=colorscheme.message,
-        )
-
         try:
             if not os.path.exists(filePath):
                 return f"File not found: {filePath}"
@@ -220,6 +214,13 @@ class ReadFileTool(BaseTool):
                 + "\n".join(result_lines)
             )
 
+            print_text = "\n".join(result_lines)
+            print_to_console(
+                text=print_text[:500] + "...",
+                title=f"Read file: {filePath}",
+                border_style=colorscheme.message,
+            )
+
         except Exception as e:
             return f"Error reading file: {str(e)}"
 
@@ -241,12 +242,20 @@ class RunJuliaCodeToolInput(BaseModel):
     )
 
 
+def _fix_imports(code: str) -> str:
+    required_imports = ["Fimbul", "GLMakie"]
+    if not all(pkg in code for pkg in required_imports):
+        return code
+    return 'using Pkg; Pkg.activate(".");\n' + code
+
+
 @tool(
     "run_julia_code",
     args_schema=RunJuliaCodeToolInput,
     description="Execute Julia code. Returns output or error message.",
 )
 def run_julia_code_tool(code: str):
+    code = _fix_imports(code)
     code = _shorter_simulations(code)
     out, code_failed = _run_julia_code(code, print_code=True)
     if code_failed:
