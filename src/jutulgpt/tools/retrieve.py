@@ -120,14 +120,8 @@ class RetrieveFimbulToolInput(BaseModel):
 
 
 # Create tools
-retrieve_jutuldarcy_tool = make_retrieve_tool(
-    name="get_relevant_examples",
-    doc_key="jutuldarcy",
-    doc_label="JutulDarcy",
-    input_cls=RetrieveJutulDarcyToolInput,
-)
-get_relevant_examples_tool = make_retrieve_tool(
-    name="get_relevant_examples",
+retrieve_jutuldarcy_examples_tool = make_retrieve_tool(
+    name="retrieve_jutuldarcy_examples",
     doc_key="jutuldarcy",
     doc_label="JutulDarcy",
     input_cls=RetrieveJutulDarcyToolInput,

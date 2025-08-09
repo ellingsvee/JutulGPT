@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 import subprocess
 from typing import Optional
 
@@ -10,74 +9,16 @@ from langchain_core.tools.base import ArgsSchema
 from pydantic import BaseModel, Field
 
 from jutulgpt.cli import colorscheme, print_to_console
+from jutulgpt.configuration import PROJECT_ROOT
 from jutulgpt.nodes.check_code import _run_julia_code, _run_linter
 from jutulgpt.utils import fix_imports, shorter_simulations
-
-
-class SemanticSearchInput(BaseModel):
-    """Input for semantic search tool."""
-
-    query: str = Field(
-        description="The query to search the codebase for. Should contain all relevant context."
-    )
-
-
-class SemanticSearchTool(BaseTool):
-    """Run a natural language search for relevant code or documentation comments."""
-
-    name: str = "semantic_search"
-    description: str = "Run a natural language search for relevant code or documentation from JutulDarcy."
-    args_schema: Optional[ArgsSchema] = SemanticSearchInput
-
-    def _run(self, query: str) -> str:
-        """Run semantic search on the workspace."""
-        try:
-            # Simple implementation using grep with keyword extraction
-            workspace_path = "./src/jutulgpt/rag/jutuldarcy/"
-
-            # Extract potential keywords from the query
-            keywords = re.findall(r"\b\w+\b", query.lower())
-
-            results = []
-            for keyword in keywords[:5]:  # Limit to top 5 keywords
-                try:
-                    # Search for the keyword in common code file types
-                    cmd = f"grep -r -n -i --include='*.py' --include='*.jl' --include='*.js' --include='*.ts' --include='*.md' '{keyword}' {workspace_path}"
-                    result = subprocess.run(
-                        cmd, shell=True, capture_output=True, text=True, timeout=10
-                    )
-                    if result.stdout:
-                        results.extend(
-                            result.stdout.strip().split("\n")[:10]
-                        )  # Limit results per keyword
-                except subprocess.TimeoutExpired:
-                    continue
-
-            if results:
-                out_text = (
-                    f"Found {len(results)} relevant matches:\n\n"
-                    "```text\n" + "\n".join(results[:20]) + "\n```"
-                )
-
-                print_to_console(
-                    text=out_text,
-                    title=f"Semantic search: {query}",
-                    border_style=colorscheme.message,
-                )
-                return out_text
-
-            else:
-                return f"No relevant code found for query: {query}"
-
-        except Exception as e:
-            return f"Error during semantic search: {str(e)}"
 
 
 class GrepSearchInput(BaseModel):
     """Input for grep search tool."""
 
     query: str = Field(
-        description="The pattern to search for in files. Can be a regex or plain text pattern"
+        description="The keyword based pattern to search for in files. Can be a regex or plain text pattern"
     )
     includePattern: Optional[str] = Field(
         default=None, description="Search files matching this glob pattern."
@@ -91,9 +32,8 @@ class GrepSearchTool(BaseTool):
     """Do a text search in the workspace."""
 
     name: str = "grep_search"
-    description: str = (
-        "Do a text search in the JutulDarcy documentation. Limited to 20 results."
-    )
+    # description: str = "Do a keyword based search in the JutulDarcy documentation. Limited to 10 results."
+    description: str = "### Instructions:\nThis is best for finding exact text matches or regex patterns.\nThis is preferred over semantic search when we know the exact symbol/function name/etc. to search for.\n\nUse this tool to run fast, exact regex searches over text files.\nTo avoid overwhelming output, the results are capped at 10 matches. 2 lines of context above and below each match are included."
     args_schema: Optional[ArgsSchema] = GrepSearchInput
 
     def _run(
@@ -102,18 +42,12 @@ class GrepSearchTool(BaseTool):
         includePattern: Optional[str] = None,
         isRegexp: Optional[bool] = False,
     ) -> str:
-        """Search for text in files."""
+        """Search for text in files, returning each match with configurable context lines above and below."""
 
-        # print_to_console(
-        #     text=f"query: {query}, includePattern: {includePattern}, isRegexp: {isRegexp}",
-        #     title=f"Tool invoked: {self.name}",
-        #     border_style=colorscheme.message,
-        # )
+        context_lines = 2  # Change this to 2, 3, etc. for more context
 
         try:
-            workspace_path = "./src/jutulgpt/rag/jutuldarcy/"
-
-            # Build grep command
+            workspace_path = str(PROJECT_ROOT / "rag" / "jutuldarcy")
             cmd_parts = ["grep", "-r", "-n"]
 
             if isRegexp:
@@ -121,17 +55,12 @@ class GrepSearchTool(BaseTool):
             else:
                 cmd_parts.append("-F")  # Fixed string search
 
-            # Add include pattern if specified
             if includePattern:
                 cmd_parts.extend(["--include", includePattern])
             else:
-                # Default to common code file types
                 cmd_parts.extend(
                     [
-                        "--include=*.py",
                         "--include=*.jl",
-                        "--include=*.js",
-                        "--include=*.ts",
                         "--include=*.md",
                     ]
                 )
@@ -143,16 +72,41 @@ class GrepSearchTool(BaseTool):
             )
 
             if result.stdout:
-                # lines = result.stdout.strip().split("\n")[:20]  # Limit to 20 results
-                # out_text = f"Found {len(lines)} matches:\n" + "\n".join(lines)
+                lines = result.stdout.strip().split("\n")[:10]  # Limit to 10 results
+                context_results = []
+                for match in lines:
+                    # Parse: filename:line_number:content
+                    parts = match.split(":", 2)
+                    if len(parts) != 3:
+                        context_results.append(match)
+                        continue
+                    filename, line_str, content = parts
+                    try:
+                        line_num = (
+                            int(line_str) - 1
+                        )  # grep is 1-based, Python is 0-based
+                        with open(filename, "r", encoding="utf-8") as f:
+                            file_lines = f.readlines()
+                        start = max(0, line_num - context_lines)
+                        end = min(len(file_lines), line_num + context_lines + 1)
+                        snippet = "".join(
+                            f"{i + 1:4d}: {file_lines[i].rstrip()}\n"
+                            for i in range(start, end)
+                        )
+                        context_results.append(
+                            f"File: {filename}, Match at line {line_num + 1}\n{snippet}"
+                        )
+                    except Exception as e:
+                        context_results.append(
+                            f"{match}\n[Could not read context: {e}]"
+                        )
 
-                lines = result.stdout.strip().split("\n")[:20]  # Limit to 20 results
                 out_text = (
-                    f"Found {len(lines)} matches:\n\n"
-                    "```text\n" + "\n".join(lines) + "\n```"
+                    f"Found {len(context_results)} matches (with context):\n\n"
+                    "```text\n" + "\n".join(context_results) + "\n```"
                 )
                 print_to_console(
-                    text=out_text,
+                    text=out_text[:500] + "...",
                     title=f"Grep search: {query}",
                     border_style=colorscheme.message,
                 )
