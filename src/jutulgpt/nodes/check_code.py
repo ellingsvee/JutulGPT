@@ -4,11 +4,11 @@ from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.configuration import BaseConfiguration
-from jutulgpt.human_in_the_loop.cli import response_on_check_code
+from jutulgpt.configuration import BaseConfiguration, cli_mode
+from jutulgpt.human_in_the_loop.cli import response_on_check_code, response_on_error
 from jutulgpt.julia import get_error_message, get_linting_result, run_code
 from jutulgpt.state import State
-from jutulgpt.utils import fix_imports, shorter_simulations
+from jutulgpt.utils import add_julia_context, fix_imports, shorter_simulations
 
 
 def _run_linter(code: str) -> tuple[str, bool]:
@@ -81,6 +81,7 @@ def check_code(
     config: RunnableConfig,
 ):
     configuration = BaseConfiguration.from_runnable_config(config)
+
     code_block = state.code_block
     code = code_block.get_full_code()
 
@@ -88,16 +89,26 @@ def check_code(
     if code_block.is_empty():
         return {"error": False}
 
+    messages_list = []
     check_code_bool = True
     user_response = ""
-    if configuration.human_interaction.code_check:
-        check_code_bool, user_response = response_on_check_code()
+    new_code = code
+    if configuration.human_interaction.code_check and cli_mode:
+        check_code_bool, user_response, new_code = response_on_check_code(code=code)
 
     # Return early if user provides response or does not want to check code
     if user_response:
         return {"error": True, "messages": [HumanMessage(content=user_response)]}
     if not check_code_bool:
         return {"error": False}
+    if new_code != code:
+        code = new_code
+        code_update_message = (
+            "The code was manually updated to the following. "
+            + "This is what will be checked:\n"
+            + add_julia_context(code)
+        )
+        messages_list.append(HumanMessage(content=code_update_message))
 
     # Hangle the importing of the Fimbul and GLMakie package
     code = fix_imports(code)
@@ -113,7 +124,7 @@ def check_code(
 
     # If we did not find any issues, we return the final code
     if not linting_issues_found and not code_running_issues_found:
-        return {"error": False}
+        return {"error": False, "messages": messages_list}
 
     # If we found issues, we prepare the feedback messages
     feedback_message = "# Code check issues found. Please use these to fix your code:\n"
@@ -123,4 +134,21 @@ def check_code(
         feedback_message += code_running_message
 
     # Return the feedback messages and and error flag
-    return {"messages": [HumanMessage(content=feedback_message)], "error": True}
+    messages_list.append(HumanMessage(content=feedback_message))
+
+    # If the code fails, the human can skip the fixing.
+    check_code_bool = True
+    user_response = ""
+    if configuration.human_interaction.fix_error and cli_mode:
+        check_code_bool, user_response = response_on_error()
+
+    if not check_code_bool:
+        messages_list.append(
+            HumanMessage(
+                content="The code failed, but the user decided to skip fixing it."
+            )
+        )
+        return {"messages": messages_list, "error": False}
+    if user_response:
+        messages_list.append(HumanMessage(content=user_response))
+    return {"messages": messages_list, "error": True}

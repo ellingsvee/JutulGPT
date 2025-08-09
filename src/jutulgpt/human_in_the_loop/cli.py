@@ -147,7 +147,7 @@ def response_on_rag(
     return filtered_docs
 
 
-def response_on_check_code() -> tuple[bool, str]:
+def response_on_check_code(code: str) -> tuple[bool, str, str]:
     """
     Returns:
         bool: Whether the user wants to check the code or not
@@ -158,24 +158,40 @@ def response_on_check_code() -> tuple[bool, str]:
     console.print("Do you want to check the code for any potential errors?")
     console.print("1. Check the code")
     console.print("2. Give feedback to model")
-    console.print("3. Skip code check")
+    console.print("3. Edit the code manually")
+    console.print("4. Skip code check")
 
     choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
 
     if choice == "1":
         console.print("[green]✓ Running code checks[/green]")
-        return True, ""
+        return True, "", code
     elif choice == "2":
         console.print("[bold blue]Give feedback:[/bold blue] ")
         user_input = console.input("> ")
         if not user_input.strip():  # If the user input is empty
             console.print("[red]✗ User feedback empty[/red]")
-            return False, ""
+            return False, "", code
         console.print("[green]✓ Feedback recieved[/green]")
-        return False, user_input
-    else:  # choice == "3"
+        return False, user_input, code
+    elif choice == "3":
+        console.print("\n[bold]Edit Code[/bold]")
+        new_code = utils.edit_document_content(code, edit_julia_file=True)
+
+        if new_code.strip():
+            utils.print_to_console(
+                text=add_julia_context(new_code),
+                title="Code update",
+                border_style=colorscheme.message,
+            )
+            console.print("[green]✓ Code updated[/green]")
+            return True, "", new_code
+        console.print("[red]✓ Code empty. Not updating![/red]")
+        return True, "", code
+
+    else:  # choice == "4"
         console.print("[red]✗ Skipping code checks[/red]")
-        return False, ""
+        return False, "", code
 
 
 def response_on_error() -> tuple[bool, str]:

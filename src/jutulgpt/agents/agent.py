@@ -16,11 +16,10 @@ from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.tools import (
-    get_relevant_examples_tool,
     grep_search_tool,
     read_file_tool,
     retrieve_function_documentation_tool,
-    semantic_search_tool,
+    retrieve_jutuldarcy_examples_tool,
 )
 from jutulgpt.utils import get_code_from_response
 
@@ -206,10 +205,9 @@ class Agent(BaseAgent):
 
 agent = Agent(
     tools=[
-        get_relevant_examples_tool,
+        retrieve_jutuldarcy_examples_tool,
         retrieve_function_documentation_tool,
         read_file_tool,
-        semantic_search_tool,
         grep_search_tool,
     ],
     name="Agent",
