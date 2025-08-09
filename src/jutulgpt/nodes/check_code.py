@@ -8,7 +8,12 @@ from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.human_in_the_loop.cli import response_on_check_code, response_on_error
 from jutulgpt.julia import get_error_message, get_linting_result, run_code
 from jutulgpt.state import State
-from jutulgpt.utils import add_julia_context, fix_imports, shorter_simulations
+from jutulgpt.utils import (
+    add_julia_context,
+    fix_imports,
+    get_code_from_response,
+    shorter_simulations,
+)
 
 
 def _run_linter(code: str) -> tuple[str, bool]:
@@ -101,7 +106,10 @@ def check_code(
         return {"error": True, "messages": [HumanMessage(content=user_response)]}
     if not check_code_bool:
         return {"error": False}
+
+    code_updated = False
     if new_code != code:
+        code_updated = True
         code = new_code
         code_update_message = (
             "The code was manually updated to the following. "
@@ -151,4 +159,8 @@ def check_code(
         return {"messages": messages_list, "error": False}
     if user_response:
         messages_list.append(HumanMessage(content=user_response))
+
+    if code_updated:
+        new_code_block = get_code_from_response(code, within_julia_context=False)
+        return {"messages": messages_list, "error": True, "code_block": new_code_block}
     return {"messages": messages_list, "error": True}
