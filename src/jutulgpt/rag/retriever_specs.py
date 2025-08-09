@@ -4,7 +4,7 @@ File for defining the specifics related to the different retrievers. Gives flexi
 
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable
+from typing import Callable, Union
 
 from jutulgpt.configuration import PROJECT_ROOT
 from jutulgpt.rag import split_docs, split_examples
@@ -16,7 +16,7 @@ class RetrieverSpec:
     persist_path: Callable  # Callable as we want to change where we store when we modify the embedding model in the configuration.
     cache_path: str
     collection_name: str
-    filetype: str
+    filetype: Union[str, list[str]]  # Can be a single filetype or a list of filetypes.
     split_func: Callable
 
 

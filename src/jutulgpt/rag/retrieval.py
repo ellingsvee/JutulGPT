@@ -42,18 +42,28 @@ def _load_and_split_docs(spec: RetrieverSpec) -> list:
     from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
     # Load or cache documents
-    loader = DirectoryLoader(
-        path=spec.dir_path,
-        glob=f"**/*.{spec.filetype}",
-        show_progress=True,
-        loader_cls=TextLoader,
-    )
+    if isinstance(spec.filetype, str):
+        filetypes = [spec.filetype]
+    else:
+        filetypes = spec.filetype
+
+    loaders = []
+    for filetype in filetypes:
+        loader = DirectoryLoader(
+            path=spec.dir_path,
+            glob=f"**/*.{filetype}",
+            show_progress=True,
+            loader_cls=TextLoader,
+        )
+        loaders.append(loader)
 
     if os.path.exists(spec.cache_path):
         with open(spec.cache_path, "rb") as f:
             docs = pickle.load(f)
     else:
-        docs = loader.load()
+        docs = []
+        for loader in loaders:
+            docs.extend(loader.load())
 
         with open(spec.cache_path, "wb") as f:
             pickle.dump(docs, f)
@@ -168,7 +178,6 @@ def apply_flash_reranker(
 def make_retriever(
     config: RunnableConfig,
     spec: RetrieverSpec,
-    # **retrieval_overrides,
     retrieval_params: RetrievalParams = RetrievalParams(
         search_type="mmr",
         search_kwargs={"k": 3, "fetch_k": 15, "lambda_mult": 0.5},
@@ -183,13 +192,6 @@ def make_retriever(
         **retrieval_overrides: Override any retrieval parameters (search_type, search_kwargs, etc.)
     """
     configuration = BaseConfiguration.from_runnable_config(config)
-
-    # # Merge configuration defaults with any overrides
-    # retrieval_params = {
-    #     "search_type": configuration.search_type,
-    #     "search_kwargs": configuration.search_kwargs,
-    #     **retrieval_overrides,
-    # }
 
     embedding_model = make_text_encoder(configuration.embedding_model)
 
