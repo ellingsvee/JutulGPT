@@ -3,16 +3,14 @@ from __future__ import annotations
 from typing import Any, Callable, Literal, Optional, Sequence, Union
 
 from langchain_core.language_models import LanguageModelLike
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-import jutulgpt.human_in_the_loop.cli as cli
-import jutulgpt.human_in_the_loop.ui as ui
 from jutulgpt.agents.agent_base import BaseAgent
-from jutulgpt.configuration import BaseConfiguration, cli_mode
+from jutulgpt.configuration import BaseConfiguration
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.tools import (
@@ -61,9 +59,6 @@ class Agent(BaseAgent):
         workflow.add_node("agent", self.call_model)
         workflow.add_node("tools", self.tool_node)
         workflow.add_node("finalize", self.finalize)
-        workflow.add_node(
-            "user_feedback_on_generated_code", self.user_feedback_on_generated_code
-        )
         workflow.add_node("check_code", check_code)
 
         # Set entry point
@@ -77,15 +72,7 @@ class Agent(BaseAgent):
             self.should_continue,
             {
                 "tools": "tools",
-                "continue": "user_feedback_on_generated_code",
-            },
-        )
-        workflow.add_conditional_edges(
-            "user_feedback_on_generated_code",
-            self.direct_after_user_feedback_on_generated_code,
-            {
-                "agent": "agent",
-                "check_code": "check_code",
+                "continue": "check_code",
             },
         )
         workflow.add_conditional_edges(
@@ -136,47 +123,6 @@ class Agent(BaseAgent):
         code_block = get_code_from_response(response=response.content)
 
         return {"messages": [response], "code_block": code_block, "error": False}
-
-    def user_feedback_on_generated_code(
-        self,
-        state: State,
-        config: RunnableConfig,
-    ):
-        configuration = BaseConfiguration.from_runnable_config(config)
-
-        # If no human interaction
-        if not configuration.human_interaction.generated_code:
-            return {}
-
-        code_block = state.code_block
-        if code_block.is_empty():
-            return {}
-
-        new_code_block, code_updated, user_feedback = code_block, False, ""
-        if cli_mode:
-            new_code_block, code_updated, user_feedback = (
-                cli.response_on_generated_code(code_block)
-            )
-        else:  # UI mode
-            new_code_block, code_updated, user_feedback = ui.response_on_generated_code(
-                code_block
-            )
-
-        if user_feedback:
-            self.user_provided_feedback = True
-            return {"messages": [HumanMessage(content=user_feedback)]}
-        elif code_updated:
-            code_updated_message = (
-                "Based on the code you generated, I manually updated it to the following:\n"
-                + f"{new_code_block.get_full_code(within_julia_context=True)}"
-            )
-            return {
-                "messages": [HumanMessage(content=code_updated_message)],
-                "code_block": new_code_block,
-            }
-
-        # Writing the code to the file
-        return {}
 
     def finalize(self, state: State, config: RunnableConfig):
         self.write_julia_code_to_file(code_block=state.code_block)
