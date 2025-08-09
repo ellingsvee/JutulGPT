@@ -212,10 +212,9 @@ When given a programming task, you should follow this strategic approach:
 ### 2. GATHER INTELLIGENCE
 Use your available tools strategically:
 - `retrieve_function_documentation` tool: Look up specific function signatures and usage. ALWAYS use this when implementing code that uses JutulDarcy.
-- `get_relevant_examples` tool: Use RAG to retrieve JutulDarcy examples.
-- `semantic_search` tool: Find relevant code patterns in the JutulDarcy documentation.
+- `retrieve_jutuldarcy_examples` tool: Semantic search for retrieving relevant JutulDarcy examples.
 - `grep_search` tool: Search for specific terms or patterns in the JutulDarcy documentation.
-- `read_file` tool: Examine existing relevant files for context or examples. Use AFTER the `semantic_search` or `grep_search` tools
+- `read_file` tool: Examine existing relevant files for context or examples. Use AFTER the `grep_search` tool.
 - Actively go back and forth between these tools to gather all necessary information before writing code.
 - IMPORTANT: If the code running or linting fails, go back and retrieve more context or examples to fix the issue.
 
