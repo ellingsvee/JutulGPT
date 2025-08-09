@@ -161,7 +161,7 @@ def response_on_check_code(code: str) -> tuple[bool, str, str]:
     console.print("3. Edit the code manually")
     console.print("4. Skip code check")
 
-    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3", "4"], default="1")
 
     if choice == "1":
         console.print("[green]✓ Running code checks[/green]")
