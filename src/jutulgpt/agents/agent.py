@@ -10,7 +10,7 @@ from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
 from jutulgpt.agents.agent_base import BaseAgent
-from jutulgpt.configuration import BaseConfiguration
+from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.tools import (
@@ -55,15 +55,18 @@ class Agent(BaseAgent):
         workflow = StateGraph(self.state_schema, config_schema=BaseConfiguration)
 
         # Add nodes
-        workflow.add_node("get_user_input", self.get_user_input)
         workflow.add_node("agent", self.call_model)
         workflow.add_node("tools", self.tool_node)
         workflow.add_node("finalize", self.finalize)
         workflow.add_node("check_code", check_code)
 
         # Set entry point
-        workflow.set_entry_point("get_user_input")
-        workflow.add_edge("get_user_input", "agent")
+        if cli_mode:
+            workflow.add_node("get_user_input", self.get_user_input)
+            workflow.set_entry_point("get_user_input")
+            workflow.add_edge("get_user_input", "agent")
+        else:
+            workflow.set_entry_point("agent")
 
         # Add edges
         workflow.add_edge("tools", "agent")

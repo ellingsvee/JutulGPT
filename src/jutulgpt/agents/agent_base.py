@@ -32,7 +32,12 @@ from jutulgpt.cli import (
     show_startup_screen,
     stream_to_console,
 )
-from jutulgpt.configuration import LLM_TEMPERATURE, RECURSION_LIMIT, BaseConfiguration
+from jutulgpt.configuration import (
+    LLM_TEMPERATURE,
+    RECURSION_LIMIT,
+    BaseConfiguration,
+    cli_mode,
+)
 from jutulgpt.globals import console
 from jutulgpt.utils import get_provider_and_model
 
@@ -176,15 +181,12 @@ class BaseAgent(ABC):
         workflow.add_node("agent", self.call_model)
         workflow.add_node("tools", self.tool_node)
 
-        if not self.part_of_multi_agent:
+        if not self.part_of_multi_agent and cli_mode:
             workflow.add_node("get_user_input", self.get_user_input)
-
-        # Set entry point
-        if self.part_of_multi_agent:
-            workflow.set_entry_point("agent")
-        else:
             workflow.set_entry_point("get_user_input")
             workflow.add_edge("get_user_input", "agent")
+        else:
+            workflow.set_entry_point("agent")
 
         # We now add a conditional edge
         workflow.add_conditional_edges(
@@ -192,10 +194,11 @@ class BaseAgent(ABC):
             self.should_continue,
             {
                 "tools": "tools",
-                "continue": END if self.part_of_multi_agent else "get_user_input",
+                "continue": "get_user_input"
+                if not self.part_of_multi_agent and cli_mode
+                else END,
             },
         )
-
         workflow.add_edge("tools", "agent")
 
         return workflow.compile(name=self.name)
