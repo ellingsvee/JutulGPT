@@ -152,24 +152,6 @@ class BaseConfiguration:
         metadata={"description": "The vector store provider to use for retrieval."},
     )
 
-    documents_search_type: Annotated[
-        Literal["similarity", "mmr", "similarity_score_threshold"],
-        {"__template_metadata__": {"kind": "reranker"}},
-    ] = field(
-        default="similarity",
-        metadata={
-            "description": "Defines the type of search that the retriever should perform."
-        },
-    )
-
-    documents_search_kwargs: dict[str, Any] = field(
-        # default_factory=lambda: {"score_threshold": 0.2},
-        default_factory=lambda: {"k": 5},
-        metadata={
-            "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types. See https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever"
-        },
-    )
-
     examples_search_type: Annotated[
         Literal["similarity", "mmr", "similarity_score_threshold"],
         {"__template_metadata__": {"kind": "reranker"}},
@@ -181,7 +163,7 @@ class BaseConfiguration:
     )
 
     examples_search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"k": 2, "fetch_k": 10, "lambda_mult": 0.5},
+        default_factory=lambda: {"k": 3, "fetch_k": 10, "lambda_mult": 0.5},
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types. See https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever"
         },
