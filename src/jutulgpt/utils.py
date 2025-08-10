@@ -357,6 +357,10 @@ def add_julia_context(code: str) -> str:
     return f"```julia\n{code}\n```"
 
 
+def remove_julia_context(code: str) -> str:
+    return code.replace("```julia\n", "").replace("\n```", "")
+
+
 def remove_plotting(code: str) -> str:
     """
     Remove GLMakie usage and plotting code from Julia code blocks.
@@ -469,6 +473,9 @@ def shorter_simulations(code: str) -> str:
     )
     code = replace_case(
         code=code, case_name="dt", simulation_functions=simulation_functions
+    )
+    code = replace_case(
+        code=code, case_name="timesteps", simulation_functions=simulation_functions
     )
 
     if original_code == code:

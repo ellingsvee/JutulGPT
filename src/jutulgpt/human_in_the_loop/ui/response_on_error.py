@@ -11,7 +11,8 @@ def response_on_error() -> tuple[bool, str]:
     # Prepare the human-in-the-loop UI request
     request = HumanInterrupt(
         action_request=ActionRequest(
-            action="Code failed. Accept to try to fix it, ignore to skip code fixing, and respond to give extra feedback to the model on what might be wrong.",
+            action="Code failed. Accept to try to fix it. Ignore to skip code fixing. Respond to give extra feedback to the model",
+            args={},
         ),
         config=HumanInterruptConfig(
             allow_ignore=True,
@@ -29,10 +30,10 @@ def response_on_error() -> tuple[bool, str]:
         return True, ""
 
     elif response_type == "respond":
-        # return code_block, False, ""
         raise NotImplementedError(
             f"Interrupt value of type {response_type} is yet implemented."
         )
+        # return True, ""
     elif response_type == "ignore":
         return False, ""
     else:

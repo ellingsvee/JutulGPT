@@ -5,7 +5,6 @@ from langchain_core.runnables import RunnableConfig
 
 from jutulgpt.cli import colorscheme, print_to_console
 from jutulgpt.configuration import BaseConfiguration, cli_mode
-from jutulgpt.human_in_the_loop.cli import response_on_check_code, response_on_error
 from jutulgpt.julia import get_error_message, get_linting_result, run_code
 from jutulgpt.state import State
 from jutulgpt.utils import (
@@ -98,8 +97,19 @@ def check_code(
     check_code_bool = True
     user_response = ""
     new_code = code
-    if configuration.human_interaction.code_check and cli_mode:
-        check_code_bool, user_response, new_code = response_on_check_code(code=code)
+    if configuration.human_interaction.code_check:
+        if cli_mode:
+            import jutulgpt.human_in_the_loop.cli as cli
+
+            check_code_bool, user_response, new_code = cli.response_on_check_code(
+                code=code
+            )
+        else:
+            import jutulgpt.human_in_the_loop.ui as ui
+
+            check_code_bool, user_response, new_code = ui.response_on_check_code(
+                code=code
+            )
 
     # Return early if user provides response or does not want to check code
     if user_response:
@@ -147,8 +157,15 @@ def check_code(
     # If the code fails, the human can skip the fixing.
     check_code_bool = True
     user_response = ""
-    if configuration.human_interaction.fix_error and cli_mode:
-        check_code_bool, user_response = response_on_error()
+    if configuration.human_interaction.fix_error:
+        if cli_mode:
+            import jutulgpt.human_in_the_loop.cli as cli
+
+            check_code_bool, user_response = cli.response_on_error()
+        else:
+            import jutulgpt.human_in_the_loop.ui as ui
+
+            check_code_bool, user_response = ui.response_on_error()
 
     if not check_code_bool:
         messages_list.append(

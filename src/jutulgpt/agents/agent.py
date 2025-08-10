@@ -6,7 +6,7 @@ from langchain_core.language_models import LanguageModelLike
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
-from langgraph.graph import StateGraph
+from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from jutulgpt.agents.agent_base import BaseAgent
@@ -86,7 +86,7 @@ class Agent(BaseAgent):
                 "finalize": "finalize",
             },
         )
-        workflow.add_edge("finalize", "get_user_input")
+        workflow.add_edge("finalize", "get_user_input" if cli_mode else END)
 
         # Compile with memory if standalone
         return workflow.compile()
@@ -162,3 +162,7 @@ agent = Agent(
     name="Agent",
     print_chat_output=True,
 )
+graph = agent.graph
+
+if __name__ == "__main__":
+    agent.run()

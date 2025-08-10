@@ -43,13 +43,13 @@ def make_retrieve_tool(
                 query = modify_rag_query(query, doc_label)
         else:
             print_to_console(
-                text=f"**Original Query:** `{query}`",
+                text=f"**Query:** `{query}`",
                 title=f"Retrieving from {doc_label}",
                 border_style=colorscheme.message,
             )
 
         if not query.strip():
-            return "The retrieval was skipped by the user. It is not relevant to the current question."
+            return "The query is empty."
 
         # Retrieve examples
         with retrieval.make_retriever(
