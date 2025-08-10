@@ -251,7 +251,8 @@ def _get_code_string_from_response(response: str) -> str:
     if matches:
         # Join multiple code blocks with double newlines to separate them
         code_blocks = [match.strip() for match in matches if match.strip()]
-        return "\n\n".join(code_blocks)
+        # return "\n\n".join(code_blocks)
+        return code_blocks[-1]  # Return the last code block only
     return ""
 
 

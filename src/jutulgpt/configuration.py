@@ -75,7 +75,7 @@ class HumanInteraction(BaseModel):
         },
     )
     fix_error: bool = field(
-        default=False,
+        default=True,
         metadata={
             "description": "Whether to decide to try to fix errors in the generated code."
         },
@@ -163,7 +163,7 @@ class BaseConfiguration:
     )
 
     examples_search_kwargs: dict[str, Any] = field(
-        default_factory=lambda: {"k": 3, "fetch_k": 10, "lambda_mult": 0.5},
+        default_factory=lambda: {"k": 2, "fetch_k": 10, "lambda_mult": 0.5},
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever. See langgraph documentation for details about what kwargs works for the different search types. See https://python.langchain.com/api_reference/chroma/vectorstores/langchain_chroma.vectorstores.Chroma.html#langchain_chroma.vectorstores.Chroma.as_retriever"
         },

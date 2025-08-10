@@ -44,7 +44,7 @@ class GrepSearchTool(BaseTool):
     ) -> str:
         """Search for text in files, returning each match with configurable context lines above and below."""
 
-        context_lines = 2  # Change this to 2, 3, etc. for more context
+        context_lines = 1  # Change this to 2, 3, etc. for more context
 
         try:
             workspace_path = str(PROJECT_ROOT / "rag" / "jutuldarcy")
@@ -142,12 +142,6 @@ class ReadFileTool(BaseTool):
     ) -> str:
         """Read file contents within the specified line range."""
 
-        print_to_console(
-            text="Trying to read file...",
-            title=f"Read file: {filePath}",
-            border_style=colorscheme.warning,
-        )
-
         try:
             if not os.path.exists(filePath):
                 return f"File not found: {filePath}"
@@ -171,11 +165,11 @@ class ReadFileTool(BaseTool):
 
             total_lines = len(lines)
 
-            print_text = "\n".join(result_lines)
+            print_text = f"````text\n{'\n'.join(result_lines)}\n```"
             print_to_console(
                 text=print_text[:500] + "...",
                 title=f"Read file: {filePath}",
-                border_style=colorscheme.success,
+                border_style=colorscheme.message,
             )
             return (
                 f"File: {filePath} (lines {start}-{end - 1} of {total_lines} total)\n"

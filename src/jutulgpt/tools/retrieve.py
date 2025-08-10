@@ -44,7 +44,7 @@ def make_retrieve_tool(
         else:
             print_to_console(
                 text=f"**Query:** `{query}`",
-                title=f"Retrieving from {doc_label}",
+                title=f"Retrieving from {doc_label} examples",
                 border_style=colorscheme.message,
             )
 
@@ -93,14 +93,10 @@ def make_retrieve_tool(
                         action_name=f"Modify retrieved {doc_label} examples",
                     )
 
-        # docs = split_docs.format_docs(retrieved_docs)
         examples = split_examples.format_examples(retrieved_examples)
 
         format_str = lambda s: s if s != "" else "(empty)"
-        out = f"""
-# Retrieved from {doc_label} examples
-{format_str(examples)}
-"""
+        out = format_str(examples)
         return out
 
     return retrieve_tool

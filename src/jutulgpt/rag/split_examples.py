@@ -50,13 +50,6 @@ def split_examples(document: Document, header_to_split_on: int = 2) -> List[Docu
     return chunks
 
 
-# def get_file_source(doc: Document, for_ui_printing: bool = False) -> str:
-#     file_source = doc.metadata.get("source", "Unknown Document")
-#     if for_ui_printing:
-#         file_source = os.path.basename(file_source)
-#     return file_source
-
-
 def get_section_path(doc: Document, for_ui_printing: bool = False) -> str:
     section_path = doc.metadata.get("heading", "No heading")
     if for_ui_printing:
@@ -70,7 +63,6 @@ def format_doc(doc: Document, within_julia_context: bool = True) -> str:
     return doc.page_content.strip()
 
 
-# TODO: This is currently the exact same code as the format-docs. Should be generalized.
 def format_examples(docs: List[Document], remove_duplicates: bool = True) -> str:
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)
@@ -80,8 +72,7 @@ def format_examples(docs: List[Document], remove_duplicates: bool = True) -> str
         example_string = ""
         file_source = get_file_source(doc)
         section_path = get_section_path(doc)
-        # section = "\n".join(f"```julia\n{c}\n```" for c in doc.page_content.strip())
-        example_string += f"# From `{file_source}`: Section `{section_path}`\n"
+        example_string += f"# From `{file_source}`:\n"
         example_string += f"{format_doc(doc, within_julia_context=True)}"
         formatted.append(example_string)
 
