@@ -228,7 +228,7 @@ class BaseAgent(ABC):
                 chat_model = init_chat_model(
                     model_name,
                     model_provider=provider,
-                    temperature=0,
+                    temperature=LLM_TEMPERATURE,
                     reasoning=True,
                     streaming=True,
                 )
@@ -236,7 +236,7 @@ class BaseAgent(ABC):
                 chat_model = init_chat_model(
                     model_name,
                     model_provider=provider,
-                    temperature=0,
+                    temperature=LLM_TEMPERATURE,
                     streaming=True,
                 )
             model = cast(BaseChatModel, chat_model)
