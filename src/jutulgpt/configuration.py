@@ -240,20 +240,12 @@ class BaseConfiguration:
         default=prompts.AGENT_PROMPT,
         metadata={"description": "The default prompt used for the agent."},
     )
-    default_coder_prompt: str = field(
-        default=prompts.DEFAULT_CODER_PROMPT,
-        metadata={"description": "The default prompt used for generating Julia code."},
-    )
-    supervisor_prompt: str = field(
-        default=prompts.SUPERVISOR_PROMPT,
-        metadata={"description": "The prompt used for the supervisor agent."},
-    )
     rag_prompt: str = field(
         default=prompts.RAG_PROMPT,
         metadata={"description": "The prompt used for the RAG agent."},
     )
     code_prompt: str = field(
-        default=prompts.CODE_GENERATION_PROMPT,
+        default=prompts.CODE_PROMPT,
         metadata={"description": "The prompt used for the coding agent."},
     )
 
