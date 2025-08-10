@@ -157,7 +157,7 @@ def response_on_check_code(code: str) -> tuple[bool, str, str]:
 
     console.print("Do you want to check the code for any potential errors?")
     console.print("1. Check the code")
-    console.print("2. Give feedback to model")
+    console.print("2. Give feedback and regenerate response")
     console.print("3. Edit the code manually")
     console.print("4. Skip code check")
 

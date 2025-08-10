@@ -142,6 +142,12 @@ class ReadFileTool(BaseTool):
     ) -> str:
         """Read file contents within the specified line range."""
 
+        print_to_console(
+            text="Trying to read file...",
+            title=f"Read file: {filePath}",
+            border_style=colorscheme.warning,
+        )
+
         try:
             if not os.path.exists(filePath):
                 return f"File not found: {filePath}"
@@ -164,16 +170,16 @@ class ReadFileTool(BaseTool):
                 result_lines.append(f"{i:4d}: {line.rstrip()}")
 
             total_lines = len(lines)
-            return (
-                f"File: {filePath} (lines {start}-{end - 1} of {total_lines} total)\n"
-                + "\n".join(result_lines)
-            )
 
             print_text = "\n".join(result_lines)
             print_to_console(
                 text=print_text[:500] + "...",
                 title=f"Read file: {filePath}",
-                border_style=colorscheme.message,
+                border_style=colorscheme.success,
+            )
+            return (
+                f"File: {filePath} (lines {start}-{end - 1} of {total_lines} total)\n"
+                + "\n".join(result_lines)
             )
 
         except Exception as e:

@@ -39,11 +39,6 @@ def get_function_documentation(code: str) -> tuple[list[str], str]:
         list[str]: A list of function names found in the code.
         str: The documentation string for the functions.
     """
-    print_to_console(
-        text="Retrieving function documentation...",
-        title="Function Documentation Retriever",
-        border_style=colorscheme.warning,
-    )
 
     try:
         res, err = run_julia_file(
@@ -55,14 +50,18 @@ def get_function_documentation(code: str) -> tuple[list[str], str]:
             func_names = [
                 name for name in func_names if name != "String[]"
             ]  # filter out empty function names
-            out_text = "Retrieved function names:\n- " + "\n- ".join(func_names)
+            out_text = "Retrieved functions: " + ", ".join(func_names)
+            print_to_console(
+                text=out_text,
+                title="Function Documentation Retriever",
+                border_style=colorscheme.success,
+            )
         else:
-            out_text = "No function names found in the code."
-        print_to_console(
-            text=out_text,
-            title="Function Documentation Retriever",
-            border_style=colorscheme.success,
-        )
+            print_to_console(
+                text="No function documentation found!",
+                title="Function Documentation Retriever",
+                border_style=colorscheme.error,
+            )
 
         return func_names, documentation
 
@@ -88,4 +87,10 @@ def get_function_documentation_from_list_of_funcs(
         tuple[list[str], str]: A tuple containing a list of function names and their documentation.
     """
     code = "\n".join(f"{func_name}();" for func_name in func_names)
+
+    print_to_console(
+        text="Retrieving documentation for functions: " + ", ".join(func_names),
+        title="Function Documentation Retriever",
+        border_style=colorscheme.message,
+    )
     return get_function_documentation(code)
