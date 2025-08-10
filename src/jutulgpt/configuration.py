@@ -27,7 +27,7 @@ EMBEDDING_MODEL_NAME = (
     "ollama:nomic-embed-text" if LOCAL_MODELS else "openai:text-embedding-3-small"
 )
 
-RECURSION_LIMIT = 50  # Number of recursions before an error is thrown.
+RECURSION_LIMIT = 200  # Number of recursions before an error is thrown.
 LLM_TEMPERATURE = 0
 
 
@@ -74,7 +74,7 @@ class HumanInteraction(BaseModel):
             "description": "Whether to perform code checks on the generated code."
         },
     )
-    decide_to_try_to_fix_error: bool = field(
+    fix_error: bool = field(
         default=False,
         metadata={
             "description": "Whether to decide to try to fix errors in the generated code."
