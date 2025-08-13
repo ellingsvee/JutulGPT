@@ -366,8 +366,11 @@ class BaseAgent(ABC):
 
     def get_user_input(self, state: state.State, config: RunnableConfig) -> dict:
         """Get user input for standalone mode."""
-        console.print("[bold blue]User Input:[/bold blue] ")
-        user_input = console.input("> ")
+
+        user_input = ""
+        while not user_input:  # Handle empty input
+            console.print("[bold blue]User Input:[/bold blue] ")
+            user_input = console.input("> ")
 
         # Check for quit command
         if user_input.strip().lower() in ["q", "quit"]:
