@@ -51,11 +51,11 @@ def get_function_documentation(code: str) -> tuple[list[str], str]:
                 name for name in func_names if name != "String[]"
             ]  # filter out empty function names
             out_text = "Retrieved functions: " + ", ".join(func_names)
-            print_to_console(
-                text=out_text,
-                title="Function Documentation Retriever",
-                border_style=colorscheme.success,
-            )
+            # print_to_console(
+            #     text=out_text,
+            #     title="Function Documentation Retriever",
+            #     border_style=colorscheme.success,
+            # )
         else:
             print_to_console(
                 text="No function documentation found!",

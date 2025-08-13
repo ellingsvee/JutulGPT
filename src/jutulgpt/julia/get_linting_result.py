@@ -3,12 +3,6 @@ from jutulgpt.julia.julia_code_runner import run_julia_file
 
 
 def get_linting_result(code: str) -> str:
-    print_to_console(
-        text="Running linter on the code...",
-        title="Linter",
-        border_style=colorscheme.warning,
-    )
-
     try:
         res, err = run_julia_file(code=code, julia_file_name="julia_lint_script.jl")
         lines = res.splitlines()
