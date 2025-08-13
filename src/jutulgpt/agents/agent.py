@@ -92,7 +92,7 @@ class Agent(BaseAgent):
         self, config: RunnableConfig
     ) -> Union[str, LanguageModelLike]:
         configuration = BaseConfiguration.from_runnable_config(config)
-        return configuration.coding_model
+        return configuration.agent_model
 
     def get_prompt_from_config(self, config: RunnableConfig) -> str:
         """

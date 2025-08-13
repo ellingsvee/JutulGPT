@@ -84,42 +84,7 @@ class BaseConfiguration:
     retrieval processes, including embedding model selection, retriever provider choice, and search parameters.
     """
 
-    use_local_model: Annotated[
-        bool,
-        {
-            "description": "If True, use local models (Ollama). If False, use OpenAI API."
-        },
-    ] = field(
-        default=LOCAL_MODELS,
-        metadata={
-            "description": "If True, use local models (Ollama). If False, use OpenAI API."
-        },
-    )
-
-    retrieve_fimbul: Annotated[
-        bool,
-        {
-            "description": "Whether to retrieve Fimbul documentation or not. If False, only JutulDarcy documentation is retrieved."
-        },
-    ] = field(
-        default=False,
-        metadata={
-            "description": "Whether to retrieve Fimbul documentation or not. If False, only JutulDarcy documentation is retrieved."
-        },
-    )
-
-    max_iterations: Annotated[
-        int,
-        {
-            "description": "How many times the model will try to fix the code if it fails."
-        },
-    ] = field(
-        default=3,
-        metadata={
-            "description": "How many times the model will try to fix the code if it fails."
-        },
-    )
-
+    # Human in the loop
     human_interaction: HumanInteraction = field(
         default_factory=HumanInteraction,
         metadata={
@@ -128,6 +93,7 @@ class BaseConfiguration:
         },
     )
 
+    # RAG
     embedding_model: Annotated[
         str,
         {"__template_metadata__": {"kind": "embeddings"}},
@@ -179,36 +145,15 @@ class BaseConfiguration:
     )
 
     # Models
-    response_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default_factory=lambda: LLM_MODEL_NAME,
-        metadata={
-            "description": "The language model used for generating responses. Should be in the form: provider/model-name."
-        },
-    )
-
-    supervisor_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = (
-        field(
-            default_factory=lambda: LLM_MODEL_NAME,
-            metadata={
-                "description": "The language model used as the supervisor in the multi-agent model."
-            },
-        )
-    )
-    coding_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
+    agent_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
         default_factory=lambda: LLM_MODEL_NAME,
         metadata={"description": "The language model used for coding tasks."},
     )
-    rag_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
+    autonomous_agent_model: Annotated[
+        str, {"__template_metadata__": {"kind": "llm"}}
+    ] = field(
         default_factory=lambda: LLM_MODEL_NAME,
-        metadata={
-            "description": "The language model used for retrieval-augmented generation."
-        },
-    )
-    error_analyzer_model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = (
-        field(
-            default_factory=lambda: LLM_MODEL_NAME,
-            metadata={"description": "The language model used for error analysis."},
-        )
+        metadata={"description": "The language model used for coding tasks."},
     )
 
     # Prompts
