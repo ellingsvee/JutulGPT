@@ -21,13 +21,6 @@ s.global_env.project_deps = collect(keys(s.global_env.symbols))
 f = StaticLint.loadfile(s, root_file)
 StaticLint.semantic_pass(LanguageServer.getroot(f))
 
-# Old
-# for doc in LanguageServer.getdocuments_value(s)
-#     StaticLint.check_all(LanguageServer.getcst(doc), s.lint_options, LanguageServer.getenv(doc, s))
-#     LanguageServer.mark_errors(doc, doc.diagnostics)
-#     foreach(println, doc.diagnostics)
-# end
-
 println("STARTING LINT:")
 file_text_lines = readlines(root_file)
 for doc in LanguageServer.getdocuments_value(s)
