@@ -162,7 +162,7 @@ The GUI can now be accessed on `http://localhost:3000/` (or some other location 
 
 > NOTE: Remember to set `cli_mode = False` in `src/jutulgpt/configuration.py`.
 
-## Fimbul (WARNING!)
+## Fimbul (WARNING)
 There is some legacy code for generating code for the Fimbul package. I have removed a lot of it, but it can be re-implemented by adding some tools and modifying the prompts. My suggestion is to get familiar with the current tools fot JutulDarcy, and then later extend to Fimbul.
 
 ## Testing (WARNING)
