@@ -220,7 +220,7 @@ def grep_search(
                 "```text\n" + "\n\n".join(match_results) + "\n```"
             )
             print_to_console(
-                text=print_text[:1000] + "...",
+                text=print_text[:500] + "...",
                 title=f"Grep search: {query}",
                 border_style=colorscheme.message,
             )
