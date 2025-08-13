@@ -15,12 +15,28 @@ from jutulgpt.utils import (
 )
 
 
-def _run_linter(code: str) -> tuple[str, bool]:
+def _run_linter(code: str, print_code: bool = True) -> tuple[str, bool]:
     """
     Returns:
         str: String containing the linting issues found in the code. Empty if no issues found.
         bool: True if issues were found, False otherwise.
     """
+    if print_code:
+        display_code = f"```julia\n{code}\n```"
+        if len(display_code) > 500:
+            display_code = display_code[:500] + "..."
+        print_to_console(
+            text="Running static analysis:\n" + display_code,
+            title="Linter",
+            border_style=colorscheme.warning,
+        )
+    else:
+        print_to_console(
+            text="Running static analysis...",
+            title="Linter",
+            border_style=colorscheme.warning,
+        )
+
     linting_result = get_linting_result(code)
     if linting_result:
         linting_message = (
@@ -32,7 +48,7 @@ def _run_linter(code: str) -> tuple[str, bool]:
     return "", False
 
 
-def _run_julia_code(code: str, print_code: bool = False) -> tuple[str, bool]:
+def _run_julia_code(code: str, print_code: bool = True) -> tuple[str, bool]:
     """
     Returns:
         str: String containing the code running failed. Empty if the code executed successfully.
@@ -40,17 +56,20 @@ def _run_julia_code(code: str, print_code: bool = False) -> tuple[str, bool]:
     """
 
     if print_code:
-        code_within_julia_context = f"```julia\n{code}```"
+        display_code = f"```julia\n{code}\n```"
+        if len(display_code) > 500:
+            display_code = display_code[:500] + "..."
         print_to_console(
-            text="Running code:\n" + code_within_julia_context[:500] + "...",
+            text="Running code:\n" + display_code,
             title="Code Runner",
             border_style=colorscheme.warning,
         )
-    print_to_console(
-        text="Running code...",
-        title="Code Runner",
-        border_style=colorscheme.warning,
-    )
+    else:
+        print_to_console(
+            text="Running code...",
+            title="Code Runner",
+            border_style=colorscheme.warning,
+        )
 
     # result = run_string(code)
     result = run_code(code)
@@ -135,10 +154,12 @@ def check_code(
     code = shorter_simulations(code)
 
     # Running the linter
-    linting_message, linting_issues_found = _run_linter(code)
+    linting_message, linting_issues_found = _run_linter(code, print_code=False)
 
     # Running the code
-    code_running_message, code_running_issues_found = _run_julia_code(code)
+    code_running_message, code_running_issues_found = _run_julia_code(
+        code, print_code=False
+    )
 
     # If we did not find any issues, we return the final code
     if not linting_issues_found and not code_running_issues_found:
