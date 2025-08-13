@@ -50,12 +50,6 @@ class HumanInteraction(BaseModel):
         default=False,
         metadata={"description": "Whether to modify the generated RAG query."},
     )
-    retrieved_documents: bool = field(
-        default=False,
-        metadata={
-            "description": "Whether to verify and filter the retrieved documents."
-        },
-    )
     retrieved_examples: bool = field(
         default=False,
         metadata={
@@ -222,13 +216,11 @@ class BaseConfiguration:
         default=prompts.AGENT_PROMPT,
         metadata={"description": "The default prompt used for the agent."},
     )
-    rag_prompt: str = field(
-        default=prompts.RAG_PROMPT,
-        metadata={"description": "The prompt used for the RAG agent."},
-    )
-    code_prompt: str = field(
-        default=prompts.CODE_PROMPT,
-        metadata={"description": "The prompt used for the coding agent."},
+    autonomous_agent_prompt: str = field(
+        default=prompts.AUTONOMOUS_AGENT_PROMPT,
+        metadata={
+            "description": "The default prompt used for the fully autonomous agent."
+        },
     )
 
     @classmethod
