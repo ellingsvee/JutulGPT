@@ -1,229 +1,232 @@
 from __future__ import annotations
 
 import os
-import subprocess
-from typing import Optional
 
-from langchain_core.tools import BaseTool, tool
-from langchain_core.tools.base import ArgsSchema
+from langchain_core.tools import tool
 from pydantic import BaseModel, Field
+from rich.panel import Panel
 
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.configuration import PROJECT_ROOT
-from jutulgpt.nodes.check_code import _run_julia_code, _run_linter
-from jutulgpt.utils import fix_imports, shorter_simulations
+from jutulgpt.configuration import cli_mode
+from jutulgpt.globals import console
 
 
-class GrepSearchInput(BaseModel):
-    """Input for grep search tool."""
-
-    query: str = Field(
-        description="The keyword based pattern to search for in files. Can be a regex or plain text pattern"
+class ReadFromFileInput(BaseModel):
+    file_path: str = Field(description="The absolute path of the file to read.")
+    read_full_file: bool = Field(
+        description="Whether to read the full file (ignoring line range)."
     )
-    includePattern: Optional[str] = Field(
-        default=None, description="Search files matching this glob pattern."
-    )
-    isRegexp: Optional[bool] = Field(
-        default=False, description="Whether the pattern is a regex."
-    )
-
-
-class GrepSearchTool(BaseTool):
-    """Do a text search in the workspace."""
-
-    name: str = "grep_search"
-    # description: str = "Do a keyword based search in the JutulDarcy documentation. Limited to 10 results."
-    description: str = "### Instructions:\nThis is best for finding exact text matches or regex patterns.\nThis is preferred over semantic search when we know the exact symbol/function name/etc. to search for.\n\nUse this tool to run fast, exact regex searches over text files.\nTo avoid overwhelming output, the results are capped at 10 matches. 2 lines of context above and below each match are included."
-    args_schema: Optional[ArgsSchema] = GrepSearchInput
-
-    def _run(
-        self,
-        query: str,
-        includePattern: Optional[str] = None,
-        isRegexp: Optional[bool] = False,
-    ) -> str:
-        """Search for text in files, returning each match with configurable context lines above and below."""
-
-        context_lines = 1  # Change this to 2, 3, etc. for more context
-
-        try:
-            workspace_path = str(PROJECT_ROOT / "rag" / "jutuldarcy")
-            cmd_parts = ["grep", "-r", "-n"]
-
-            if isRegexp:
-                cmd_parts.append("-E")
-            else:
-                cmd_parts.append("-F")  # Fixed string search
-
-            if includePattern:
-                cmd_parts.extend(["--include", includePattern])
-            else:
-                cmd_parts.extend(
-                    [
-                        "--include=*.jl",
-                        "--include=*.md",
-                    ]
-                )
-
-            cmd_parts.extend([query, workspace_path])
-
-            result = subprocess.run(
-                cmd_parts, capture_output=True, text=True, timeout=10
-            )
-
-            if result.stdout:
-                lines = result.stdout.strip().split("\n")[:10]  # Limit to 10 results
-                context_results = []
-                for match in lines:
-                    # Parse: filename:line_number:content
-                    parts = match.split(":", 2)
-                    if len(parts) != 3:
-                        context_results.append(match)
-                        continue
-                    filename, line_str, content = parts
-                    try:
-                        line_num = (
-                            int(line_str) - 1
-                        )  # grep is 1-based, Python is 0-based
-                        with open(filename, "r", encoding="utf-8") as f:
-                            file_lines = f.readlines()
-                        start = max(0, line_num - context_lines)
-                        end = min(len(file_lines), line_num + context_lines + 1)
-                        snippet = "".join(
-                            f"{i + 1:4d}: {file_lines[i].rstrip()}\n"
-                            for i in range(start, end)
-                        )
-                        context_results.append(
-                            f"File: {filename}, Match at line {line_num + 1}\n{snippet}"
-                        )
-                    except Exception as e:
-                        context_results.append(
-                            f"{match}\n[Could not read context: {e}]"
-                        )
-
-                out_text = (
-                    f"Found {len(context_results)} matches (with context):\n\n"
-                    "```text\n" + "\n".join(context_results) + "\n```"
-                )
-                print_to_console(
-                    text=out_text[:500] + "...",
-                    title=f"Grep search: {query}",
-                    border_style=colorscheme.message,
-                )
-                return out_text
-            else:
-                return f"No matches found for: {query}"
-
-        except Exception as e:
-            return f"Error during text search: {str(e)}"
-
-
-class ReadFileInput(BaseModel):
-    """Input for read file tool."""
-
-    filePath: str = Field(description="The absolute path of the file to read.")
-    startLineNumberBaseZero: int = Field(
+    start_line_number_base_zero: int = Field(
         description="The line number to start reading from, 0-based."
     )
-    endLineNumberBaseZero: int = Field(
+    end_line_number_base_zero: int = Field(
         description="The inclusive line number to end reading at, 0-based."
     )
 
 
-class ReadFileTool(BaseTool):
-    """Read the contents of a file."""
+@tool(
+    "read_from_file",
+    description="Read file contents. Has the option to specify the line range. Returns a string containing the specified lines or the entire file.",
+    args_schema=ReadFromFileInput,
+)
+def read_from_file(
+    file_path: str,
+    read_full_file: bool,
+    start_line_number_base_zero: int,
+    end_line_number_base_zero: int,
+) -> str:
+    try:
+        if not os.path.exists(file_path):
+            return f"File not found: {file_path}"
 
-    name: str = "read_file"
-    description: str = "Read the contents of a file. You must specify the line range you're interested in."
-    args_schema: Optional[ArgsSchema] = ReadFileInput
+        with open(file_path, "r", encoding="utf-8") as file:
+            lines = file.readlines()
 
-    def _run(
-        self, filePath: str, startLineNumberBaseZero: int, endLineNumberBaseZero: int
-    ) -> str:
-        """Read file contents within the specified line range."""
+        # Convert to 0-based indexing
+        if read_full_file:
+            start = 0
+            end = len(lines)
+        else:
+            start = max(0, start_line_number_base_zero)
+            end = min(len(lines), end_line_number_base_zero + 1)
 
+        if start >= len(lines):
+            return f"Start line {start_line_number_base_zero} is beyond file length ({len(lines)} lines)"
+
+        selected_lines = lines[start:end]
+
+        # Add line numbers
+        result_lines = []
+        for i, line in enumerate(selected_lines, start=start):
+            result_lines.append(f"{i:4d}: {line.rstrip()}")
+
+        total_lines = len(lines)
+
+        print_text = f"````text\n{'\n'.join(result_lines)}\n```"
+        print_to_console(
+            text=print_text[:500] + "...",
+            title=f"Read file: {file_path}",
+            border_style=colorscheme.message,
+        )
+        return (
+            f"File: {file_path} (lines {start}-{end - 1} of {total_lines} total)\n"
+            + "\n".join(result_lines)
+        )
+
+    except Exception as e:
+        return f"Error reading file: {str(e)}"
+
+
+class WriteToFileInput(BaseModel):
+    file_path: str = Field(
+        "The absolute path to the file to write to",
+    )
+    content: str = Field(
+        "The content to write to the file",
+    )
+
+
+@tool(
+    "write_to_file",
+    description="Write a string to file.",
+    args_schema=WriteToFileInput,
+)
+def write_to_file(
+    file_path: str,
+    content: str,
+) -> str:
+    # Check if file already exists
+    if os.path.exists(file_path):
         try:
-            if not os.path.exists(filePath):
-                return f"File not found: {filePath}"
+            # Read existing content for preview
+            with open(file_path, "r", encoding="utf-8") as f:
+                existing_content = f.read()
 
-            with open(filePath, "r", encoding="utf-8") as file:
-                lines = file.readlines()
+            if cli_mode:
+                # Create preview of existing content (first 300 chars)
+                existing_preview = existing_content[:300]
+                if len(existing_content) > 300:
+                    existing_preview += "..."
 
-            # Convert to 0-based indexing
-            start = max(0, startLineNumberBaseZero)
-            end = min(len(lines), endLineNumberBaseZero + 1)
+                # Create preview of new content (first 300 chars)
+                new_preview = content[:300]
+                if len(content) > 300:
+                    new_preview += "..."
 
-            if start >= len(lines):
-                return f"Start line {startLineNumberBaseZero} is beyond file length ({len(lines)} lines)"
+                # Display confirmation prompt with previews
+                console.print(
+                    Panel.fit(
+                        f"[bold yellow]File Already Exists: {file_path}[/bold yellow]\n\n"
+                        f"[bold]Current content ({len(existing_content)} chars):[/bold]\n"
+                        f"[dim]{existing_preview}[/dim]\n\n"
+                        f"[bold]New content ({len(content)} chars):[/bold]\n"
+                        f"[dim]{new_preview}[/dim]",
+                        title="File Overwrite Confirmation",
+                        border_style="yellow",
+                    )
+                )
 
-            selected_lines = lines[start:end]
+                # Prompt for confirmation
+                response = (
+                    console.input(
+                        "\n[bold red]Do you want to overwrite this file? (y/n): [/bold red]"
+                    )
+                    .strip()
+                    .lower()
+                )
 
-            # Add line numbers
-            result_lines = []
-            for i, line in enumerate(selected_lines, start=start):
-                result_lines.append(f"{i:4d}: {line.rstrip()}")
+                if response not in ["y", "yes"]:
+                    print_to_console(
+                        text=f"File write cancelled by user: {file_path}",
+                        title="File Writer",
+                        border_style=colorscheme.warning,
+                    )
+                    return f"File write cancelled by user: {file_path}"
+            else:  # UI mode
+                from jutulgpt.human_in_the_loop.ui import response_on_file_write
 
-            total_lines = len(lines)
-
-            print_text = f"````text\n{'\n'.join(result_lines)}\n```"
-            print_to_console(
-                text=print_text[:500] + "...",
-                title=f"Read file: {filePath}",
-                border_style=colorscheme.message,
-            )
-            return (
-                f"File: {filePath} (lines {start}-{end - 1} of {total_lines} total)\n"
-                + "\n".join(result_lines)
-            )
+                write_to_file, file_path = response_on_file_write(file_path)
+                if not write_to_file:
+                    return f"File write cancelled by user: {file_path}"
 
         except Exception as e:
-            return f"Error reading file: {str(e)}"
+            print_to_console(
+                text=f"Error reading existing file {file_path}: {str(e)}",
+                title="File Writer Warning",
+                border_style=colorscheme.warning,
+            )
+
+    try:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+            success_msg = f"Successfully wrote to file: {file_path}"
+            print_to_console(
+                text=success_msg,
+                title="File Writer Success",
+                border_style=colorscheme.success,
+            )
+            return success_msg
+    except Exception as e:
+        error_msg = f"Error writing to file {file_path}: {str(e)}"
+        print_to_console(
+            text=error_msg,
+            title="File Writer Error",
+            border_style=colorscheme.error,
+        )
+        return error_msg
 
 
-@tool("get_working_directory", parse_docstring=True)
-def get_working_directory_tool() -> str:
-    """
-    Get the current working directory.
-
-    Returns:
-        str: The current working directory path
-    """
+@tool("get_working_directory", description=" Get the current working directory path.")
+def get_working_directory() -> str:
     return os.getcwd()
 
 
-class RunJuliaCodeToolInput(BaseModel):
-    code: str = Field(
-        description="The Julia code that should be executed",
+class ListFilesInDocumentationInput(BaseModel):
+    directory_path: str = Field(
+        description="The absolute path of the directory to list files from."
+    )
+    recursive: bool = Field(
+        description="True to list files recursively, False to list only top-level files."
     )
 
 
 @tool(
-    "run_julia_code",
-    args_schema=RunJuliaCodeToolInput,
-    description="Execute Julia code. Returns output or error message.",
+    "list_files_in_directory",
+    description="Recursievly list all files in a directory. Returns a string with the absolute paths of all files and directories.",
+    args_schema=ListFilesInDocumentationInput,
 )
-def run_julia_code_tool(code: str):
-    code = fix_imports(code)
-    code = shorter_simulations(code)
-    out, code_failed = _run_julia_code(code, print_code=True)
-    if code_failed:
-        return out
-    return "Code executed successfully!"
+def list_files_in_directory(directory_path: str, recursive: bool) -> str:
+    try:
+        if not os.path.exists(directory_path):
+            return f"ERROR: Directory {directory_path} does not exist."
 
+        if not os.path.isdir(directory_path):
+            return f"ERROR: {directory_path} is not a directory."
 
-class RunJuliaLinterToolInput(BaseModel):
-    code: str = Field(
-        description="The Julia code that should be analyzed using the linter",
-    )
+        file_paths = []
+        if recursive:
+            for root, dirs, files in os.walk(directory_path):
+                for file in files:
+                    path = os.path.join(root, file)
+                    file_paths.append(f"[FILE] {path}")
+                for dir in dirs:
+                    path = os.path.join(root, dir)
+                    file_paths.append(f"[DIR]  {path}/")
+        else:
+            # Only list top-level files and directories
+            for item in os.listdir(directory_path):
+                item_path = os.path.join(directory_path, item)
+                if os.path.isdir(item_path):
+                    file_paths.append(f"[DIR]  {item_path}/")
+                else:
+                    file_paths.append(f"[FILE] {item_path}")
 
+        if not file_paths:
+            return f"No files found in directory: {directory_path}"
 
-@tool(
-    "run_julia_linter",
-    args_schema=RunJuliaLinterToolInput,
-    description="Run a static analysis of Julia code using a linter.",
-)
-def run_julia_linter_tool(code: str):
-    out, code_failed = _run_linter(code)
-    if not code_failed:
-        return out
-    return "Linter found no issues!"
+        file_paths.sort()
+        mode = "recursive" if recursive else "top-level"
+        return f"Contents of {directory_path} ({mode}):\n" + "\n".join(file_paths)
+
+    except Exception as e:
+        return f"ERROR: Failed to list directory contents: {str(e)}"

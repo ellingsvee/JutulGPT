@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+import subprocess
 from functools import partial
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, InjectedToolArg, tool
@@ -9,7 +12,7 @@ from pydantic import BaseModel, Field
 import jutulgpt.rag.retrieval as retrieval
 import jutulgpt.rag.split_examples as split_examples
 from jutulgpt.cli import colorscheme, print_to_console
-from jutulgpt.configuration import BaseConfiguration, cli_mode
+from jutulgpt.configuration import PROJECT_ROOT, BaseConfiguration, cli_mode
 from jutulgpt.julia import get_function_documentation_from_list_of_funcs
 from jutulgpt.rag.retriever_specs import RETRIEVER_SPECS
 from jutulgpt.utils import get_file_source
@@ -63,10 +66,7 @@ def make_retrieve_tool(
             retrieved_examples = retriever.invoke(query)
 
         # Human interaction: filter docs/examples
-        if (
-            configuration.human_interaction.retrieved_documents
-            or configuration.human_interaction.retrieved_examples
-        ):
+        if configuration.human_interaction.retrieved_examples:
             if cli_mode:
                 from jutulgpt.human_in_the_loop.cli import response_on_rag
 
@@ -103,36 +103,35 @@ def make_retrieve_tool(
 
 
 # Input schemas
-class RetrieveJutulDarcyToolInput(BaseModel):
+class RetrieveJutulDarcyInput(BaseModel):
     query: str = Field(
         "The query that will be used for document and example retrieval",
     )
 
 
-class RetrieveFimbulToolInput(BaseModel):
+class RetrieveFimbulInput(BaseModel):
     query: str = Field(
         "The query that will be used for document and example retrieval",
     )
 
 
 # Create tools
-retrieve_jutuldarcy_examples_tool = make_retrieve_tool(
+retrieve_jutuldarcy_examples = make_retrieve_tool(
     name="retrieve_jutuldarcy_examples",
     doc_key="jutuldarcy",
     doc_label="JutulDarcy",
-    input_cls=RetrieveJutulDarcyToolInput,
+    input_cls=RetrieveJutulDarcyInput,
 )
 
-retrieve_fimbul_tool = make_retrieve_tool(
+retrieve_fimbul = make_retrieve_tool(
     name="retrieve_fimbul",
     doc_key="fimbul",
     doc_label="Fimbul",
-    input_cls=RetrieveFimbulToolInput,
+    input_cls=RetrieveFimbulInput,
 )
 
 
-# Tool for retrieving function documentation
-class RetrieveFunctionDocumentationToolInput(BaseModel):
+class RetrieveFunctionDocumentationInput(BaseModel):
     function_names: List[str] = Field(
         description="A list of function names to retrieve the documentation for.",
     )
@@ -140,14 +139,13 @@ class RetrieveFunctionDocumentationToolInput(BaseModel):
 
 @tool(
     "retrieve_function_documentation",
-    args_schema=RetrieveFunctionDocumentationToolInput,
+    description="Retrieve documentation for specific Julia functions. Use this tool when needing detailed information about function signatures and usage.",
+    args_schema=RetrieveFunctionDocumentationInput,
 )
-def retrieve_function_documentation_tool(
+def retrieve_function_documentation(
     function_names: List[str],
     config: Annotated[RunnableConfig, InjectedToolArg],
 ) -> str:
-    """Use this tool to retrieve the documentation for spesific Julia functions."""
-
     _, retrieved_signatures = get_function_documentation_from_list_of_funcs(
         func_names=function_names
     )
@@ -156,3 +154,82 @@ def retrieve_function_documentation_tool(
         return retrieved_signatures
 
     return "No function signatures found for the provided function names."
+
+
+class GrepSearchInput(BaseModel):
+    """Input for grep search tool."""
+
+    query: str = Field(
+        description="The keyword based pattern to search for in files. Can be a regex or plain text pattern"
+    )
+    includePattern: Optional[str] = Field(
+        default=None, description="Search files matching this glob pattern."
+    )
+    isRegexp: Optional[bool] = Field(
+        default=False, description="Whether the pattern is a regex."
+    )
+
+
+@tool(
+    "grep_search",
+    description="Do a keyword based search in the JutulDarcy documentation. Limited to 20 results. Use this tool to get an overview of which files to consider reading using the file-reader tool.",
+    args_schema=GrepSearchInput,
+)
+def grep_search(
+    query: str,
+    includePattern: Optional[str] = None,
+    isRegexp: Optional[bool] = False,
+) -> str:
+    try:
+        workspace_path = str(PROJECT_ROOT / "rag" / "jutuldarcy")
+        cmd_parts = ["grep", "-r", "-n"]
+
+        if isRegexp:
+            cmd_parts.append("-E")
+        else:
+            cmd_parts.append("-F")  # Fixed string search
+
+        if includePattern:
+            cmd_parts.extend(["--include", includePattern])
+        else:
+            cmd_parts.extend(
+                [
+                    "--include=*.jl",
+                    "--include=*.md",
+                ]
+            )
+
+        cmd_parts.extend([query, workspace_path])
+
+        result = subprocess.run(cmd_parts, capture_output=True, text=True, timeout=10)
+
+        if result.stdout:
+            lines = result.stdout.strip().split("\n")[:20]  # Limit to 20 results
+            match_results = []
+            for match in lines:
+                # Parse: filename:line_number:content
+                parts = match.split(":", 2)
+                if len(parts) != 3:
+                    match_results.append(match)
+                    continue
+                filename, line_str, content = parts
+                match_results.append(f"File: {filename}, Line {line_str}: {content}")
+
+            print_text = (
+                f"Found {len(match_results)} matches:\n\n"
+                "```text\n" + "\n\n".join(match_results) + "\n```"
+            )
+            print_to_console(
+                text=print_text[:1000] + "...",
+                title=f"Grep search: {query}",
+                border_style=colorscheme.message,
+            )
+            out_text = f"Found {len(match_results)} matches:\n" + "\n\n".join(
+                match_results
+            )
+            return out_text
+        else:
+            return f"No matches found for: {query}"
+
+    except Exception as e:
+        return f"Error during text search: {str(e)}"

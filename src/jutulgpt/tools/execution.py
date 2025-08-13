@@ -1,90 +1,80 @@
 """Tools for executing code and terminal commands."""
 
+from __future__ import annotations
+
 import os
 import re
 import subprocess
-import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from langchain_core.tools import tool
+from pydantic import BaseModel, Field
 
 from jutulgpt.cli import colorscheme, print_to_console
+from jutulgpt.nodes.check_code import _run_julia_code, _run_linter
+from jutulgpt.utils import fix_imports, shorter_simulations
 
 
-@tool
-def execute_julia_code(code: str, working_directory: Optional[str] = None) -> str:
+class RunJuliaCodeInput(BaseModel):
+    code: str = Field(
+        description="The Julia code that should be executed",
+    )
+
+
+@tool(
+    "run_julia_code",
+    args_schema=RunJuliaCodeInput,
+    description="Execute Julia code. Returns output or error message.",
+)
+def run_julia_code(code: str):
+    code = fix_imports(code)
+    code = shorter_simulations(code)
+    out, code_failed = _run_julia_code(code, print_code=True)
+    if code_failed:
+        return out
+    return "Code executed successfully!"
+
+
+class RunJuliaLinterInput(BaseModel):
+    code: str = Field(
+        description="The Julia code that should be analyzed using the linter",
+    )
+
+
+@tool(
+    "run_julia_linter",
+    args_schema=RunJuliaLinterInput,
+    description="Run a static analysis of Julia code using a linter. Returns output or error message.",
+)
+def run_julia_linter(code: str):
+    out, code_failed = _run_linter(code)
+    if not code_failed:
+        return out
+    return "Linter found no issues!"
+
+
+@tool("execute_terminal_command", parse_docstring=True)
+def execute_terminal_command(command: str) -> str:
     """
-    Execute Julia code in a temporary file and return the output.
+    Execute a terminal command and return the output. Remember to include the project directory in the command when running the julia command. I.e. write f.ex. `julia --project=. my_script.jl`
 
     Args:
-        code: The Julia code to execute
-        working_directory: Optional working directory to run the code in
-
-    Returns:
-        str: The output from executing the code (stdout and stderr combined)
-    """
-    if working_directory is None:
-        working_directory = os.getcwd()
-
-    # Create a temporary Julia file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".jl", delete=False) as f:
-        f.write(code)
-        temp_file = f.name
-
-    try:
-        # Execute the Julia code
-        result = subprocess.run(
-            ["julia", temp_file],
-            cwd=working_directory,
-            capture_output=True,
-            text=True,
-            timeout=60,  # 60 second timeout
-        )
-
-        output = ""
-        if result.stdout:
-            output += f"STDOUT:\n{result.stdout}\n"
-        if result.stderr:
-            output += f"STDERR:\n{result.stderr}\n"
-        if result.returncode != 0:
-            output += f"EXIT CODE: {result.returncode}\n"
-
-        return (
-            output.strip()
-            if output.strip()
-            else "Code executed successfully with no output."
-        )
-
-    except subprocess.TimeoutExpired:
-        return "ERROR: Code execution timed out after 60 seconds."
-    except Exception as e:
-        return f"ERROR: Failed to execute code: {str(e)}"
-    finally:
-        # Clean up temporary file
-        try:
-            os.unlink(temp_file)
-        except:
-            pass
-
-
-@tool
-def execute_terminal_command(
-    command: str, working_directory: Optional[str] = None
-) -> str:
-    """
-    Execute a terminal command and return the output.
-
-    Args:
-        command: The command to execute
-        working_directory: Optional working directory to run the command in
+        command: The command to execute. IMPORTANT to remember to add the project directory to the command when running Julia!
 
     Returns:
         str: The output from executing the command (stdout and stderr combined)
     """
-    if working_directory is None:
-        working_directory = os.getcwd()
+
+    from jutulgpt.human_in_the_loop import cli
+
+    run_command, command = cli.modify_terminal_run(command)
+
+    if not run_command:
+        return "User did not allow you to run this command."
+
+    working_directory = os.getcwd()
 
     try:
         # Execute the command
@@ -99,11 +89,19 @@ def execute_terminal_command(
 
         output = ""
         if result.stdout:
-            output += f"STDOUT:\n{result.stdout}\n"
+            output += f"# STDOUT:\n\n```text\n{result.stdout}\n```\n\n"
         if result.stderr:
-            output += f"STDERR:\n{result.stderr}\n"
+            output += f"# STDERR:\n\n```text\n{result.stderr}\n```\n\n"
         if result.returncode != 0:
             output += f"EXIT CODE: {result.returncode}\n"
+
+        print_to_console(
+            text=output,
+            title="Run finished",
+            border_style=colorscheme.success
+            if not result.stderr
+            else colorscheme.message,
+        )
 
         return (
             output.strip()
@@ -112,8 +110,19 @@ def execute_terminal_command(
         )
 
     except subprocess.TimeoutExpired:
+        print_to_console(
+            text="ERROR: Command execution timed out after 60 seconds.",
+            title="Run error",
+            border_style=colorscheme.success,
+        )
+
         return "ERROR: Command execution timed out after 60 seconds."
     except Exception as e:
+        print_to_console(
+            text=f"ERROR: Failed to execute command: {str(e)}",
+            title="Run error",
+            border_style=colorscheme.success,
+        )
         return f"ERROR: Failed to execute command: {str(e)}"
 
 

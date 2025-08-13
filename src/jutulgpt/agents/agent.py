@@ -14,10 +14,12 @@ from jutulgpt.configuration import BaseConfiguration, cli_mode
 from jutulgpt.nodes import check_code
 from jutulgpt.state import State
 from jutulgpt.tools import (
-    grep_search_tool,
-    read_file_tool,
-    retrieve_function_documentation_tool,
-    retrieve_jutuldarcy_examples_tool,
+    grep_search,
+    list_files_in_directory,
+    read_from_file,
+    retrieve_function_documentation,
+    retrieve_jutuldarcy_examples,
+    write_to_file,
 )
 from jutulgpt.utils import get_code_from_response
 
@@ -154,10 +156,12 @@ class Agent(BaseAgent):
 
 agent = Agent(
     tools=[
-        retrieve_jutuldarcy_examples_tool,
-        retrieve_function_documentation_tool,
-        read_file_tool,
-        grep_search_tool,
+        list_files_in_directory,
+        read_from_file,
+        write_to_file,
+        grep_search,
+        retrieve_function_documentation,
+        retrieve_jutuldarcy_examples,
     ],
     name="Agent",
     print_chat_output=True,

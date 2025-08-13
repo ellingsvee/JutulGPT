@@ -375,3 +375,49 @@ def response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, str]:
         else:
             console.print("[red]✗ Empty code provided[/red]")
             return code_block, False, ""
+
+
+def modify_terminal_run(command: str) -> tuple[bool, str]:
+    """
+    Accept, modify, or skip a terminal command.
+
+    Args:
+        command: The original terminal command string
+
+    Returns:
+        bool: Whether the command is allowed to run
+        str: The potentially modified query
+
+    """
+    console.print("\n[bold yellow] Terminal Command Review[/bold yellow]")
+
+    utils.print_to_console(
+        text=f"**Command:** `{command}`",
+        title="Trying to run in terminal",
+        border_style=colorscheme.warning,
+    )
+
+    console.print("\nWhat would you like to do with this command?")
+    console.print("1. Accept and run the command")
+    console.print("2. Edit the command and run")
+    console.print("3. Not run the command at all")
+
+    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="3")
+
+    if choice == "1":
+        console.print("[green]✓ Running original command[/green]")
+        return True, command
+
+    elif choice == "2":
+        new_command = utils.edit_document_content(command)
+
+        if new_command.strip():
+            console.print("[green]✓ Running updated command[/green]")
+
+            return True, new_command
+        else:
+            console.print("[yellow]⚠ Empty command. Not running[/yellow]")
+            return False, command
+    else:  # choice == "3"
+        console.print("[red]✗ Skipping running command[/red]")
+        return False, command
