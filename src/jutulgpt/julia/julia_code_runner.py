@@ -6,40 +6,6 @@ import time
 from typing import Union
 
 
-def run_code_tempfile(code: str, project_dir: str | None = None):
-    """
-    Takes in a code string, writes it to a temporary file, and runs it in Julia using the subprocess module.
-    """
-    if project_dir is None:
-        project_dir = os.getcwd()
-
-    # Create a temporary file with Julia code in the project directory
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".jl", delete=False, encoding="utf-8", dir=project_dir
-    ) as temp_file:
-        temp_file.write(code)
-        temp_file.flush()  # Ensure content is written to disk
-        temp_file_path = temp_file.name
-
-    try:
-        # Run the Julia file with the project activated
-        result = subprocess.run(
-            ["julia", f"--project={project_dir}", temp_file_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            cwd=project_dir,  # Set working directory to project directory
-        )
-        print(f"Julia exit code: {result.returncode}")
-        return result.stdout, result.stderr
-    finally:
-        # Clean up the temporary file
-        try:
-            os.unlink(temp_file_path)
-        except OSError:
-            pass  # File might already be deleted
-
-
 def run_julia_file(code: str, julia_file_name: str, project_dir: str | None = None):
     assert julia_file_name.endswith(".jl"), "julia_file_name must end with .jl"
 
@@ -56,17 +22,9 @@ def run_julia_file(code: str, julia_file_name: str, project_dir: str | None = No
 
     try:
         # Run the Julia file with the project activated
-        # result = subprocess.run(
-        #     ["julia", f"--project={project_dir}", temp_file_path],
-        #     stdout=subprocess.PIPE,
-        #     stderr=subprocess.PIPE,
-        #     text=True,
-        #     cwd=project_dir,  # Set working directory to project directory
-        # )
         julia_script = os.path.join(
             project_dir, "src", "jutulgpt", "julia", julia_file_name
         )
-        # print(f"Running lint script: {julia_script}")
         result = subprocess.run(
             [
                 "julia",
@@ -80,7 +38,6 @@ def run_julia_file(code: str, julia_file_name: str, project_dir: str | None = No
             text=True,
             cwd=project_dir,
         )
-        # print(f"Julia exit code: {result.returncode}")
         return result.stdout, result.stderr
     finally:
         # Clean up the temporary file
