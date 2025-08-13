@@ -146,6 +146,7 @@ agent = Agent(
     ],
     print_chat_output=True,
 )
+agent_graph = agent.graph
 
 if __name__ == "__main__":
     agent.run()

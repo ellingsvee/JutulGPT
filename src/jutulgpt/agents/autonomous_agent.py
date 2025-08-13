@@ -129,6 +129,7 @@ autonomous_agent = AutonomousAgent(
     ],
     print_chat_output=True,
 )
+autonomous_agent_graph = autonomous_agent.graph
 
 if __name__ == "__main__":
     autonomous_agent.run()
