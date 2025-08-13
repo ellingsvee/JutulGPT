@@ -153,7 +153,7 @@ def response_on_check_code(code: str) -> tuple[bool, str, str]:
         bool: Whether the user wants to check the code or not
         str: Additional feedback to the model
     """
-    console.print("\n[bold yellow]Code check[/bold yellow]")
+    console.print("\n[bold yellow]Code found in response[/bold yellow]")
 
     console.print("Do you want to check the code for any potential errors?")
     console.print("1. Check the code")
