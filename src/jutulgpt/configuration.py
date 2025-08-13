@@ -21,8 +21,6 @@ cli_mode: bool = True
 # Select whether to use local models through Ollama or use OpenAI
 LOCAL_MODELS = False
 LLM_MODEL_NAME = "ollama:qwen3:14b" if LOCAL_MODELS else "openai:gpt-4.1"
-
-
 EMBEDDING_MODEL_NAME = (
     "ollama:nomic-embed-text" if LOCAL_MODELS else "openai:text-embedding-3-small"
 )
