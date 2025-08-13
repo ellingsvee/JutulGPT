@@ -1,3 +1,3 @@
-from jutulgpt.agents import agent
+from jutulgpt.agents import agent, autonomous_agent
 
-__all__ = ["agent"]
+__all__ = ["agent", "autonomous_agent"]
