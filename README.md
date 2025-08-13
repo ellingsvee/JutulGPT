@@ -2,7 +2,7 @@
 
 An AI assistant for JutulDarcy!
 
-![CLI example](media/cli_cropped.png "CLI example")
+![CLI example](media/JutulGPT_CLI.png "CLI example")
 
 ## Getting started
 
@@ -137,6 +137,8 @@ cli_mode = True
 This gives you a nice interface for asking questions, retrieving info, generating and running code etc. Both agents can also read and write to files.
 
 ### GUI
+![GUI example](media/JutulGPT_GUI.png "GUI example")
+
 The JutulGPT also has an associated GUI called [JutulGPT-GUI](https://github.com/ellingsvee/JutulGPT-GUI).  For using the GUI, you must disable the CLI-mode. To this by setting `cli_mode = False` in `src/jutulgpt/configuration.py`.
 
 Install it by following the instructions in the repository. Alternatively do
