@@ -30,9 +30,7 @@ class Agent(BaseAgent):
         tools: Optional[
             Union[Sequence[Union[BaseTool, Callable, dict[str, Any]]], ToolNode]
         ] = None,
-        name: Optional[str] = None,
         print_chat_output: bool = True,
-        filepath: Optional[str] = None,
     ):
         # Set default empty tools if none provided
         if tools is None:
@@ -41,12 +39,9 @@ class Agent(BaseAgent):
         # Initialize the base agent
         super().__init__(
             tools=tools,
-            name=name or "Agent",
+            name="Agent",
             printed_name="Agent",
-            part_of_multi_agent=False,
-            state_schema=State,
             print_chat_output=print_chat_output,
-            filepath=filepath,
         )
 
         self.user_provided_feedback = False
@@ -130,16 +125,7 @@ class Agent(BaseAgent):
         return {"messages": [response], "code_block": code_block, "error": False}
 
     def finalize(self, state: State, config: RunnableConfig):
-        self.write_julia_code_to_file(code_block=state.code_block)
         return {}
-
-    def direct_after_user_feedback_on_generated_code(
-        self, state: State
-    ) -> Literal["agent", "check_code"]:
-        if self.user_provided_feedback:
-            self.user_provided_feedback = False
-            return "agent"
-        return "check_code"
 
     def direct_after_check_code(
         self, state: State, config: RunnableConfig
@@ -147,11 +133,6 @@ class Agent(BaseAgent):
         if state.error:
             return "agent"
         return "finalize"
-
-    def decide_to_finish(
-        self, state: State, config: RunnableConfig
-    ) -> Literal["call_model", "end"]:
-        return "end"
 
 
 agent = Agent(
@@ -163,10 +144,8 @@ agent = Agent(
         retrieve_function_documentation,
         retrieve_jutuldarcy_examples,
     ],
-    name="Agent",
     print_chat_output=True,
 )
-graph = agent.graph
 
 if __name__ == "__main__":
     agent.run()
