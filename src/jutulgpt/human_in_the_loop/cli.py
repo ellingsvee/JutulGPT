@@ -5,7 +5,6 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 import jutulgpt.cli.cli_utils as utils
-import jutulgpt.state as state
 from jutulgpt.cli.cli_colorscheme import colorscheme
 from jutulgpt.globals import console
 from jutulgpt.rag.utils import modify_doc_content
@@ -274,107 +273,6 @@ def modify_rag_query(query: str, retriever_name: str) -> str:
     else:  # choice == "3"
         console.print(f"[red]✗ Skipping {retriever_name} retrieval[/red]")
         return ""  # Return empty string to indicate no query
-
-
-def handle_code_response(response_content: str) -> None:
-    """
-    CLI interaction for handling code found in multi-agent responses.
-    Allows user to run the code and/or save it to a file.
-
-    Args:
-        console: Rich console for display
-        response_content: The response content that may contain code
-    """
-    from jutulgpt.utils import get_code_from_response
-
-    # Extract code from the response
-    code_block = get_code_from_response(response_content)
-
-    # If no code found, return early
-    if not code_block.imports and not code_block.code:
-        return
-
-    # Display the found code
-    full_code = code_block.get_full_code(within_julia_context=True)
-
-    console.print("\n[bold yellow]Code Detected in Response[/bold yellow]")
-    console.print("\nWould you like to save the code (y/n)?")
-
-    choice = Prompt.ask("Your choice", choices=["y", "n"], default="n")
-
-    # Run the code if requested
-
-    # Save the code if requested
-    if choice == "y":
-        utils.save_code_to_file(code_block)
-    else:  # choice == "n"
-        console.print("[blue]ℹ No action taken[/blue]")
-
-
-def response_on_generated_code(code_block) -> tuple[state.CodeBlock, bool, str]:
-    """
-
-    Returns:
-        CodeBlock: The potentially modified code block
-        bool: Whether the code block was updated (True) or not (False)
-        str: Any user feedback to send back to the agent
-    """
-    from jutulgpt.utils import get_code_from_response
-
-    # If there is no code to edit, return immediately
-    if code_block.is_empty():
-        return code_block, False, ""
-
-    # Format the code for display
-    full_code = code_block.get_full_code(within_julia_context=True)
-
-    console.print("\n[bold yellow]Generated Code Review[/bold yellow]")
-
-    utils.print_to_console(
-        text=full_code,
-        title="Coding Agent",
-        border_style=colorscheme.human_interaction,
-    )
-
-    console.print("\nWhat would you like to do with this code?")
-    console.print("1. Accept code")
-    console.print("2. Give feedback to agent and regenerate code")
-    console.print("3. Edit the code manually")
-
-    choice = Prompt.ask("Your choice", choices=["1", "2", "3"], default="1")
-
-    if choice == "1":
-        console.print("[green]✓ Code accepted[/green]")
-        return code_block, False, ""
-    elif choice == "2":
-        console.print("[bold blue]Give feedback:[/bold blue] ")
-        user_input = console.input("> ")
-        if not user_input.strip():  # If the user input is empty
-            console.print("[red]✗ User feedback empty[/red]")
-            return code_block, False, ""
-        return code_block, False, user_input
-
-    else:  # choice == "3":
-        console.print("\n[bold]Edit Code[/bold]")
-        new_code = utils.edit_document_content(
-            code_block.get_full_code(within_julia_context=False), edit_julia_file=True
-        )
-
-        if new_code.strip():
-            utils.print_to_console(
-                text=add_julia_context(new_code),
-                title="Code update",
-                border_style=colorscheme.message,
-            )
-            # Update the code block with the new code
-            updated_code_block = get_code_from_response(
-                new_code, within_julia_context=False
-            )
-            console.print("[green]✓ Code updated[/green]")
-            return updated_code_block, True, ""
-        else:
-            console.print("[red]✗ Empty code provided[/red]")
-            return code_block, False, ""
 
 
 def modify_terminal_run(command: str) -> tuple[bool, str]:

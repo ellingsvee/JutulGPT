@@ -56,12 +56,6 @@ class HumanInteraction(BaseModel):
             "description": "Whether to verify and filter the retrieved examples."
         },
     )
-    generated_code: bool = field(
-        default=False,
-        metadata={
-            "description": "Whether to verify the generated code, edit it manually, or request a fix."
-        },
-    )
     code_check: bool = field(
         default=True,
         metadata={
