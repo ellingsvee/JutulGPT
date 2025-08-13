@@ -251,8 +251,7 @@ def _get_code_string_from_response(response: str) -> str:
     if matches:
         # Join multiple code blocks with double newlines to separate them
         code_blocks = [match.strip() for match in matches if match.strip()]
-        # return "\n\n".join(code_blocks)
-        return code_blocks[-1]  # Return the last code block only
+        return "\n\n".join(code_blocks)
     return ""
 
 
@@ -321,14 +320,8 @@ def _get_relevant_part_of_file_source(source: str, relevant_doc_name: str = "rag
     return source
 
 
-def get_file_source(
-    doc: Document, for_ui_printing: bool = False, only_relevant_part: bool = True
-) -> str:
+def get_file_source(doc: Document) -> str:
     file_source = doc.metadata.get("source", "Unknown Document")
-    if only_relevant_part:
-        file_source = _get_relevant_part_of_file_source(file_source)
-    if for_ui_printing:
-        return f"{file_source}"
     return file_source
 
 
