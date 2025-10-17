@@ -40,6 +40,15 @@ source .venv/bin/activate
 uv sync
 ```
 
+If encountering an error due to the `pygraphviz` package, try explicitly installing it using
+```bash
+brew install graphviz
+uv add --config-settings="--global-option=build_ext" \
+            --config-settings="--global-option=-I$(brew --prefix graphviz)/include/" \
+            --config-settings="--global-option=-L$(brew --prefix graphviz)/lib/" \
+            pygraphviz
+```
+
 Alternatively, if you use `pip`, create and activate the virtual environment by
 ```bash
 python3 -m venv .venv
