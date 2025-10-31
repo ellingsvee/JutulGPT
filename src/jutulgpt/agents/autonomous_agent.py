@@ -22,6 +22,7 @@ from jutulgpt.tools import (
     retrieve_jutuldarcy_examples,
     run_julia_code,
     run_julia_linter,
+    search_jutuldarcy_api,
     write_to_file,
 )
 from jutulgpt.utils import get_code_from_response
@@ -149,6 +150,7 @@ autonomous_agent = AutonomousAgent(
         grep_search,
         retrieve_function_documentation,
         retrieve_jutuldarcy_examples,
+        search_jutuldarcy_api,
     ],
     print_chat_output=True,
 )
