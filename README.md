@@ -86,6 +86,8 @@ uv run examples/agent.py
 
 This should install the necessary Julia packages before running. You might need to re-run the model after the installation.
 
+> **Note**: On first run, JutulGPT automatically downloads the latest JutulDarcy documentation from GitHub and caches it locally. This happens in the background with no user intervention required. See `scripts/README.md` for cache management options.
+
 ## Basic usage
 
 Two different agents are implemented.
