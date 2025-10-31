@@ -139,21 +139,131 @@ class RetrieveFunctionDocumentationInput(BaseModel):
 
 @tool(
     "retrieve_function_documentation",
-    description="Retrieve documentation for specific Julia functions. Use this tool when needing detailed information about function signatures and usage.",
+    description="Retrieve documentation for specific Julia functions. Use this tool when needing detailed information about function signatures and usage. Provides comprehensive documentation from JutulDarcy and Jutul APIs.",
     args_schema=RetrieveFunctionDocumentationInput,
 )
 def retrieve_function_documentation(
     function_names: List[str],
     config: Annotated[RunnableConfig, InjectedToolArg],
 ) -> str:
-    _, retrieved_signatures = get_function_documentation_from_list_of_funcs(
-        func_names=function_names
+    """
+    Retrieve function documentation using the extracted API docs.
+    Falls back to live @doc queries if needed.
+    """
+    from jutulgpt.julia.extract_docs import (
+        extract_jutuldarcy_documentation,
+        format_function_doc,
     )
 
-    if retrieved_signatures:
-        return retrieved_signatures
+    # Load extracted documentation (silently)
+    all_docs = extract_jutuldarcy_documentation()
+    
+    found_docs = []
+    not_found = []
+    
+    for func_name in function_names:
+        # Try to find in extracted docs (try different variations)
+        doc_found = False
+        
+        # Check exact match and with module prefixes
+        possible_names = [
+            func_name,
+            f"JutulDarcy.{func_name}",
+            f"Jutul.{func_name}",
+        ]
+        
+        for name_variant in possible_names:
+            if name_variant in all_docs:
+                found_docs.append(format_function_doc(name_variant, all_docs[name_variant]))
+                doc_found = True
+                break
+        
+        if not doc_found:
+            not_found.append(func_name)
+    
+    # Fallback: Try live @doc for functions not found in extracted docs
+    if not_found:
+        _, live_docs = get_function_documentation_from_list_of_funcs(
+            func_names=not_found
+        )
+        if live_docs:
+            found_docs.append(f"# Additional documentation from @doc\n\n{live_docs}")
+    
+    if found_docs:
+        result = "\n\n---\n\n".join(found_docs)
+        # Only print summary if there were issues finding some functions
+        if not_found:
+            print_to_console(
+                text=f"Retrieved {len(function_names) - len(not_found)}/{len(function_names)} from cache, {len(not_found)} from live query",
+                title="Function Documentation",
+                border_style=colorscheme.success,
+            )
+        else:
+            print_to_console(
+                text=f"Retrieved documentation for {len(function_names)} function(s)",
+                title="Function Documentation",
+                border_style=colorscheme.success,
+            )
+        return result
+    
+    return "No function documentation found for the provided function names."
 
-    return "No function signatures found for the provided function names."
+
+class SearchJutulDarcyAPIInput(BaseModel):
+    """Input for searching JutulDarcy API documentation."""
+
+    query: str = Field(
+        description="Search query for function names or keywords to find in the JutulDarcy/Jutul API documentation"
+    )
+    top_k: int = Field(
+        default=5,
+        description="Number of top results to return",
+    )
+
+
+@tool(
+    "search_jutuldarcy_api",
+    description="Search the complete JutulDarcy and Jutul API documentation extracted from docstrings. Use this to find function documentation, signatures, and usage information. More comprehensive than retrieve_function_documentation as it searches all exported functions.",
+    args_schema=SearchJutulDarcyAPIInput,
+)
+def search_jutuldarcy_api(
+    query: str,
+    top_k: int = 5,
+) -> str:
+    """Search the extracted JutulDarcy API documentation."""
+    from jutulgpt.julia.extract_docs import (
+        extract_jutuldarcy_documentation,
+        format_function_doc,
+        search_function_docs,
+    )
+
+    # Get all documentation (silently)
+    docs = extract_jutuldarcy_documentation()
+
+    if not docs:
+        return "Failed to load JutulDarcy API documentation."
+
+    # Search for matching functions
+    results = search_function_docs(query, docs, top_k=top_k)
+
+    if not results:
+        return f"No API documentation found matching: {query}"
+
+    # Format results
+    formatted_results = []
+    for func_name, doc in results:
+        formatted_results.append(format_function_doc(func_name, doc))
+
+    output = "\n\n---\n\n".join(formatted_results)
+
+    # Simple, clean message
+    print_to_console(
+        text=f"Found {len(results)} function(s) matching '{query}'",
+        title="API Search",
+        border_style=colorscheme.success,
+    )
+
+    return output
 
 
 class GrepSearchInput(BaseModel):

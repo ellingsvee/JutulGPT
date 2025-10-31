@@ -41,6 +41,9 @@ def _load_and_split_docs(spec: RetrieverSpec) -> list:
 
     from langchain_community.document_loaders import DirectoryLoader, TextLoader
 
+    # Resolve dir_path if it's a callable
+    dir_path = spec.dir_path() if callable(spec.dir_path) else spec.dir_path
+
     # Load or cache documents
     if isinstance(spec.filetype, str):
         filetypes = [spec.filetype]
@@ -50,12 +53,17 @@ def _load_and_split_docs(spec: RetrieverSpec) -> list:
     loaders = []
     for filetype in filetypes:
         loader = DirectoryLoader(
-            path=spec.dir_path,
+            path=dir_path,
             glob=f"**/*.{filetype}",
             show_progress=True,
             loader_cls=TextLoader,
         )
         loaders.append(loader)
+
+    # Ensure cache directory exists
+    cache_dir = os.path.dirname(spec.cache_path)
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
 
     if os.path.exists(spec.cache_path):
         with open(spec.cache_path, "rb") as f:

@@ -56,6 +56,23 @@ def format_doc(doc: Document, within_julia_context: bool = True) -> str:
     return doc.page_content.strip()
 
 
+def get_section_path(doc: Document, for_ui_printing: bool = False) -> str:
+    """
+    Get the section path from document metadata.
+    
+    Args:
+        doc: Document with metadata
+        for_ui_printing: Whether to format for UI display
+        
+    Returns:
+        Section path string
+    """
+    heading = doc.metadata.get("heading", "")
+    if for_ui_printing:
+        return heading if heading else "Root"
+    return heading if heading else "Root"
+
+
 def format_examples(docs: List[Document], remove_duplicates: bool = True) -> str:
     if remove_duplicates:
         docs = deduplicate_document_chunks(docs)

@@ -13,6 +13,7 @@ from jutulgpt.tools.retrieve import (
     grep_search,
     retrieve_function_documentation,
     retrieve_jutuldarcy_examples,
+    search_jutuldarcy_api,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "grep_search",
     "retrieve_function_documentation",
     "retrieve_jutuldarcy_examples",
+    "search_jutuldarcy_api",
 ]

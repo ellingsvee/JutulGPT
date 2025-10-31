@@ -14,6 +14,11 @@ python_scrapbook/
 src/ui/node_modules/
 src/ui/pnpm-lock.yaml
 
+# Dynamic documentation cache (fetched from GitHub)
+.cache/
+# Keep hard-copied docs as legacy backup (can be removed after migration)
+src/jutulgpt/rag/jutuldarcy/
+
 # Julia-specific
 Manifest.toml
 
