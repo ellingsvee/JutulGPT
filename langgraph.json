@@ -3,7 +3,10 @@
     "."
   ],
   "graphs": {
-    "agent": "./src/jutulgpt/agents/agent.py:agent_graph"
+    "jutulgpt": {
+      "path": "./src/jutulgpt/agents/autonomous_agent.py:autonomous_agent_graph",
+      "description": "An agent used to retrie information and write code for the JutulDarcy.jl package."
+    }
   },
   "image_distro": "wolfi",
   "env": ".env"

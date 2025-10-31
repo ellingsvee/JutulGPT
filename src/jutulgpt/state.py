@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
-from langgraph.managed import IsLastStep, RemainingSteps
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated, Sequence
 
@@ -58,41 +57,61 @@ class CodeBlock(BaseModel):
         return full_code
 
 
+# @dataclass
+# class InputState:
+#     """
+#     Base input state for the agent, representing the evolving conversation and tool interaction history.
+#
+#     - messages: List of all messages exchanged so far (user, AI, tool, etc.).
+#       The `add_messages` annotation ensures new messages are merged by ID, so the state is append-only unless a message is replaced.
+#     """
+#
+#     messages: Annotated[Sequence[AnyMessage], add_messages] = field(
+#         default_factory=list
+#     )
+
+
+# Define minimal input schema for MCP
 @dataclass
-class InputState:
+class MCPInputState:
     """
-    Base input state for the agent, representing the evolving conversation and tool interaction history.
-
-    - messages: List of all messages exchanged so far (user, AI, tool, etc.).
-      The `add_messages` annotation ensures new messages are merged by ID, so the state is append-only unless a message is replaced.
+    Input schema for MCP endpoint, containing only the user question or prompt.
     """
 
+    question: str
+    current_filepath: str
+
+
+# Define minimal output schema for MCP
+@dataclass
+class MCPOutputState:
+    """
+    Output schema for MCP endpoint, containing the agent's response.
+    """
+
+    answer: str
+    code_block: CodeBlock  # Include if code output is part of the MCP response
+
+
+# Define internal state for graph processing
+@dataclass
+class State:
+    """
+    Internal state for managing the agent's conversation and tool interactions.
+    Extends the input/output schemas with additional fields for internal use.
+    """
+
+    mcp_question: str = ""
+    mcp_current_filepath: str = ""
+    mcp_answer: str = ""
     messages: Annotated[Sequence[AnyMessage], add_messages] = field(
         default_factory=list
     )
-    is_last_step: IsLastStep = field(default=False)
-    remaining_steps: RemainingSteps = field(default=50)
-
-
-@dataclass
-class State(InputState):
-    """
-    Main agent state, extends InputState with error tracking, step control, and iteration count.
-
-    - is_last_step: True if the next step will hit the recursion limit (managed by the graph, not user code).
-    - error: True if the agent encountered an error in the last step.
-    - error_message: Details of the last error, if any.
-    - iterations: Number of steps/turns taken so far (useful for limiting recursion or debugging).
-    - regenerate_code: True if the human has asked the agent to regenerate code before executing it.
-    - retrieved_context: Context retrieved from RAG agent, available to subsequent agents.
-    - code_block: The current code block being worked on, including imports and main code.
-    - retrieved_function_definitions: Retrieved function definitions. Used by the code-agent.
-    """
-
     error: bool = field(default=False)
     error_message: str = field(default="")
     iterations: int = field(default=0)
     regenerate_code: bool = field(default=False)
     retrieved_context: str = field(default="")
     code_block: CodeBlock = field(default_factory=CodeBlock)
-    original_user_query: str = field(default="")
+    is_last_step: bool = field(default=False)
+    remaining_steps: int = field(default=50)

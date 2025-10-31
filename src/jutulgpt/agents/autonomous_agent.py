@@ -10,8 +10,8 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from jutulgpt.agents.agent_base import BaseAgent
-from jutulgpt.configuration import BaseConfiguration, cli_mode
-from jutulgpt.state import State
+from jutulgpt.configuration import BaseConfiguration, cli_mode, mcp_mode
+from jutulgpt.state import MCPInputState, MCPOutputState, State
 from jutulgpt.tools import (
     execute_terminal_command,
     get_working_directory,
@@ -52,14 +52,32 @@ class AutonomousAgent(BaseAgent):
     def build_graph(self):
         """Build the react agent graph."""
 
-        workflow = StateGraph(self.state_schema, config_schema=BaseConfiguration)
+        # TODO: This is not the best way to do this
+        if mcp_mode:
+            workflow = StateGraph(
+                self.state_schema,
+                input_schema=MCPInputState,
+                output_schema=MCPOutputState,
+                config_schema=BaseConfiguration,
+            )
+        else:
+            workflow = StateGraph(
+                self.state_schema,
+                config_schema=BaseConfiguration,
+            )
 
         # Add nodes
         workflow.add_node("agent", self.call_model)
         workflow.add_node("tools", self.tool_node)
 
+        if mcp_mode:
+            workflow.add_node("mcp_input", self.state_from_mcp_input)
+
         # Set entry point
-        if cli_mode:
+        if mcp_mode:
+            workflow.set_entry_point("mcp_input")
+            workflow.add_edge("mcp_input", "agent")
+        elif cli_mode:
             workflow.add_node("get_user_input", self.get_user_input)
             workflow.set_entry_point("get_user_input")
             workflow.add_edge("get_user_input", "agent")
@@ -111,7 +129,12 @@ class AutonomousAgent(BaseAgent):
 
         code_block = get_code_from_response(response=response.content)
 
-        return {"messages": [response], "code_block": code_block, "error": False}
+        return {
+            "messages": [response],
+            "code_block": code_block,
+            "error": False,
+            "mcp_answer": response.content,
+        }
 
 
 autonomous_agent = AutonomousAgent(

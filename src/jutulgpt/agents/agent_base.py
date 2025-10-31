@@ -29,6 +29,7 @@ import jutulgpt.state as state
 from jutulgpt.cli import colorscheme, show_startup_screen, stream_to_console
 from jutulgpt.configuration import LLM_TEMPERATURE, PROJECT_ROOT, RECURSION_LIMIT
 from jutulgpt.globals import console
+from jutulgpt.state import State
 from jutulgpt.utils import get_provider_and_model
 
 
@@ -379,8 +380,32 @@ class BaseAgent(ABC):
 
         return {
             "messages": [HumanMessage(content=user_input)],
-            "original_user_query": user_input,
         }
+
+    def state_from_mcp_input(self, state: State, config: RunnableConfig) -> dict:
+        """
+        Convert from the input from Copilot to a question that JutulGPT can interpret. Used when running an MCP-server for VSCode/Copilot integration.
+        """
+
+        question = state.mcp_question
+
+        try:
+            current_filepath = state.mcp_current_filepath
+        except:
+            current_filepath = ""
+
+        if not current_filepath:
+            current_filepath = "Filepath not provided"
+
+        full_question = f"""
+You are called as a tool by another agent. Try to answer the question, and note that the other agent can only read your final ouput.
+
+The current file we are working in. You should read its content before trying to respond: {current_filepath}
+
+Here is the question asked by the other agent:
+{question}
+"""
+        return {"messages": [full_question]}
 
     def run(self) -> None:
         """Run the agent."""

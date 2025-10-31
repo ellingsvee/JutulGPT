@@ -10,9 +10,9 @@ from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from jutulgpt.agents.agent_base import BaseAgent
-from jutulgpt.configuration import BaseConfiguration, cli_mode
+from jutulgpt.configuration import BaseConfiguration, cli_mode, mcp_mode
 from jutulgpt.nodes import check_code
-from jutulgpt.state import State
+from jutulgpt.state import MCPInputState, MCPOutputState, State
 from jutulgpt.tools import (
     grep_search,
     list_files_in_directory,
@@ -49,7 +49,19 @@ class Agent(BaseAgent):
     def build_graph(self):
         """Build the react agent graph."""
 
-        workflow = StateGraph(self.state_schema, config_schema=BaseConfiguration)
+        # TODO: This is not the best way to do this
+        if mcp_mode:
+            workflow = StateGraph(
+                self.state_schema,
+                input_schema=MCPInputState,
+                output_schema=MCPOutputState,
+                config_schema=BaseConfiguration,
+            )
+        else:
+            workflow = StateGraph(
+                self.state_schema,
+                config_schema=BaseConfiguration,
+            )
 
         # Add nodes
         workflow.add_node("agent", self.call_model)
@@ -57,8 +69,14 @@ class Agent(BaseAgent):
         workflow.add_node("finalize", self.finalize)
         workflow.add_node("check_code", check_code)
 
+        if mcp_mode:
+            workflow.add_node("mcp_input", self.state_from_mcp_input)
+
         # Set entry point
-        if cli_mode:
+        if mcp_mode:
+            workflow.set_entry_point("mcp_input")
+            workflow.add_edge("mcp_input", "agent")
+        elif cli_mode:
             workflow.add_node("get_user_input", self.get_user_input)
             workflow.set_entry_point("get_user_input")
             workflow.add_edge("get_user_input", "agent")

@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "langgraph-jutulgpt": {
+      "type": "http",
+      "url": "http://127.0.0.1:2024/mcp"
+    }
+  }
+}

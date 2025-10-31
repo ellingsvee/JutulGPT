@@ -145,6 +145,24 @@ cli_mode = True
 ```
 This gives you a nice interface for asking questions, retrieving info, generating and running code etc. Both agents can also read and write to files.
 
+### VSCode integration using MCP
+For calling using JutulGPT from VSCode, it can communicate with Copilot through setting up an [MCP server](https://code.visualstudio.com/docs/copilot/customization/mcp-servers). 
+
+To enable MCP server in JutulGPT, in `src/jutulgpt/configuration.py` set
+```python
+mcp_mode = True
+```
+and start JutulGPT through the [Langgraph CLI](https://docs.langchain.com/langsmith/cli) by running
+```bash
+source .venv/bin/activate # If not already activated
+langgraph dev # Starts local dev server
+```
+Then, in the VSCode workspace where you want to use JutulGPT, add the an MCP server through a `mcp.json` file. See the `.vscode.example/mcp.json` file for an example. Finally, select the JutulGPT MCP as a tool in the Copilot settinsgs. See [Use MCP tools in chat](https://code.visualstudio.com/docs/copilot/customization/mcp-servers#_use-mcp-tools-in-chat) for how ot do this!
+
+
+
+
+
 ### GUI
 ![GUI example](media/JutulGPT_GUI.png "GUI example")
 
@@ -174,10 +192,10 @@ The GUI can now be accessed on `http://localhost:3000/` (or some other location 
 ## Fimbul (WARNING)
 There is some legacy code for generating code for the Fimbul package. I have removed a lot of it, but it can be re-implemented by adding some tools and modifying the prompts. My suggestion is to get familiar with the current tools fot JutulDarcy, and then later extend to Fimbul.
 
-## Testing (WARNING)
+## Testing
 Tests are set up to be implemented using [pytest](https://docs.pytest.org/en/stable/). They can be written in the `tests/` directory. Run by the command
 ```bash
 uv run pytest
 ```
-> Note: Due to a lot of rapid modifications the previous tests were remove doe to being outdated. Work is being done to update this!
+> Note: No tests have yet been implemented.
 
