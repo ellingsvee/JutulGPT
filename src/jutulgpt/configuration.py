@@ -15,8 +15,13 @@ from pydantic import BaseModel, ConfigDict
 
 from jutulgpt import prompts
 
-# Static settings
-cli_mode: bool = True
+# Static settings.
+# NOTE: Currently only one of these can be true at a time
+cli_mode: bool = True  # If the agent is run from using the CLI
+mcp_mode: bool = (
+    False  # If the agent is run as an MPC server that can be called from VSCode
+)
+assert not (cli_mode and mcp_mode), "cli_mode and mcp_mode cannot both be true."
 
 # Select whether to use local models through Ollama or use OpenAI
 LOCAL_MODELS = False
@@ -38,6 +43,9 @@ def _set_env(var: str):
 PROJECT_ROOT = Path(__file__).resolve().parent
 load_dotenv()
 _set_env("OPENAI_API_KEY")
+_set_env("LANGSMITH_API_KEY")
+
+
 logging.getLogger("httpx").setLevel(logging.WARNING)  # Less warnings in the output
 logging.getLogger("faiss").setLevel(logging.WARNING)
 
