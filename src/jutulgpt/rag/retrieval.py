@@ -1,9 +1,9 @@
 import os
 from contextlib import contextmanager
-from typing import Generator, TypedDict, Union
+from typing import Generator, TypedDict
 
-from langchain.retrievers import ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import FlashrankRerank
+# from langchain.retrievers import ContextualCompressionRetriever
+# from langchain.retrievers.document_compressors import FlashrankRerank
 from langchain_core.embeddings import Embeddings
 from langchain_core.runnables import RunnableConfig
 from langchain_core.vectorstores import VectorStoreRetriever
@@ -164,14 +164,14 @@ def make_chroma_retriever(
     )
 
 
-def apply_flash_reranker(
-    configuration: BaseConfiguration, retriever: VectorStoreRetriever
-):
-    compressor = FlashrankRerank(**configuration.rerank_kwargs)
-
-    return ContextualCompressionRetriever(
-        base_compressor=compressor, base_retriever=retriever
-    )
+# def apply_flash_reranker(
+#     configuration: BaseConfiguration, retriever: VectorStoreRetriever
+# ):
+#     compressor = FlashrankRerank(**configuration.rerank_kwargs)
+#
+#     return ContextualCompressionRetriever(
+#         base_compressor=compressor, base_retriever=retriever
+#     )
 
 
 @contextmanager
@@ -182,7 +182,7 @@ def make_retriever(
         search_type="mmr",
         search_kwargs={"k": 3, "fetch_k": 15, "lambda_mult": 0.5},
     ),
-) -> Generator[Union[VectorStoreRetriever, ContextualCompressionRetriever], None, None]:
+) -> Generator[VectorStoreRetriever, None, None]:
     """
     Create a retriever for the agent, based on the current configuration.
 
@@ -226,8 +226,6 @@ def make_retriever(
 
     # Apply the reranker
     match configuration.rerank_provider:
-        case "flash":
-            yield apply_flash_reranker(configuration, selected_retriever)
         case "None":
             yield selected_retriever
         case _:
